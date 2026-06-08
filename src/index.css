@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@layer base {
+  button,
+  a {
+    cursor: pointer;
+  }
+}
