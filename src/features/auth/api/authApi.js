@@ -79,6 +79,7 @@ export const authApi = {
 	register: (data) => apiClient.post("/auth/register", data),
 	login: (data) => apiClient.post("/auth/login", data),
 	verifyEmail: (token) => apiClient.get(`/auth/verify-email?token=${token}`),
+	getGoogleAuthUrl,
 
 	forgotPassword: (data) =>
 		postWithMessage(

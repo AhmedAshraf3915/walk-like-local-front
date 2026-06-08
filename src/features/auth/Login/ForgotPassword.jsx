@@ -259,17 +259,17 @@ export function EnterOTP() {
 
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
-  const [canResend, setCanResend] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
   const inputRefs = useRef([]);
 
   const fullCode = otp.join("");
   const isComplete = fullCode.length === OTP_LENGTH && otp.every((d) => d !== "");
+  const canResend = timeLeft === 0;
 
   // Countdown
   useEffect(() => {
-    if (timeLeft === 0) { setCanResend(true); return; }
+    if (timeLeft === 0) return;
     const t = setTimeout(() => setTimeLeft((p) => p - 1), 1000);
     return () => clearTimeout(t);
   }, [timeLeft]);
@@ -303,9 +303,8 @@ export function EnterOTP() {
       await authApi.resendOtp({ email });
       setOtp(Array(OTP_LENGTH).fill(""));
       setTimeLeft(TIMER_SECONDS);
-      setCanResend(false);
       setError("");
-    } catch (err) {
+    } catch {
       setError("Failed to resend. Try again.");
     }
   };
@@ -397,7 +396,7 @@ export function EnterOTP() {
 export function ChangePassword() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { email, otp } = location.state || {};
+  const { email } = location.state || {};
   const [serverError, setServerError] = useState("");
 
   const form = useForm({

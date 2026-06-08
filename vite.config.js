@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
-const repoName = 'Walk-Like-Local-Frontend'
+const repoName = 'walk-like-local-front'
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
