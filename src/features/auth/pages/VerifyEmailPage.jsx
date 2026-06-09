@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import AuthLayout from "../../../components/layouts/AuthLayout";
 import { authApi } from "@/features/auth/api/authApi";
 import useAuth from "@/contexts/useAuth";
@@ -8,7 +8,9 @@ import Loader from "../../../components/shared/Loader";
 
 const VerifyEmailPage = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  const { token: tokenFromPath } = useParams();
+  const tokenFromQuery = searchParams.get("token");
+  const token = tokenFromQuery ?? tokenFromPath ?? null;
   const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState(() =>
     token ? null : "No verification token provided.",

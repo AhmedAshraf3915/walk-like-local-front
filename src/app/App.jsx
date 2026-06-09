@@ -31,7 +31,12 @@ function App() {
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/check-email" element={<CheckEmailNoticePage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/email-verified/:token" element={<VerifyEmailPage />} />
         <Route path="/email-verified" element={<EmailVerifiedPage />} />
+        <Route
+          path="/verified-email"
+          element={<Navigate to="/email-verified" replace />}
+        />
         <Route
           path="/verify-email-notice"
           element={<Navigate to="/check-email" replace />}
