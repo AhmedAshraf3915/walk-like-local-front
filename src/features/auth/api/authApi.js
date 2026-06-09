@@ -1,5 +1,16 @@
 import { apiClient } from "@/services/apiClient";
 
+const appBaseUrl = import.meta.env.BASE_URL || "/";
+
+const toAppUrl = (path) => {
+	const normalizedBase = appBaseUrl.endsWith("/")
+		? appBaseUrl
+		: `${appBaseUrl}/`;
+	const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+
+	return new URL(`${normalizedBase}${normalizedPath}`, window.location.origin);
+};
+
 const unwrapResponseData = (response) => response?.data?.data ?? response?.data ?? null;
 
 const getErrorMessage = (error, fallbackMessage) => {
@@ -37,7 +48,12 @@ const normalizeRoleForApi = (role) => {
 
 const getGoogleAuthUrl = (nextPath = "/test", options = {}) => {
 	const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "");
-	const callbackUrl = new URL("/auth/google/callback", window.location.origin);
+
+	if (!apiBaseUrl) {
+		throw new Error("VITE_API_BASE_URL is not configured.");
+	}
+
+	const callbackUrl = toAppUrl("auth/google/callback");
 	const googleAuthUrl = new URL(`${apiBaseUrl}/auth/google`);
 	const { role, mode } = options;
 

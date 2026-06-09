@@ -1,13 +1,32 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>wll</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wll</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    // Restore deep-link path after GitHub Pages 404.html redirects to ?p=...
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const redirectedPath = params.get("p");
+
+      if (!redirectedPath) return;
+
+      try {
+        const restoredPath = decodeURIComponent(redirectedPath);
+        window.history.replaceState(null, "", restoredPath);
+      } catch {
+        // Keep current URL if the query payload is malformed.
+      }
+    })();
+  </script>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

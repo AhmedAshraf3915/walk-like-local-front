@@ -1,7 +1,14 @@
 import axios from "axios";
 
+const appBaseUrl = import.meta.env.BASE_URL || "/";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!apiBaseUrl) {
+	console.warn("VITE_API_BASE_URL is not set. API requests will fail at runtime.");
+}
+
 export const apiClient = axios.create({
-	baseURL: import.meta.env.VITE_API_BASE_URL,
+	baseURL: apiBaseUrl,
 
 	headers: {
 		"Content-Type": "application/json",
@@ -36,8 +43,7 @@ apiClient.interceptors.response.use(
 
 		if (error.response?.status === 401 && hasStoredToken) {
 			localStorage.removeItem("accessToken");
-
-			window.location.href = "/login";
+			window.location.href = `${appBaseUrl}login`;
 		}
 
 		return Promise.reject(error);
