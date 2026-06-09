@@ -55,7 +55,7 @@ const GoogleAuthCallbackPage = () => {
     const accessToken = params.get("accessToken") ?? params.get("token");
     const refreshToken = params.get("refreshToken");
     const user = parseUser(params.get("user"));
-    const nextPath = params.get("next") || "/test";
+    const nextPath = params.get("next") || "/guide-verification";
 
     if (!accessToken || !user) {
       return { error: "Google sign in did not return valid auth data." };

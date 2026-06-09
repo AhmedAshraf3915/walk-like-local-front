@@ -18,7 +18,7 @@ const initialFormState = {
 
 const SignUpPage = () => {
   const navigate = useNavigate();
-  const { signup, loading, error, resetMessages } = useAuth();
+  const { signup, loading, error, resetMessages, clearAuth } = useAuth();
   const [formValues, setFormValues] = useState(initialFormState);
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -65,6 +65,10 @@ const SignUpPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (loading) {
+      return;
+    }
+
     const validationErrors = validateSignupForm(formValues);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -81,7 +85,11 @@ const SignUpPage = () => {
         role: formValues.role,
       });
 
+      // Keep the flow deterministic: after signup we always re-authenticate via login.
+      clearAuth();
+
       navigate("/check-email", {
+        replace: true,
         state: { email: result?.email ?? formValues.email.trim() },
       });
     } catch {
@@ -99,10 +107,7 @@ const SignUpPage = () => {
     }
 
     window.location.assign(
-      authApi.getGoogleAuthUrl("/test", {
-        role: formValues.role,
-        mode: "signup",
-      }),
+      authApi.getGoogleSignupUrl(formValues.role, "/test"),
     );
   };
 

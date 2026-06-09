@@ -33,8 +33,7 @@ const VerifyEmailPage = () => {
         try {
           login(response);
           setSuccessMessage("Email verified and signed in.");
-          // navigate to root or dashboard
-          navigate("/");
+          navigate("/email-verified", { replace: true });
         } catch {
           // If login failed due to missing tokens, show success notice
           setSuccessMessage("Email verified. You may now sign in.");
@@ -75,7 +74,7 @@ const VerifyEmailPage = () => {
             </div>
             <div className="flex gap-2">
               <Button onClick={() => navigate("/login")}>Sign in</Button>
-              <Button variant="secondary" onClick={() => navigate("/")}>
+              <Button variant="secondary" onClick={() => navigate("/login")}>
                 Go home
               </Button>
             </div>

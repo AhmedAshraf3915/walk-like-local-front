@@ -57,6 +57,22 @@ const getGoogleAuthUrl = (nextPath = "/test", options = {}) => {
 	return googleAuthUrl.toString();
 };
 
+const getGoogleSignupUrl = (role, nextPath = "/test") => {
+	if (!role || typeof role !== "string") {
+		throw new Error("Role is required for Google sign up.");
+	}
+
+	return getGoogleAuthUrl(nextPath, {
+		role,
+		mode: "signup",
+	});
+};
+
+const getGoogleSigninUrl = (nextPath = "/test") =>
+	getGoogleAuthUrl(nextPath, {
+		mode: "signin",
+	});
+
 export const authApi = {
 	registerTourist: (data) =>
 		postWithMessage(
@@ -80,6 +96,8 @@ export const authApi = {
 	login: (data) => apiClient.post("/auth/login", data),
 	verifyEmail: (token) => apiClient.get(`/auth/verify-email?token=${token}`),
 	getGoogleAuthUrl,
+	getGoogleSignupUrl,
+	getGoogleSigninUrl,
 
 	forgotPassword: (data) =>
 		postWithMessage(

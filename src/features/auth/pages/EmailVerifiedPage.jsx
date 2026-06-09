@@ -3,21 +3,34 @@ import { ArrowRight, Check, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCountdown from "../../../hooks/useCountdown";
 import VerificationGlassShell from "../components/VerificationGlassShell";
+import useAuth from "@/contexts/useAuth";
 
 const EmailVerifiedPage = () => {
   const navigate = useNavigate();
+  const { userRole, isAuthenticated } = useAuth();
   const { secondsLeft, isComplete } = useCountdown(5);
+  const nextRoute = userRole === "guide" ? "/guide-verification" : "/test";
 
   useEffect(() => {
     if (!isComplete) {
       return;
     }
 
-    navigate("/test", { replace: true });
-  }, [isComplete, navigate]);
+    if (!isAuthenticated) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    navigate(nextRoute, { replace: true });
+  }, [isComplete, isAuthenticated, navigate, nextRoute]);
 
   const handleGoToLogin = () => {
-    navigate("/test");
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    navigate(nextRoute);
   };
 
   return (
@@ -45,7 +58,7 @@ const EmailVerifiedPage = () => {
         </h1>
 
         <p className="sr-only" aria-live="polite">
-          Redirecting to login in {secondsLeft} second
+          Redirecting in {secondsLeft} second
           {secondsLeft === 1 ? "" : "s"}.
         </p>
 
