@@ -5,7 +5,6 @@ import { useState } from "react";
 import { authApi } from "../api/authApi";
 import authBg from "../../../assets/images/auth-bg.jpg";
 
-
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const GlassCard = ({ children, className = "" }) => (
@@ -32,7 +31,12 @@ const IconBox = ({ children }) => (
   </div>
 );
 
-const PrimaryBtn = ({ children, type = "button", disabled = false, onClick }) => (
+const PrimaryBtn = ({
+  children,
+  type = "button",
+  disabled = false,
+  onClick,
+}) => (
   <button
     type={type}
     disabled={disabled}
@@ -60,7 +64,17 @@ const BackBtn = ({ onClick }) => (
     onClick={onClick}
     className="flex items-center gap-1 text-sm text-[#0a0a5e] font-medium mb-6 hover:opacity-70 transition-opacity"
   >
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M19 12H5M12 5l-7 7 7 7" />
     </svg>
     Back
@@ -71,13 +85,31 @@ const FieldError = ({ msg }) =>
   msg ? <p className="text-red-500 text-xs mt-1">{msg}</p> : null;
 
 const Spinner = () => (
-  <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    className="animate-spin"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
   </svg>
 );
 
 const ArrowRight = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
@@ -85,34 +117,80 @@ const ArrowRight = () => (
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const MailIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="34"
+    height="34"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#F59E0B"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect width="20" height="16" x="2" y="4" rx="2" />
     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
   </svg>
 );
 
 const LockIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="34"
+    height="34"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#F59E0B"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 
 const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#F59E0B"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 // ── Shared PasswordInput ──────────────────────────────────────────────────────
 
-const PasswordInput = ({ value, onChange, name, placeholder = "••••••••••" }) => {
+const PasswordInput = ({
+  value,
+  onChange,
+  name,
+  placeholder = "••••••••••",
+}) => {
   const [show, setShow] = useState(false);
   return (
     <div className="relative w-full">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#010170]">
-        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
       </span>
       <input
@@ -123,14 +201,40 @@ const PasswordInput = ({ value, onChange, name, placeholder = "•••••�
         onChange={onChange}
         name={name}
       />
-      <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#010170]">
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#010170]"
+      >
         {show ? (
-          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.73 5.073A11 11 0 0 1 12 5c4.664 0 8.4 2.903 10 7a11.6 11.6 0 0 1-1.555 2.788M6.52 6.519C4.48 7.764 2.9 9.693 2 12c1.6 4.097 5.336 7 10 7a10.44 10.44 0 0 0 5.48-1.52m-7.6-7.6a3 3 0 1 0 4.243 4.243" /><path d="m4 4 16 16" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M10.73 5.073A11 11 0 0 1 12 5c4.664 0 8.4 2.903 10 7a11.6 11.6 0 0 1-1.555 2.788M6.52 6.519C4.48 7.764 2.9 9.693 2 12c1.6 4.097 5.336 7 10 7a10.44 10.44 0 0 0 5.48-1.52m-7.6-7.6a3 3 0 1 0 4.243 4.243" />
+            <path d="m4 4 16 16" />
           </svg>
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0" /><path d="M2 12c1.6-4.097 5.336-7 10-7s8.4 2.903 10 7c-1.6 4.097-5.336 7-10 7s-8.4-2.903-10-7" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+            <path d="M2 12c1.6-4.097 5.336-7 10-7s8.4 2.903 10 7c-1.6 4.097-5.336 7-10 7s-8.4-2.903-10-7" />
           </svg>
         )}
       </button>
@@ -167,11 +271,11 @@ export function ForgotPassword() {
     onSubmit: async ({ value }) => {
       setServerError("");
       try {
-        await authApi.forgotPassword({ email: value.email });
-        navigate("/enter-otp", { state: { email: value.email } });
+        const normalizedEmail = value.email.trim().toLowerCase();
+        await authApi.forgotPassword({ email: normalizedEmail });
+        navigate("/enter-otp", { state: { email: normalizedEmail } });
       } catch (err) {
-        const msg = err?.response?.data?.message;
-        setServerError(msg || "Something went wrong.");
+        setServerError(err?.message || "Something went wrong.");
       }
     },
   });
@@ -181,7 +285,9 @@ export function ForgotPassword() {
       <GlassCard>
         <BackBtn onClick={() => navigate(-1)} />
 
-        <IconBox><MailIcon /></IconBox>
+        <IconBox>
+          <MailIcon />
+        </IconBox>
 
         <h1 className="text-center text-[#0a0a5e] font-bold text-2xl mb-2">
           Forget password!
@@ -191,16 +297,21 @@ export function ForgotPassword() {
         </p>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
           className="flex flex-col gap-4"
         >
           <div>
-            <label className="text-sm font-medium text-[#0a0a5e] mb-1 block">Email</label>
+            <label className="text-sm font-medium text-[#0a0a5e] mb-1 block">
+              Email
+            </label>
             <form.Field
               name="email"
               validators={{
                 onChange: ({ value }) => {
-                  const r = emailSchema.shape.email.safeParse(value);
+                  const r = emailSchema.shape.email.safeParse(value.trim());
                   return r.success ? undefined : r.error.issues[0].message;
                 },
               }}
@@ -209,16 +320,38 @@ export function ForgotPassword() {
                 <>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#010170]">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                       </svg>
                     </span>
                     <input
-                      className="input input-bordered w-full h-[44px] rounded-md bg-white/70 backdrop-blur-sm text-sm placeholder:text-gray-400 focus:outline-none focus:border-[#010170] pl-9"
+                      className="input input-bordered w-full h-[44px] rounded-md bg-white/70 backdrop-blur-sm text-sm placeholder:text-gray-400 focus:outline-none focus:border-[#010170] pl-9 text-stone-950"
                       type="email"
-                      placeholder="You@Example.Com"
+                      name="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      inputMode="email"
+                      required
+                      aria-label="Email address"
+                      placeholder="you@example.com"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={(e) =>
+                        field.handleChange(e.target.value.trim().toLowerCase())
+                      }
                     />
                   </div>
                   <FieldError msg={field.state.meta.errors[0]} />
@@ -264,8 +397,15 @@ export function EnterOTP() {
   const inputRefs = useRef([]);
 
   const fullCode = otp.join("");
-  const isComplete = fullCode.length === OTP_LENGTH && otp.every((d) => d !== "");
+  const isComplete =
+    fullCode.length === OTP_LENGTH && otp.every((d) => d !== "");
   const canResend = timeLeft === 0;
+
+  useEffect(() => {
+    if (!email) {
+      navigate("/forgot-password", { replace: true });
+    }
+  }, [email, navigate]);
 
   // Countdown
   useEffect(() => {
@@ -289,7 +429,10 @@ export function EnterOTP() {
   };
 
   const handlePaste = (e) => {
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH);
     if (!pasted) return;
     const next = Array(OTP_LENGTH).fill("");
     pasted.split("").forEach((ch, i) => (next[i] = ch));
@@ -304,8 +447,8 @@ export function EnterOTP() {
       setOtp(Array(OTP_LENGTH).fill(""));
       setTimeLeft(TIMER_SECONDS);
       setError("");
-    } catch {
-      setError("Failed to resend. Try again.");
+    } catch (err) {
+      setError(err?.message || "Failed to resend. Try again.");
     }
   };
 
@@ -317,8 +460,7 @@ export function EnterOTP() {
       await authApi.verifyOtp({ email, otp: fullCode });
       navigate("/change-password", { state: { email, otp: fullCode } });
     } catch (err) {
-      const msg = err?.response?.data?.message;
-      setError(msg || "Invalid code.");
+      setError(err?.message || "Invalid code.");
     } finally {
       setVerifying(false);
     }
@@ -332,7 +474,9 @@ export function EnterOTP() {
       <GlassCard>
         <BackBtn onClick={() => navigate(-1)} />
 
-        <IconBox><MailIcon /></IconBox>
+        <IconBox>
+          <MailIcon />
+        </IconBox>
 
         <h1 className="text-center text-[#0a0a5e] font-bold text-2xl mb-2">
           Enter the code
@@ -355,18 +499,30 @@ export function EnterOTP() {
               onKeyDown={(e) => handleKeyDown(idx, e)}
               className="w-[48px] h-[52px] rounded-xl text-center text-xl font-bold text-[#0a0a5e] focus:outline-none focus:ring-2 focus:ring-[#010170]/40 transition-all"
               style={{
-                background: digit ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
-                border: digit ? "1.5px solid rgba(1,1,112,0.3)" : "1.5px solid rgba(255,255,255,0.6)",
+                background: digit
+                  ? "rgba(255,255,255,0.95)"
+                  : "rgba(255,255,255,0.55)",
+                border: digit
+                  ? "1.5px solid rgba(1,1,112,0.3)"
+                  : "1.5px solid rgba(255,255,255,0.6)",
               }}
             />
           ))}
         </div>
 
-        {error && <p className="text-red-500 text-xs text-center mb-3">{error}</p>}
+        {error && (
+          <p className="text-red-500 text-xs text-center mb-3">{error}</p>
+        )}
 
         {/* Verify button */}
         <PrimaryBtn disabled={!isComplete || verifying} onClick={handleVerify}>
-          {verifying ? <Spinner /> : <>Verify code <ArrowRight /></>}
+          {verifying ? (
+            <Spinner />
+          ) : (
+            <>
+              Verify code <ArrowRight />
+            </>
+          )}
         </PrimaryBtn>
 
         {/* Timer / Resend */}
@@ -378,8 +534,19 @@ export function EnterOTP() {
           ) : (
             <OutlineBtn onClick={handleResend}>
               Resent OTP
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
             </OutlineBtn>
           )}
@@ -399,6 +566,12 @@ export function ChangePassword() {
   const { email } = location.state || {};
   const [serverError, setServerError] = useState("");
 
+  useEffect(() => {
+    if (!email) {
+      navigate("/forgot-password", { replace: true });
+    }
+  }, [email, navigate]);
+
   const form = useForm({
     defaultValues: { password: "", confirmPassword: "" },
     onSubmit: async ({ value }) => {
@@ -407,14 +580,13 @@ export function ChangePassword() {
       setServerError("");
       try {
         await authApi.resetPassword({
-            email,
-            password: value.password,
-            confirmPassword: value.confirmPassword,  
-          });
+          email,
+          password: value.password,
+          confirmPassword: value.confirmPassword,
+        });
         navigate("/password-reset-success");
       } catch (err) {
-        const msg = err?.response?.data?.message;
-        setServerError(msg || "Failed to reset password.");
+        setServerError(err?.message || "Failed to reset password.");
       }
     },
   });
@@ -424,24 +596,32 @@ export function ChangePassword() {
       <GlassCard>
         <BackBtn onClick={() => navigate(-1)} />
 
-        <IconBox><LockIcon /></IconBox>
+        <IconBox>
+          <LockIcon />
+        </IconBox>
 
         <h1 className="text-center text-[#0a0a5e] font-bold text-2xl mb-6">
           Enter new password
         </h1>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
           className="flex flex-col gap-4"
         >
           {/* Password */}
           <div>
-            <label className="text-sm font-medium text-[#0a0a5e] mb-1 block">Password</label>
+            <label className="text-sm font-medium text-[#0a0a5e] mb-1 block">
+              Password
+            </label>
             <form.Field
               name="password"
               validators={{
                 onChange: ({ value }) => {
-                  if (!value || value.length < 8) return "Password must be at least 8 characters";
+                  if (!value || value.length < 8)
+                    return "Password must be at least 8 characters";
                   return undefined;
                 },
               }}
@@ -461,13 +641,18 @@ export function ChangePassword() {
 
           {/* Confirm Password */}
           <div>
-            <label className="text-sm font-medium text-[#0a0a5e] mb-1 block">Repeat Password</label>
+            <label className="text-sm font-medium text-[#0a0a5e] mb-1 block">
+              Repeat Password
+            </label>
             <form.Field
               name="confirmPassword"
               validators={{
                 onChangeListenTo: ["password"],
                 onChange: ({ value, fieldApi }) => {
-                  if (value && value !== fieldApi.form.getFieldValue("password")) {
+                  if (
+                    value &&
+                    value !== fieldApi.form.getFieldValue("password")
+                  ) {
                     return "Passwords do not match";
                   }
                   return undefined;
@@ -493,7 +678,13 @@ export function ChangePassword() {
           <form.Subscribe selector={(s) => [s.isSubmitting]}>
             {([isSubmitting]) => (
               <PrimaryBtn type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Spinner /> : <>Confirm <ArrowRight /></>}
+                {isSubmitting ? (
+                  <Spinner />
+                ) : (
+                  <>
+                    Confirm <ArrowRight />
+                  </>
+                )}
               </PrimaryBtn>
             )}
           </form.Subscribe>
@@ -513,7 +704,9 @@ export function PasswordResetSuccess() {
   return (
     <PageShell>
       <GlassCard className="text-center">
-        <IconBox><CheckIcon /></IconBox>
+        <IconBox>
+          <CheckIcon />
+        </IconBox>
 
         <h1 className="text-[#0a0a5e] font-bold text-2xl mb-2">
           Password reset
