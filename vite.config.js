@@ -3,12 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
-const repoName = 'walk-like-local-front'
-
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? `/${repoName}/` : '/',
+export default defineConfig(() => ({
   plugins: [react(), tailwindcss()],
+  base: process.env.VITE_BASE_PATH || "/walk-like-local-front",
   server: {
     port: 5173,
     strictPort: true,

@@ -10,22 +10,6 @@
 
 <body>
   <div id="root"></div>
-  <script>
-    // Restore deep-link path after GitHub Pages 404.html redirects to ?p=...
-    (function () {
-      const params = new URLSearchParams(window.location.search);
-      const redirectedPath = params.get("p");
-
-      if (!redirectedPath) return;
-
-      try {
-        const restoredPath = decodeURIComponent(redirectedPath);
-        window.history.replaceState(null, "", restoredPath);
-      } catch {
-        // Keep current URL if the query payload is malformed.
-      }
-    })();
-  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
