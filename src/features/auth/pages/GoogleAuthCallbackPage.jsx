@@ -22,6 +22,40 @@ const parseUser = (value) => {
   }
 };
 
+const parseUserFromToken = (token) => {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      return null;
+    }
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    const decoded = JSON.parse(jsonPayload);
+    const userCandidate = decoded.user || decoded;
+
+    return {
+      id: userCandidate.id ?? userCandidate._id ?? userCandidate.sub ?? null,
+      email: userCandidate.email ?? null,
+      role: userCandidate.role ?? null,
+      fullName: userCandidate.fullName ?? userCandidate.name ?? null,
+      ...userCandidate,
+    };
+  } catch {
+    return null;
+  }
+};
+
 const getCallbackParams = (search, hash) => {
   const params = new URLSearchParams(search);
   const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
@@ -54,8 +88,21 @@ const GoogleAuthCallbackPage = () => {
 
     const accessToken = params.get("accessToken") ?? params.get("token");
     const refreshToken = params.get("refreshToken");
-    const user = parseUser(params.get("user"));
-    const nextPath = params.get("next") || "/guide-verification";
+    let user = parseUser(params.get("user"));
+
+    if (!user && accessToken) {
+      user = parseUserFromToken(accessToken);
+    }
+
+    const defaultNextPath = "/";
+    let nextPath = params.get("next");
+    if (
+      !nextPath ||
+      nextPath === "/guide-verification" ||
+      nextPath === "/test"
+    ) {
+      nextPath = defaultNextPath;
+    }
 
     if (!accessToken || !user) {
       return { error: "Google sign in did not return valid auth data." };

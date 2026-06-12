@@ -78,7 +78,7 @@ const LoginPage = () => {
       });
 
       login(response);
-      navigate("/guide-verification", { replace: true });
+      navigate("/", { replace: true });
     } catch (requestError) {
       setError(
         requestError instanceof Error
