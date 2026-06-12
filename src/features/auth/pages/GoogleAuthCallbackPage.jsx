@@ -4,6 +4,7 @@ import AuthLayout from "../../../components/layouts/AuthLayout";
 import Button from "../../../components/shared/Button";
 import FormError from "../../../components/shared/FormError";
 import Loader from "../../../components/shared/Loader";
+import { resolvePostAuthPath } from "@/features/auth/utils/roleRedirect";
 import useAuth from "@/contexts/useAuth";
 
 const parseUser = (value) => {
@@ -69,6 +70,32 @@ const getCallbackParams = (search, hash) => {
   return params;
 };
 
+const getFriendlyGoogleCallbackError = (rawMessage) => {
+  if (typeof rawMessage !== "string" || !rawMessage.trim()) {
+    return "Google sign in could not be completed. Please try again.";
+  }
+
+  const message = rawMessage.trim();
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    normalizedMessage.includes("access_denied") ||
+    normalizedMessage.includes("cancel")
+  ) {
+    return "Google sign in was cancelled. Please try again.";
+  }
+
+  if (
+    normalizedMessage.includes("redirect") ||
+    normalizedMessage.includes("uri") ||
+    normalizedMessage.includes("configuration")
+  ) {
+    return "Google sign in is temporarily unavailable due to configuration. Please sign in with email and password.";
+  }
+
+  return message;
+};
+
 const GoogleAuthCallbackPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -80,10 +107,13 @@ const GoogleAuthCallbackPage = () => {
   );
 
   const callbackResult = useMemo(() => {
-    const message = params.get("error") ?? params.get("message");
+    const message =
+      params.get("error_description") ??
+      params.get("error") ??
+      params.get("message");
 
     if (message) {
-      return { error: message };
+      return { error: getFriendlyGoogleCallbackError(message) };
     }
 
     const accessToken = params.get("accessToken") ?? params.get("token");
@@ -94,19 +124,17 @@ const GoogleAuthCallbackPage = () => {
       user = parseUserFromToken(accessToken);
     }
 
-    const defaultNextPath = "/";
-    let nextPath = params.get("next");
-    if (
-      !nextPath ||
-      nextPath === "/guide-verification" ||
-      nextPath === "/test"
-    ) {
-      nextPath = defaultNextPath;
+    if (!accessToken || !user) {
+      return {
+        error:
+          "Google sign in did not return valid account data. Please try again or sign in with email and password.",
+      };
     }
 
-    if (!accessToken || !user) {
-      return { error: "Google sign in did not return valid auth data." };
-    }
+    const nextPath = resolvePostAuthPath({
+      role: user.role,
+      nextPath: params.get("next"),
+    });
 
     return {
       authData: { accessToken, refreshToken, user },

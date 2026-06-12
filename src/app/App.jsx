@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext.jsx";
+import useAuth from "../contexts/useAuth";
+import { getRoleBasedVerificationPath } from "../features/auth/utils/roleRedirect";
 
 import CheckEmailNoticePage from "../features/auth/pages/CheckEmailNoticePage";
 import EmailVerifiedPage from "../features/auth/pages/EmailVerifiedPage";
@@ -18,16 +20,43 @@ import {
   PasswordResetSuccess,
 } from "../features/auth/Login/ForgotPassword";
 
+function RootRedirect() {
+  const { isAuthenticated, userRole } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/signup" replace />;
+  }
+
+  return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
+}
+
+function GuideVerificationRoute() {
+  const { isAuthenticated, userRole } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (String(userRole).toLowerCase() !== "guide") {
+    return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
+  }
+
+  return <GuideVerificationPage />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<Navigate to="/signup" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/test" element={<TestPage />} />
-        <Route path="/guide-verification" element={<GuideVerificationPage />} />
+        <Route
+          path="/guide-verification"
+          element={<GuideVerificationRoute />}
+        />
         <Route
           path="/auth/google/callback"
           element={<GoogleAuthCallbackPage />}

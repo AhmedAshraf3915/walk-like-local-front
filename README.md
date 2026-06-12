@@ -2,7 +2,7 @@
 
 ## Environment Variables
 
-Create a local environment file from `.env.example` and set:
+Create a local environment file and set:
 
 - `VITE_API_BASE_URL`: backend API base URL.
 

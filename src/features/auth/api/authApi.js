@@ -13,13 +13,42 @@ const toAppUrl = (path) => {
 
 const unwrapResponseData = (response) => response?.data?.data ?? response?.data ?? null;
 
-const getErrorMessage = (error, fallbackMessage) => {
-	const responseMessage =
+const extractServerMessage = (error) => {
+	const candidate =
 		error?.response?.data?.message ??
 		error?.response?.data?.error ??
+		error?.response?.data?.details ??
 		error?.message;
 
-	if (typeof responseMessage === "string" && responseMessage.trim()) {
+	if (typeof candidate !== "string") {
+		return "";
+	}
+
+	return candidate.trim();
+};
+
+const getErrorMessage = (error, fallbackMessage) => {
+	const responseMessage = extractServerMessage(error);
+	const statusCode = error?.response?.status;
+
+	if (statusCode === 401) {
+		return "Invalid email or password.";
+	}
+
+	if (statusCode === 403) {
+		const normalizedMessage = responseMessage.toLowerCase();
+		if (
+			normalizedMessage.includes("verify") ||
+			normalizedMessage.includes("verification") ||
+			normalizedMessage.includes("unverified")
+		) {
+			return "Please verify your email first.";
+		}
+
+		return "Invalid email or password.";
+	}
+
+	if (responseMessage) {
 		return responseMessage;
 	}
 
@@ -36,6 +65,17 @@ const postWithMessage = async (path, payload, fallbackMessage) => {
 	}
 };
 
+const loginWithMessage = async (payload) => {
+	try {
+		return await apiClient.post("/auth/login", payload);
+	} catch (error) {
+		throw new Error(
+			getErrorMessage(error, "Unable to sign in. Please try again."),
+			{ cause: error }
+		);
+	}
+};
+
 const normalizeRoleForApi = (role) => {
 	if (typeof role !== "string") {
 		return role;
@@ -46,12 +86,45 @@ const normalizeRoleForApi = (role) => {
 	return normalizedRole || role;
 };
 
-const getGoogleAuthUrl = (nextPath = "/test", options = {}) => {
-	const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "");
-
-	if (!apiBaseUrl) {
-		throw new Error("VITE_API_BASE_URL is not configured.");
+const normalizeRoleForSignup = (role) => {
+	if (typeof role !== "string") {
+		return null;
 	}
+
+	const normalizedRole = role.trim().toLowerCase();
+
+	if (normalizedRole !== "guide" && normalizedRole !== "tourist") {
+		return null;
+	}
+
+	return normalizedRole;
+};
+
+const getValidatedApiBaseUrl = () => {
+	const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+	if (!rawApiBaseUrl || typeof rawApiBaseUrl !== "string") {
+		throw new Error(
+			"Google authentication is unavailable right now. Please use email and password while we fix configuration."
+		);
+	}
+
+	try {
+		const parsedUrl = new URL(rawApiBaseUrl.trim());
+		if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+			throw new Error("Unsupported protocol.");
+		}
+
+		return parsedUrl.toString().replace(/\/$/, "");
+	} catch {
+		throw new Error(
+			"Google authentication is temporarily unavailable due to an invalid server URL configuration."
+		);
+	}
+};
+
+const getGoogleAuthUrl = (nextPath = "/test", options = {}) => {
+	const apiBaseUrl = getValidatedApiBaseUrl();
 
 	const callbackUrl = toAppUrl("auth/google/callback");
 	const googleAuthUrl = new URL(`${apiBaseUrl}/auth/google`);
@@ -74,12 +147,14 @@ const getGoogleAuthUrl = (nextPath = "/test", options = {}) => {
 };
 
 const getGoogleSignupUrl = (role, nextPath = "/test") => {
-	if (!role || typeof role !== "string") {
+	const normalizedRole = normalizeRoleForSignup(role);
+
+	if (!normalizedRole) {
 		throw new Error("Role is required for Google sign up.");
 	}
 
 	return getGoogleAuthUrl(nextPath, {
-		role,
+		role: normalizedRole,
 		mode: "signup",
 	});
 };
@@ -109,7 +184,7 @@ export const authApi = {
 			"Unable to resend verification email. Please try again.",
 		),
 	register: (data) => apiClient.post("/auth/register", data),
-	login: (data) => apiClient.post("/auth/login", data),
+		login: (data) => loginWithMessage(data),
 	verifyEmail: (token) => apiClient.get(`/auth/verify-email?token=${token}`),
 	getGoogleAuthUrl,
 	getGoogleSignupUrl,

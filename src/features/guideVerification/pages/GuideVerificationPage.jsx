@@ -115,7 +115,7 @@ const GuideVerificationPage = () => {
 
     if (step === 4) {
       if (!paymentMethod.isPaymentSaved && paymentMethod.isPaymentFormOpen) {
-        const saveError = paymentMethod.savePayment();
+        const saveError = await paymentMethod.savePayment();
         if (saveError) {
           setErrorMessage(saveError);
           return;

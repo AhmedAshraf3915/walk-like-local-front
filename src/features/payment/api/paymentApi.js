@@ -99,7 +99,7 @@ const withErrorMessage = async (apiCall) => {
 			error.response?.data?.message ||
 			error.message ||
 			"An error occurred. Please try again.";
-		throw new Error(message);
+		throw new Error(message, { cause: error });
 	}
 };
 

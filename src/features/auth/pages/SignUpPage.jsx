@@ -16,11 +16,24 @@ const initialFormState = {
   showConfirmPassword: false,
 };
 
+const ALLOWED_GOOGLE_SIGNUP_ROLES = new Set(["guide", "tourist"]);
+
+const getGoogleAuthErrorMessage = (error) => {
+  const message = error instanceof Error ? error.message : "";
+
+  if (!message) {
+    return "Google sign up is temporarily unavailable. Please use email and password.";
+  }
+
+  return message;
+};
+
 const SignUpPage = () => {
   const navigate = useNavigate();
   const { signup, loading, error, resetMessages, clearAuth } = useAuth();
   const [formValues, setFormValues] = useState(initialFormState);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [oauthError, setOauthError] = useState(null);
 
   const handleChange = (event) => {
     const { name, value, type } = event.target;
@@ -45,6 +58,10 @@ const SignUpPage = () => {
       name === "role"
     ) {
       resetMessages();
+    }
+
+    if (oauthError) {
+      setOauthError(null);
     }
   };
 
@@ -98,7 +115,14 @@ const SignUpPage = () => {
   };
 
   const handleGoogleAuth = () => {
-    if (!formValues.role) {
+    setOauthError(null);
+
+    const selectedRole =
+      typeof formValues.role === "string"
+        ? formValues.role.trim().toLowerCase()
+        : "";
+
+    if (!selectedRole) {
       setFieldErrors((currentErrors) => ({
         ...currentErrors,
         role: "Please choose a role.",
@@ -106,9 +130,20 @@ const SignUpPage = () => {
       return;
     }
 
-    window.location.assign(
-      authApi.getGoogleSignupUrl(formValues.role, "/test"),
-    );
+    if (!ALLOWED_GOOGLE_SIGNUP_ROLES.has(selectedRole)) {
+      setFieldErrors((currentErrors) => ({
+        ...currentErrors,
+        role: "Invalid role selected. Please choose Guide or Tourist.",
+      }));
+      return;
+    }
+
+    try {
+      const googleUrl = authApi.getGoogleSignupUrl(selectedRole, "/");
+      window.location.assign(googleUrl);
+    } catch (googleError) {
+      setOauthError(getGoogleAuthErrorMessage(googleError));
+    }
   };
 
   return (
@@ -119,7 +154,7 @@ const SignUpPage = () => {
       <SignUpForm
         values={formValues}
         errors={fieldErrors}
-        apiError={error}
+        apiError={oauthError ?? error}
         successMessage={null}
         loading={loading}
         onChange={handleChange}

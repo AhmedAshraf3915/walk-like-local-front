@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AuthLayout from "../../../components/layouts/AuthLayout";
 import { authApi } from "@/features/auth/api/authApi";
+import { getRoleBasedVerificationPath } from "@/features/auth/utils/roleRedirect";
 import useAuth from "@/contexts/useAuth";
 import LoginForm from "../components/LoginForm";
 import { validateLoginForm } from "../validation/loginValidation";
@@ -10,6 +11,23 @@ const initialFormState = {
   email: "",
   password: "",
   showPassword: false,
+};
+
+const getUserRoleFromAuthResponse = (authResponse) => {
+  const candidate =
+    authResponse?.data?.data ?? authResponse?.data ?? authResponse ?? null;
+
+  return candidate?.user?.role ?? null;
+};
+
+const getGoogleAuthErrorMessage = (error) => {
+  const message = error instanceof Error ? error.message : "";
+
+  if (!message) {
+    return "Google sign in is temporarily unavailable. Please sign in with email and password.";
+  }
+
+  return message;
 };
 
 const LoginPage = () => {
@@ -78,7 +96,8 @@ const LoginPage = () => {
       });
 
       login(response);
-      navigate("/", { replace: true });
+      const userRole = getUserRoleFromAuthResponse(response);
+      navigate(getRoleBasedVerificationPath(userRole), { replace: true });
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -91,7 +110,12 @@ const LoginPage = () => {
   };
 
   const handleGoogleAuth = () => {
-    window.location.assign(authApi.getGoogleSigninUrl("/guide-verification"));
+    try {
+      const googleAuthUrl = authApi.getGoogleSigninUrl("/");
+      window.location.assign(googleAuthUrl);
+    } catch (googleError) {
+      setError(getGoogleAuthErrorMessage(googleError));
+    }
   };
 
   return (
