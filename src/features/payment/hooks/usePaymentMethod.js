@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { initialPaymentState } from "@/features/guideVerification/constants";
+import { initialPaymentState, PAYMENT_MESSAGES } from "@/features/payment/constants";
 import {
 	formatCardNumber,
 	formatExpiryDate,
@@ -44,35 +44,35 @@ export const usePaymentMethod = () => {
 		const { nameOnCard, cardNumber, expiryDate, cvv } = payment;
 
 		if (!nameOnCard?.trim()) {
-			return "Cardholder name is required.";
+			return PAYMENT_MESSAGES.CARDHOLDER_NAME_REQUIRED;
 		}
 
 		if (!validateCardholderName(nameOnCard)) {
-			return "Cardholder name must be at least 2 letters.";
+			return PAYMENT_MESSAGES.CARDHOLDER_NAME_INVALID;
 		}
 
 		if (!cardNumber?.trim()) {
-			return "Card number is required.";
+			return PAYMENT_MESSAGES.CARD_NUMBER_REQUIRED;
 		}
 
 		if (!validateCardNumber(cardNumber)) {
-			return "Card number is invalid. Please check and try again.";
+			return PAYMENT_MESSAGES.CARD_NUMBER_INVALID;
 		}
 
 		if (!expiryDate?.trim()) {
-			return "Expiry date is required.";
+			return PAYMENT_MESSAGES.EXPIRY_DATE_REQUIRED;
 		}
 
 		if (!validateExpiryDate(expiryDate)) {
-			return "Expiry date is invalid (use MM/YY format and a future date).";
+			return PAYMENT_MESSAGES.EXPIRY_DATE_INVALID;
 		}
 
 		if (!cvv?.trim()) {
-			return "CVV is required.";
+			return PAYMENT_MESSAGES.CVV_REQUIRED;
 		}
 
 		if (!validateCVV(cvv)) {
-			return "CVV must be 3 or 4 digits.";
+			return PAYMENT_MESSAGES.CVV_INVALID;
 		}
 
 		return null;
@@ -91,7 +91,7 @@ export const usePaymentMethod = () => {
 		try {
 			// TODO: Integrate with Stripe here
 			// 1. Tokenize card with Stripe Elements or Stripe.js
-			// 2. Call paymentService.savePaymentMethod(paymentMethodId)
+			// 2. Call paymentApi.savePaymentMethod(paymentMethodId)
 			// 3. Handle response/errors
 			// For now, simulate successful save
 			await new Promise((resolve) => setTimeout(resolve, 500));
@@ -100,7 +100,7 @@ export const usePaymentMethod = () => {
 			setIsPaymentFormOpen(false);
 			return null;
 		} catch (err) {
-			const errorMsg = err.message ?? "Unable to save payment method.";
+			const errorMsg = err.message ?? PAYMENT_MESSAGES.PAYMENT_SAVE_ERROR;
 			setPaymentError(errorMsg);
 			return errorMsg;
 		} finally {

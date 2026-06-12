@@ -10,6 +10,7 @@ const AiAssessmentStep = ({
   isAiSessionStarted,
   isRecording,
   recordingSeconds,
+  startingAiSession,
   aiUploadingAudio,
   submittingAiTest,
   formatDuration,
@@ -73,11 +74,14 @@ const AiAssessmentStep = ({
         <div className="mt-6 flex justify-end">
           <button
             type="button"
-            disabled={selectedLanguages.length === 0}
-            onClick={onStartSession}
+            disabled={selectedLanguages.length === 0 || startingAiSession}
+            onClick={() => {
+              void onStartSession();
+            }}
             className="inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white disabled:opacity-60"
           >
-            Let&apos;s start <ArrowRight className="h-5 w-5" />
+            {startingAiSession ? "Starting..." : "Let&apos;s start"}{" "}
+            <ArrowRight className="h-5 w-5" />
           </button>
         </div>
       </section>

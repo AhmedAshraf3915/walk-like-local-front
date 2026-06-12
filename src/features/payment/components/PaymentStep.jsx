@@ -1,5 +1,5 @@
 import { Check, Lock, AlertCircle } from "lucide-react";
-import CreditCard from "@/features/guideVerification/components/CreditCard";
+import CreditCard from "@/features/payment/components/CreditCard";
 
 const PaymentStep = ({
   payment,

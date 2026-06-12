@@ -68,6 +68,45 @@ export const guideVerificationApi = {
 			"Unable to get verification status.",
 		),
 
+	getLanguageTestStatus: (languages = []) =>
+		withErrorMessage(
+			() =>
+				apiClient.get("/guides/language-test/status", {
+					params: languages.length > 0 ? { languages: languages.join(",") } : {},
+				}),
+			"Unable to get language test status.",
+		),
+
+	startLanguageTest: (payload) =>
+		withErrorMessage(
+			() => apiClient.post("/guides/language-test/start", payload),
+			"Unable to start language test.",
+		),
+
+	getLanguageTestSession: (sessionId) =>
+		withErrorMessage(
+			() => apiClient.get(`/guides/language-test/${sessionId}`),
+			"Unable to get language test session.",
+		),
+
+	submitLanguageTest: (sessionId, payload) =>
+		withErrorMessage(
+			() => apiClient.post(`/guides/language-test/${sessionId}/submit`, payload),
+			"Unable to submit language test.",
+		),
+
+	reportLanguageTestIntegrityEvents: (sessionId, payload) =>
+		withErrorMessage(
+			() => apiClient.post(`/guides/language-test/${sessionId}/integrity-events`, payload),
+			"Unable to report language test integrity events.",
+		),
+
+	getLanguageTestHistory: () =>
+		withErrorMessage(
+			() => apiClient.get("/guides/language-test/history"),
+			"Unable to get language test history.",
+		),
+
 	submitVerification: (payload) =>
 		withErrorMessage(
 			() => apiClient.post("/guides/verification", payload),
@@ -78,6 +117,18 @@ export const guideVerificationApi = {
 		withErrorMessage(
 			() => apiClient.patch("/guides/verification/resubmit", payload),
 			"Unable to resubmit verification documents.",
+		),
+
+	updateGuideLanguages: (payload) =>
+		withErrorMessage(
+			() => apiClient.put("/guides/profile/languages", payload),
+			"Unable to save guide languages.",
+		),
+
+	completeGuideProfile: (payload) =>
+		withErrorMessage(
+			() => apiClient.patch("/guides/profile", payload),
+			"Unable to complete guide profile.",
 		),
 
 	submitAiLanguageTest: (payload) =>

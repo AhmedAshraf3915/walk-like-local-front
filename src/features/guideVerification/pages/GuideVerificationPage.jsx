@@ -10,12 +10,12 @@ import {
 import { useVerificationAssets } from "@/features/guideVerification/hooks/useVerificationAssets";
 import { useAiAssessment } from "@/features/guideVerification/hooks/useAiAssessment";
 import { useGuideProfile } from "@/features/guideVerification/hooks/useGuideProfile";
-import { usePaymentMethod } from "@/features/guideVerification/hooks/usePaymentMethod";
+import { usePaymentMethod } from "@/features/payment/hooks/usePaymentMethod";
 import VerificationStep from "@/features/guideVerification/components/VerificationStep";
 import AiAssessmentStep from "@/features/guideVerification/components/AiAssessmentStep";
 import ProfileStep from "@/features/guideVerification/components/ProfileStep";
 import Stepper from "@/features/guideVerification/components/Stepper";
-import PaymentMethodPage from "@/features/guideVerification/components/PaymentMethodPage";
+import PaymentMethodPage from "@/features/payment/components/PaymentMethodPage";
 import GuideVerificationFooter from "@/features/guideVerification/components/GuideVerificationFooter";
 
 // Heading text shown above the step content area.
@@ -45,10 +45,12 @@ const STEP_HEADINGS = {
 const getContinueLabel = ({
   step,
   submittingVerification,
+  submittingProfile,
   isPaymentSaved,
   isPaymentFormOpen,
 }) => {
   if (step === 1 && submittingVerification) return "Submitting...";
+  if (step === 3 && submittingProfile) return "Saving...";
   if (step === 4 && !isPaymentSaved && isPaymentFormOpen) return "Save card";
   if (step === 4) return "Finish & Explore";
   return "Continue";
@@ -96,6 +98,16 @@ const GuideVerificationPage = () => {
         setErrorMessage("Complete or skip each profile section to continue.");
         return;
       }
+
+      try {
+        await guideProfile.submitProfile({
+          selectedLanguages: aiAssessment.selectedLanguages,
+        });
+      } catch (error) {
+        setErrorMessage(error.message ?? "Unable to save profile right now.");
+        return;
+      }
+
       setStep(4);
       setErrorMessage("");
       return;
@@ -128,7 +140,8 @@ const GuideVerificationPage = () => {
     }
 
     if (step === 3) {
-      navigate("/test", { replace: true });
+      setStep(4);
+      setErrorMessage("");
       return;
     }
 
@@ -149,6 +162,7 @@ const GuideVerificationPage = () => {
   const continueLabel = getContinueLabel({
     step,
     submittingVerification: verification.submittingVerification,
+    submittingProfile: guideProfile.submittingProfile,
     isPaymentSaved: paymentMethod.isPaymentSaved,
     isPaymentFormOpen: paymentMethod.isPaymentFormOpen,
   });
@@ -161,6 +175,9 @@ const GuideVerificationPage = () => {
 
   const isContinueDisabled =
     verification.submittingVerification ||
+    aiAssessment.startingAiSession ||
+    aiAssessment.submittingAiTest ||
+    guideProfile.submittingProfile ||
     (step === 1 &&
       (verification.verificationStatus === "none" ||
         verification.verificationStatus === "rejected") &&
@@ -237,6 +254,7 @@ const GuideVerificationPage = () => {
             isAiSessionStarted={aiAssessment.isAiSessionStarted}
             isRecording={aiAssessment.isRecording}
             recordingSeconds={aiAssessment.recordingSeconds}
+            startingAiSession={aiAssessment.startingAiSession}
             aiUploadingAudio={aiAssessment.aiUploadingAudio}
             submittingAiTest={aiAssessment.submittingAiTest}
             formatDuration={aiAssessment.formatDuration}
@@ -272,6 +290,8 @@ const GuideVerificationPage = () => {
             payment={paymentMethod.payment}
             isPaymentFormOpen={paymentMethod.isPaymentFormOpen}
             isPaymentSaved={paymentMethod.isPaymentSaved}
+            isSavingPayment={paymentMethod.isSavingPayment}
+            paymentError={paymentMethod.paymentError}
             onTogglePaymentForm={paymentMethod.togglePaymentForm}
             onPaymentChange={paymentMethod.setPaymentField}
             onSaveCard={handleContinue}

@@ -3,6 +3,23 @@ import { guideVerificationApi } from "@/features/guideVerification/api/guideVeri
 import { AI_TEST_QUESTIONS } from "@/features/guideVerification/constants";
 import { useVoiceRecorder } from "@/features/guideVerification/hooks/useVoiceRecorder";
 
+const LANGUAGE_TO_CODE = {
+	Arabic: "ar",
+	English: "en",
+	German: "de",
+	Italian: "it",
+	Spanish: "es",
+};
+
+const toLanguageCode = (language) => LANGUAGE_TO_CODE[language] ?? "";
+
+const extractSessionId = (payload) =>
+	payload?.sessionId ??
+	payload?.session?.id ??
+	payload?.session?._id ??
+	payload?.id ??
+	"";
+
 /**
  * Manages the full AI language-test flow:
  * language selection, question navigation, text answers, voice recordings,
@@ -13,9 +30,11 @@ import { useVoiceRecorder } from "@/features/guideVerification/hooks/useVoiceRec
 export const useAiAssessment = ({ setErrorMessage }) => {
 	const [selectedLanguages, setSelectedLanguages] = useState(["Arabic", "English"]);
 	const [isAiSessionStarted, setIsAiSessionStarted] = useState(false);
+	const [activeSessionId, setActiveSessionId] = useState("");
 	const [aiQuestionIndex, setAiQuestionIndex] = useState(0);
 	const [aiAnswers, setAiAnswers] = useState({});
 	const [aiVoiceClips, setAiVoiceClips] = useState({});
+	const [startingAiSession, setStartingAiSession] = useState(false);
 	const [aiUploadingAudio, setAiUploadingAudio] = useState(false);
 	const [submittingAiTest, setSubmittingAiTest] = useState(false);
 	const [aiTestCompleted, setAiTestCompleted] = useState(false);
@@ -72,8 +91,34 @@ export const useAiAssessment = ({ setErrorMessage }) => {
 		});
 	};
 
-	const startSession = () => {
-		setIsAiSessionStarted(true);
+	const startSession = async () => {
+		const languageCodes = selectedLanguages
+			.map(toLanguageCode)
+			.filter((value) => Boolean(value));
+
+		const preferredLanguage = languageCodes.find((code) => code !== "ar") || languageCodes[0] || "en";
+
+		setStartingAiSession(true);
+		setErrorMessage("");
+
+		try {
+			await guideVerificationApi.getLanguageTestStatus(languageCodes);
+			const startResponse = await guideVerificationApi.startLanguageTest({
+				language: preferredLanguage,
+			});
+			const nextSessionId = extractSessionId(startResponse);
+
+			if (!nextSessionId) {
+				throw new Error("Language test session did not return a session ID.");
+			}
+
+			setActiveSessionId(nextSessionId);
+			setIsAiSessionStarted(true);
+		} catch (error) {
+			setErrorMessage(error.message ?? "Unable to start language test.");
+		} finally {
+			setStartingAiSession(false);
+		}
 	};
 
 	const handleTextAnswerChange = (questionNumber, value) => {
@@ -93,24 +138,25 @@ export const useAiAssessment = ({ setErrorMessage }) => {
 	};
 
 	const submitAiAssessment = async () => {
+		if (!activeSessionId) {
+			setErrorMessage("Language test session is missing. Please restart the test.");
+			return;
+		}
+
 		const responses = AI_TEST_QUESTIONS.map((question, index) => {
 			const questionNumber = index + 1;
+			const questionId = `q${questionNumber}`;
 
 			if (question.type === "voice") {
 				const clip = aiVoiceClips[questionNumber];
 				return {
-					questionNumber,
-					type: "voice",
-					prompt: question.prompt,
-					recording: clip?.asset ?? null,
-					durationSeconds: clip?.duration ?? 0,
+					questionId,
+					audioUrl: clip?.asset?.secureUrl ?? "",
 				};
 			}
 
 			return {
-				questionNumber,
-				type: "text",
-				prompt: question.prompt,
+				questionId,
 				answer: aiAnswers[questionNumber] ?? "",
 			};
 		});
@@ -119,9 +165,8 @@ export const useAiAssessment = ({ setErrorMessage }) => {
 		setErrorMessage("");
 
 		try {
-			await guideVerificationApi.submitAiLanguageTest({
-				languages: selectedLanguages,
-				responses,
+			await guideVerificationApi.submitLanguageTest(activeSessionId, {
+				answers: responses,
 			});
 			setAiTestCompleted(true);
 		} catch (error) {
@@ -164,9 +209,11 @@ export const useAiAssessment = ({ setErrorMessage }) => {
 	return {
 		selectedLanguages,
 		isAiSessionStarted,
+		activeSessionId,
 		aiQuestionIndex,
 		aiAnswers,
 		aiVoiceClips,
+		startingAiSession,
 		aiUploadingAudio,
 		submittingAiTest,
 		aiTestCompleted,

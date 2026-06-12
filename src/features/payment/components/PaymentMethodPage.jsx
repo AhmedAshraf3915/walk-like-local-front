@@ -1,4 +1,4 @@
-import PaymentStep from "@/features/guideVerification/components/PaymentStep";
+import PaymentStep from "@/features/payment/components/PaymentStep";
 
 const PaymentMethodPage = ({
   payment,

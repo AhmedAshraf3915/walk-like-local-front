@@ -1,5 +1,16 @@
 import { useState } from "react";
 import { initialProfileState } from "@/features/guideVerification/constants";
+import { guideVerificationApi } from "@/features/guideVerification/api/guideVerificationApi";
+
+const LANGUAGE_TO_CODE = {
+	Arabic: "ar",
+	English: "en",
+	German: "de",
+	Italian: "it",
+	Spanish: "es",
+};
+
+const toLanguageCode = (language) => LANGUAGE_TO_CODE[language] ?? "";
 
 /**
  * Manages guide profile state: bio, years of experience, interests, and their
@@ -8,6 +19,7 @@ import { initialProfileState } from "@/features/guideVerification/constants";
  */
 export const useGuideProfile = () => {
 	const [profile, setProfile] = useState(initialProfileState);
+	const [submittingProfile, setSubmittingProfile] = useState(false);
 	const [profileSkips, setProfileSkips] = useState({
 		bio: false,
 		yearsOfExperience: false,
@@ -46,13 +58,54 @@ export const useGuideProfile = () => {
 		}));
 	};
 
+	const submitProfile = async ({ selectedLanguages = [] } = {}) => {
+		const languages = selectedLanguages
+			.map(toLanguageCode)
+			.filter((value) => Boolean(value));
+		const trimmedBio = profile.bio.trim();
+
+		setSubmittingProfile(true);
+
+		try {
+			if (languages.length > 0) {
+				await guideVerificationApi.updateGuideLanguages({ languages });
+			}
+
+			const profilePayload = {};
+
+			if (trimmedBio) {
+				profilePayload.bio = trimmedBio;
+			}
+
+			if (profile.interests.length > 0) {
+				profilePayload.interests = profile.interests;
+			}
+
+			if (profile.yearsOfExperience) {
+				profilePayload.experience = {
+					year: profile.yearsOfExperience,
+				};
+			}
+
+			if (Object.keys(profilePayload).length === 0) {
+				return;
+			}
+
+			await guideVerificationApi.completeGuideProfile(profilePayload);
+		} finally {
+			setSubmittingProfile(false);
+		}
+	};
+
 	return {
 		profile,
 		profileSkips,
 		isProfileReady,
+		submittingProfile,
 		setBio,
 		setExperience,
 		toggleInterest,
 		toggleProfileSkip,
+		submitProfile,
 	};
 };
