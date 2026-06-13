@@ -14,6 +14,8 @@ import {
   PasswordResetSuccess,
 } from "../features/auth/Login/ForgotPassword";
 
+import {OnboardingRoutes} from "../features/tourist verification/onboardingRoutes.jsx";
+
 function App() {
   return (
     <AuthProvider>
@@ -39,8 +41,11 @@ function App() {
           element={<PasswordResetSuccess />}
         />
         <Route path="*" element={<Navigate to="/signup" replace />} />
+        <Route path="/onboarding/*" element={<OnboardingRoutes />} />
+
       </Routes>
     </AuthProvider>
+ 
   );
 }
 export default App;
