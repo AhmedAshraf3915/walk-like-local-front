@@ -27,7 +27,7 @@ const REVIEWS = [
 
 export default function Reviews() {
   return (
-    <section className="px-16 py-24" style={{ background: "#FDFDFF" }}>
+    <section className="px-4 sm:px-6 md:px-16 py-12 md:py-24" style={{ background: "#FDFDFF" }}>
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-16">
         <Eyebrow>Travelers say</Eyebrow>
@@ -39,7 +39,7 @@ export default function Reviews() {
         </h2>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {REVIEWS.map((r) => (
           <ReviewCard key={r.name} {...r} />
         ))}

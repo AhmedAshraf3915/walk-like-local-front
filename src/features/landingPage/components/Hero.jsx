@@ -34,7 +34,7 @@ export default function Hero() {
       <Navbar />
 
       {/* Hero content */}
-      <div className="relative z-10 flex flex-col flex-1 px-16 pt-48 pb-0">
+      <div className="relative z-10 flex flex-col flex-1 px-4 sm:px-6 md:px-16 pt-28 sm:pt-32 md:pt-48 pb-0">
         {/* Headline */}
         <div
           className="font-bold leading-tight tracking-wide"
@@ -54,7 +54,7 @@ export default function Hero() {
         </p>
 
         {/* Stats */}
-        <div className="flex items-end gap-16 mt-14">
+        <div className="flex flex-wrap items-end gap-6 sm:gap-10 md:gap-16 mt-10 md:mt-14">
           <div>
             <div className="text-white font-bold text-3xl tracking-wide">120+</div>
             <div
@@ -92,7 +92,7 @@ export default function Hero() {
 
       {/* Search Bar */}
       <div
-        className="relative z-10 mt-16 flex items-center gap-6 px-16 py-5"
+        className="relative z-10 mt-10 md:mt-16 flex flex-col md:flex-row items-stretch md:items-center gap-4 md:gap-6 px-4 sm:px-6 md:px-16 py-4 md:py-5"
         style={{ background: "rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}
       >
         {/* Field: Where to */}
