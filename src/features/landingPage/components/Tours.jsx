@@ -38,7 +38,7 @@ const TOURS = [
 
 export default function Tours() {
   return (
-    <section className="px-16 pb-24" style={{ background: "#FDFDFF" }}>
+    <section className="px-4 sm:px-6 md:px-16 pb-12 md:pb-24" style={{ background: "#FDFDFF" }}>
       <SectionHeader
         eyebrow="Tours"
         title="Hand-curated experiences."
@@ -46,7 +46,7 @@ export default function Tours() {
         action="Browse all tours"
       />
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {TOURS.map((tour) => (
           <TourCard key={tour.title} {...tour} />
         ))}
@@ -62,16 +62,16 @@ function TourCard({ title, tags, guide, avatar, photo, duration, type, price }) 
       style={{ boxShadow: "0 4px 6px rgba(1,1,112,0.2)" }}
     >
       {/* Photo area */}
-      <div className="relative" style={{ height: "340px" }}>
+      <div className="relative h-[240px] md:h-[340px]">
         <img src={photo} alt={title} className="w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.25)" }} />
 
         {/* Tags */}
-        <div className="absolute top-6 left-6 flex gap-3">
+        <div className="absolute top-3 md:top-6 left-3 md:left-6 flex gap-2 md:gap-3 flex-wrap">
           {tags.map((t) => (
             <span
               key={t}
-              className="font-medium rounded-full px-5 py-2"
+              className="font-medium rounded-full px-3 md:px-5 py-1 md:py-2"
               style={{ background: "rgba(204,204,226,0.75)", fontSize: "14px", color: "#010170" }}
             >
               {t}
@@ -81,21 +81,21 @@ function TourCard({ title, tags, guide, avatar, photo, duration, type, price }) 
 
         {/* Guide avatar + strip */}
         <div
-          className="absolute bottom-0 left-0 right-0 flex items-center justify-end px-8 py-3"
+          className="absolute bottom-0 left-0 right-0 flex items-center justify-end px-4 md:px-8 py-2 md:py-3"
           style={{ background: "rgba(204,204,226,0.82)" }}
         >
-          <span style={{ fontSize: "15px", color: "#010138" }}>Your guide: {guide}</span>
+          <span className="text-xs md:text-[15px]" style={{ color: "#010138" }}>Your guide: {guide}</span>
         </div>
         <div
-          className="absolute rounded-full overflow-hidden border-3 border-[#cccce2d6]"
-          style={{ width: "130px", height: "128px", bottom: "-22px", left: "24px" }}
+          className="absolute rounded-full overflow-hidden border-3 border-[#cccce2d6] w-16 h-16 md:w-[130px] md:h-[128px]"
+          style={{ bottom: "-22px", left: "12px" }}
         >
           <img src={avatar} alt={guide} className="w-full h-full object-cover" />
         </div>
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-5 p-8 flex-1">
+      <div className="flex flex-col gap-4 md:gap-5 p-4 md:p-8 flex-1">
         {/* Title + rating */}
         <div className="flex flex-col gap-3">
           <h3 className="font-medium" style={{ fontSize: "22px", color: "#010138", lineHeight: 1.3 }}>

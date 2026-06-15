@@ -10,7 +10,7 @@ const CITIES = [
 
 export default function Destinations() {
   return (
-    <section className="px-16 py-24" style={{ background: "#FDFDFF" }}>
+    <section className="px-4 sm:px-6 md:px-16 py-12 md:py-24" style={{ background: "#FDFDFF" }}>
       <SectionHeader
         eyebrow="Destinations"
         title="Egypt, city by city."
@@ -18,7 +18,7 @@ export default function Destinations() {
         action="View all places"
       />
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {CITIES.map((city) => (
           <CityCard key={city.name} {...city} />
         ))}
@@ -30,8 +30,8 @@ export default function Destinations() {
 function CityCard({ name, tours, img }) {
   return (
     <div
-      className="relative rounded-2xl overflow-hidden cursor-pointer group"
-      style={{ height: "520px", boxShadow: "0 4px 12px rgba(1,1,112,0.2)" }}
+      className="relative rounded-2xl overflow-hidden cursor-pointer group h-[360px] md:h-[520px]"
+      style={{ boxShadow: "0 4px 12px rgba(1,1,112,0.2)" }}
     >
       {/* Background image */}
       <img
@@ -43,7 +43,7 @@ function CityCard({ name, tours, img }) {
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.38)" }} />
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-10 flex flex-col gap-5">
+      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 flex flex-col gap-3 md:gap-5">
         {/* Tours label */}
         <span
           className="uppercase tracking-[4px] font-medium"
@@ -55,7 +55,7 @@ function CityCard({ name, tours, img }) {
         {/* City name */}
         <div className="flex items-center gap-2">
           <MapPin size={30} color="white" />
-          <span className="font-bold text-white" style={{ fontSize: "42px", lineHeight: 1 }}>
+          <span className="font-bold text-white text-3xl md:text-[42px]" style={{ lineHeight: 1 }}>
             {name}
           </span>
         </div>

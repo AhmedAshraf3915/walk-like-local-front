@@ -4,14 +4,14 @@ import { Link } from "react-router-dom";
 
 export default function Navbar() {
   return (
-    <nav className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-16 py-8">
+    <nav className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 md:px-16 py-4 md:py-8">
       {/* Logo */}
       <div className="flex items-center gap-3">
         <img src={IMG.WLLLogo} alt="Walk Like A Local" className="w-10 h-10" />
       </div>
 
       {/* Nav Links */}
-      <div className="flex items-center gap-10">
+      <div className="hidden md:flex items-center gap-10">
         <button className="flex items-center gap-1 text-white font-semibold text-base hover:text-[#EDC84C] transition-colors">
           Explore
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

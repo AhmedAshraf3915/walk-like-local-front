@@ -27,7 +27,7 @@ const FEATURES = [
 export default function WhyUs() {
   return (
     <section
-      className="px-16 py-24"
+      className="px-4 sm:px-6 md:px-16 py-12 md:py-24"
       style={{ background: "linear-gradient(113deg, #010170 0%, #010138 100%)" }}
     >
       {/* Header */}
@@ -48,11 +48,11 @@ export default function WhyUs() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {FEATURES.map((f) => (
           <div
             key={f.title}
-            className="flex flex-col gap-7 rounded-2xl p-10"
+            className="flex flex-col gap-5 md:gap-7 rounded-2xl p-6 md:p-10"
             style={{
               background: "linear-gradient(180deg, #151571, #333381)",
               boxShadow: "0 4px 4px rgba(53,53,114,0.25)",

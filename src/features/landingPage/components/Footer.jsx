@@ -3,10 +3,10 @@ import { IMG } from "../../../assets/images/landingPage/images.js";
 export default function Footer() {
   return (
     <footer
-      className="px-16 pt-16 pb-10"
+      className="px-4 sm:px-6 md:px-16 pt-12 md:pt-16 pb-10"
       style={{ background: "#010138" }}
     >
-      <div className="grid grid-cols-2 gap-12 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12">
         {/* Brand col */}
         <div className="flex flex-col gap-8">
           {/* Logo */}
@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
 
         {/* Links col */}
-        <div className="flex flex-col gap-7 pl-10">
+        <div className="flex flex-col gap-7 pl-0 md:pl-10">
           <h3 className="font-bold text-white" style={{ fontSize: "32px" }}>
             Quick Links
           </h3>

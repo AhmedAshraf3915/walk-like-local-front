@@ -37,7 +37,7 @@ export function SectionSub({ children, light = false }) {
 
 export function SectionHeader({ eyebrow, title, sub, action, light = false }) {
   return (
-    <div className="flex items-end justify-between mb-12">
+    <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8 md:mb-12">
       <div className="flex flex-col gap-4 max-w-2xl">
         <Eyebrow>{eyebrow}</Eyebrow>
         <SectionHeading light={light}>{title}</SectionHeading>

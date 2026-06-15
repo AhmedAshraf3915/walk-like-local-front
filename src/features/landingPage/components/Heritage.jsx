@@ -4,7 +4,7 @@ import { IMG } from "../../../assets/images/landingPage/images.js";
 
 export default function Heritage() {
   return (
-    <section className="px-16 pb-24" style={{ background: "#FDFDFF" }}>
+    <section className="px-4 sm:px-6 md:px-16 pb-12 md:pb-24" style={{ background: "#FDFDFF" }}>
       {/* Text header */}
       <div className="text-center max-w-3xl mx-auto mb-14">
         <Eyebrow>The beauty of Egypt</Eyebrow>
@@ -24,8 +24,7 @@ export default function Heritage() {
 
       {/* Full-width photo with label */}
       <div
-        className="relative rounded-2xl overflow-hidden flex items-end justify-end"
-        style={{ height: "440px" }}
+        className="relative rounded-2xl overflow-hidden flex items-end justify-end h-[260px] md:h-[440px]"
       >
         <img
           src={IMG.sinai}

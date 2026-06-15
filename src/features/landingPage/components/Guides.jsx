@@ -25,7 +25,7 @@ const GUIDES = [
 
 export default function Guides() {
   return (
-    <section className="px-16 py-24" style={{ background: "#FDFDFF" }}>
+    <section className="px-4 sm:px-6 md:px-16 py-12 md:py-24" style={{ background: "#FDFDFF" }}>
       <SectionHeader
         eyebrow="Guides"
         title="Meet your locals."
@@ -33,7 +33,7 @@ export default function Guides() {
         action="View all guides"
       />
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {GUIDES.map((g) => (
           <GuideCard key={g.name} {...g} />
         ))}
@@ -49,7 +49,7 @@ function GuideCard({ name, city, languages, photo }) {
       style={{ boxShadow: "0 4px 12px rgba(1,1,112,0.2)" }}
     >
       {/* Photo */}
-      <div className="overflow-hidden" style={{ height: "300px" }}>
+      <div className="overflow-hidden h-[240px] md:h-[300px]">
         <img
           src={photo}
           alt={name}
@@ -58,7 +58,7 @@ function GuideCard({ name, city, languages, photo }) {
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-6 p-8 flex-1">
+      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-8 flex-1">
         <div className="flex flex-col gap-3">
           <h3 className="font-medium" style={{ fontSize: "22px", color: "#010138" }}>
             {name}

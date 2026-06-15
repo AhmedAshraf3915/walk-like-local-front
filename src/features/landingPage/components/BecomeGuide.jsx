@@ -6,10 +6,9 @@ import { Link } from "react-router-dom";
 
 export default function BecomeGuide() {
   return (
-    <section className="px-16 pb-24" style={{ background: "#FDFDFF" }}>
+    <section className="px-4 sm:px-6 md:px-16 pb-12 md:pb-24" style={{ background: "#FDFDFF" }}>
       <div
-        className="relative rounded-2xl overflow-hidden flex flex-col justify-center"
-        style={{ minHeight: "420px", padding: "80px" }}
+        className="relative rounded-2xl overflow-hidden flex flex-col justify-center min-h-[320px] md:min-h-[420px] p-6 md:p-[80px]"
       >
         {/* Background */}
         <img
@@ -44,7 +43,7 @@ export default function BecomeGuide() {
 
           <Link
             to="/signup"
-            className="self-start flex items-center gap-2 rounded-xl font-semibold text-white transition-opacity hover:opacity-90"
+            className="self-center md:self-start flex items-center gap-2 rounded-xl font-semibold text-white transition-opacity hover:opacity-90"
             style={{
               background: "linear-gradient(90deg, #010170, #5656A0)",
               boxShadow: "0 4px 4px rgba(1,1,56,0.2)",
