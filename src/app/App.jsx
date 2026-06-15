@@ -12,6 +12,7 @@ import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
 
 import TestPage from "../features/test/pages/TestPage.jsx";
 import GuideVerificationPage from "../features/guideVerification/pages/GuideVerificationPage";
+import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
 
 import {
   ForgotPassword,
@@ -44,6 +45,20 @@ function GuideVerificationRoute() {
   return <GuideVerificationPage />;
 }
 
+function AdminRoute() {
+  const { isAuthenticated, userRole } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (String(userRole).toLowerCase() !== "admin") {
+    return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
+  }
+
+  return <AdminDashboardPage />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -53,6 +68,7 @@ function App() {
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/test" element={<TestPage />} />
+        <Route path="/admin" element={<AdminRoute />} />
         <Route
           path="/guide-verification"
           element={<GuideVerificationRoute />}

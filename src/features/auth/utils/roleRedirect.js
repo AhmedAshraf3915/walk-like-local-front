@@ -17,6 +17,10 @@ export const normalizeRole = (role) => {
 export const getRoleBasedVerificationPath = (role) => {
 	const normalizedRole = normalizeRole(role);
 
+	if (normalizedRole === "admin") {
+		return "/admin";
+	}
+
 	if (normalizedRole === "guide") {
 		return "/guide-verification";
 	}
