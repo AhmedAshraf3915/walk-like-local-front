@@ -21,6 +21,10 @@ import {
   PasswordResetSuccess,
 } from "../features/auth/Login/ForgotPassword";
 
+import {OnboardingRoutes} from "../features/touristVerification/onboardingRoutes.jsx";
+import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
+
+
 function RootRedirect() {
   const { isAuthenticated, userRole } = useAuth();
 
@@ -63,7 +67,8 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<RootRedirect />} />
+        <Route path="/" element={<LandingPage />} />
+        {/* <Route path="/" element={<RootRedirect />} /> */}
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/login" element={<LoginPage />} />
@@ -93,7 +98,10 @@ function App() {
           element={<PasswordResetSuccess />}
         />
 
+        <Route path="/onboarding/*" element={<OnboardingRoutes />} />
         <Route path="*" element={<Navigate to="/signup" replace />} />
+        
+
       </Routes>
     </AuthProvider>
   );

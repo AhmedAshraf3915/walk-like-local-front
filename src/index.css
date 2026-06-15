@@ -1,9 +1,18 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+
+
 @layer base {
   button,
   a {
     cursor: pointer;
   }
+}
+
+
+html {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
 }
