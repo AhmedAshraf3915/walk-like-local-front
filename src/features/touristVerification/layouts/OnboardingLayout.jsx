@@ -136,7 +136,7 @@ export function OnboardingFooter({
   const btnBase =
     "flex items-center gap-2 h-12 px-10 rounded-2xl text-base font-medium transition-opacity";
 
-  const ContinueBtn = () => (
+  const continueButton = (
     <button
       onClick={onContinue}
       disabled={!continueEnabled}
@@ -182,10 +182,10 @@ export function OnboardingFooter({
           )}
           {continueTo ? (
             <Link to={continueTo}>
-              <ContinueBtn />
+              {continueButton}
             </Link>
           ) : (
-            <ContinueBtn />
+            continueButton
           )}
         </div>
       </div>

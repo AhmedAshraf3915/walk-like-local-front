@@ -12,8 +12,8 @@ export default function LandingPage() {
   return (
     <div style={{ background: "#FDFDFF", overflowX: "hidden" }}>
       <Hero />
-      <Destinations />
       <Tours />
+      <Destinations />
       <WhyUs />
       <Guides />
       <Heritage />

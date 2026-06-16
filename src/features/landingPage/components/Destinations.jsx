@@ -1,27 +1,35 @@
 import { MapPin, ArrowRight } from "lucide-react";
-import { SectionHeader }from "../ui/ui.jsx";
+import { Link } from "react-router-dom";
+import { SectionHeader } from "../ui/ui.jsx";
 import { IMG } from "../../../assets/images/landingPage/images.js";
 
 const CITIES = [
-  { name: "Cairo",  tours: 45, img: IMG.cairo },
-  { name: "Dahab",  tours: 10, img: IMG.dahab },
-  { name: "Luxor",  tours: 30, img: IMG.luxor },
+  { name: "Cairo", tours: 45, img: IMG.cairo },
+  { name: "Dahab", tours: 10, img: IMG.dahab },
+  { name: "Luxor", tours: 30, img: IMG.luxor },
 ];
 
 export default function Destinations() {
   return (
-    <section className="px-4 sm:px-6 md:px-16 py-12 md:py-24" style={{ background: "#FDFDFF" }}>
-      <SectionHeader
-        eyebrow="Destinations"
-        title="Egypt, city by city."
-        sub="Pick a place. Meet a local. Wander on purpose."
-        action="View all places"
-      />
+    <section
+      id="destinations"
+      className="px-4 py-10 sm:px-6 md:py-14"
+      style={{ background: "#FDFDFF" }}
+    >
+      <div className="mx-auto max-w-6xl">
+        <SectionHeader
+          eyebrow="Destinations"
+          title="Egypt, city by city."
+          sub="Pick a place. Meet a local. Wander on purpose."
+          action="View all places"
+          actionHref="#destinations"
+        />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {CITIES.map((city) => (
-          <CityCard key={city.name} {...city} />
-        ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {CITIES.map((city) => (
+            <CityCard key={city.name} {...city} />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -30,42 +38,48 @@ export default function Destinations() {
 function CityCard({ name, tours, img }) {
   return (
     <div
-      className="relative rounded-2xl overflow-hidden cursor-pointer group h-[360px] md:h-[520px]"
-      style={{ boxShadow: "0 4px 12px rgba(1,1,112,0.2)" }}
+      className="group relative h-[280px] cursor-pointer overflow-hidden rounded-2xl"
+      style={{ boxShadow: "0 6px 24px rgba(1,1,112,0.18)" }}
     >
-      {/* Background image */}
       <img
         src={img}
         alt={name}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      {/* Overlay */}
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.38)" }} />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.08) 30%, rgba(0,0,0,0.62) 100%)",
+        }}
+      />
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 flex flex-col gap-3 md:gap-5">
-        {/* Tours label */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-2 p-5">
         <span
-          className="uppercase tracking-[4px] font-medium"
-          style={{ fontSize: "14px", color: "#EDC84C", fontFamily: "'Instrument Sans', sans-serif" }}
+          className="uppercase tracking-[3px] font-semibold"
+          style={{ fontSize: "10px", color: "#EDC84C" }}
         >
           {tours} tours
         </span>
 
-        {/* City name */}
         <div className="flex items-center gap-2">
-          <MapPin size={30} color="white" />
-          <span className="font-bold text-white text-3xl md:text-[42px]" style={{ lineHeight: 1 }}>
+          <MapPin size={15} color="white" />
+          <span
+            className="text-xl font-bold text-white"
+            style={{ lineHeight: 1 }}
+          >
             {name}
           </span>
         </div>
 
-        {/* Link */}
-        <button className="flex items-center gap-2 text-white font-normal hover:gap-4 transition-all"
-          style={{ fontSize: "22px", letterSpacing: "0.02em" }}>
-          View all tours
-          <ArrowRight size={22} color="white" />
-        </button>
+        <Link
+          to="/signup"
+          className="flex items-center gap-1.5 font-medium text-white transition-all hover:gap-3"
+          style={{ fontSize: "11px" }}
+        >
+          View all tours <ArrowRight size={12} color="white" />
+        </Link>
       </div>
     </div>
   );

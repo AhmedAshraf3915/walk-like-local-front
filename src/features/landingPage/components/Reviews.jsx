@@ -1,4 +1,4 @@
-import { Eyebrow }from "../ui/ui.jsx";
+import { Eyebrow } from "../ui/ui.jsx";
 import { IMG } from "../../../assets/images/landingPage/images.js";
 
 const REVIEWS = [
@@ -27,22 +27,27 @@ const REVIEWS = [
 
 export default function Reviews() {
   return (
-    <section className="px-4 sm:px-6 md:px-16 py-12 md:py-24" style={{ background: "#FDFDFF" }}>
-      {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-16">
-        <Eyebrow>Travelers say</Eyebrow>
-        <h2
-          className="font-bold mt-4"
-          style={{ fontSize: "clamp(28px,3vw,46px)", color: "#010138" }}
-        >
-          Stories from the road.
-        </h2>
-      </div>
+    <section
+      className="px-4 py-9 sm:px-6 md:py-12"
+      style={{ background: "#FDFDFF" }}
+    >
+      <div className="mx-auto max-w-6xl">
+        {/* Header */}
+        <div className="mx-auto mb-7 max-w-2xl text-center">
+          <Eyebrow>Travelers say</Eyebrow>
+          <h2
+            className="mt-2 font-bold"
+            style={{ fontSize: "clamp(20px,2.1vw,28px)", color: "#010138" }}
+          >
+            Stories from the road.
+          </h2>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {REVIEWS.map((r) => (
-          <ReviewCard key={r.name} {...r} />
-        ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {REVIEWS.map((r) => (
+            <ReviewCard key={r.name} {...r} />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -51,50 +56,69 @@ export default function Reviews() {
 function ReviewCard({ text, name, country, stars, avatar }) {
   return (
     <div
-      className="flex flex-col gap-6 p-6"
+      className="flex flex-col gap-4 p-5"
       style={{
         background: "#F4F4F8",
-        border: "1px solid #AAAACF",
-        borderRadius: "40px 12px 40px 12px",
-        boxShadow: "4px 4px 12px rgba(1,1,112,0.2)",
+        border: "1px solid rgba(170,170,207,0.55)",
+        borderRadius: "20px 6px 20px 6px",
+        boxShadow: "4px 6px 18px rgba(1,1,112,0.12)",
       }}
     >
-      {/* Quote icon */}
-      <div className="self-end text-4xl font-bold leading-none" style={{ color: "#010170" }}>
-        "
+      <div
+        className="self-end text-2xl font-bold leading-none"
+        style={{ color: "rgba(1,1,112,0.18)", fontFamily: "Georgia, serif" }}
+      >
+        &ldquo;
       </div>
 
-      {/* Review text */}
       <p
-        className="font-medium leading-relaxed"
-        style={{ fontSize: "15px", color: "#010138", lineHeight: 1.75 }}
+        className="leading-relaxed"
+        style={{ fontSize: "11px", color: "#010138", lineHeight: 1.65 }}
       >
-        "{text}"
+        &ldquo;{text}&rdquo;
       </p>
 
-      {/* Footer */}
       <div className="flex items-center justify-between mt-auto">
-        {/* Author */}
         <div className="flex items-center gap-3">
-          <div className="rounded-full overflow-hidden flex-shrink-0" style={{ width: "46px", height: "46px" }}>
-            <img src={avatar} alt={name} className="w-full h-full object-cover" />
+          <div
+            className="flex-shrink-0 overflow-hidden rounded-full"
+            style={{
+              width: "28px",
+              height: "28px",
+              border: "2px solid #CCCCE2",
+            }}
+          >
+            <img
+              src={avatar}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
-            <div className="font-semibold" style={{ fontSize: "16px", color: "#010170" }}>
+            <div
+              className="font-semibold"
+              style={{ fontSize: "10px", color: "#010170" }}
+            >
               {name}
             </div>
-            <div style={{ fontSize: "13px", color: "#AAAACF", marginTop: "3px" }}>
+            <div
+              style={{ fontSize: "9px", color: "#AAAACF", marginTop: "2px" }}
+            >
               {country}
             </div>
           </div>
         </div>
 
-        {/* Stars */}
-        <div className="flex gap-1">
+        <div className="flex gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <svg key={i} width="20" height="20" viewBox="0 0 24 24"
+            <svg
+              key={i}
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
               fill={i < stars ? "#EDC84C" : "none"}
-              stroke="#EDC84C" strokeWidth="1.5"
+              stroke="#EDC84C"
+              strokeWidth="1.5"
             >
               <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
             </svg>

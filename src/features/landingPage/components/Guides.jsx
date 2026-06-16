@@ -1,5 +1,5 @@
 import { MapPin, Globe } from "lucide-react";
-import { SectionHeader, StarRating, OutlineButton }from "../ui/ui.jsx";
+import { SectionHeader, StarRating, OutlineButton } from "../ui/ui.jsx";
 import { IMG } from "../../../assets/images/landingPage/images.js";
 
 const GUIDES = [
@@ -25,18 +25,25 @@ const GUIDES = [
 
 export default function Guides() {
   return (
-    <section className="px-4 sm:px-6 md:px-16 py-12 md:py-24" style={{ background: "#FDFDFF" }}>
-      <SectionHeader
-        eyebrow="Guides"
-        title="Meet your locals."
-        sub="Verified, story-rich and ready to walk you through their Egypt."
-        action="View all guides"
-      />
+    <section
+      id="guides"
+      className="px-4 py-10 sm:px-6 md:py-14"
+      style={{ background: "#FDFDFF" }}
+    >
+      <div className="mx-auto max-w-6xl">
+        <SectionHeader
+          eyebrow="Guides"
+          title="Meet your locals."
+          sub="Verified, story-rich and ready to walk you through their Egypt."
+          action="View all guides"
+          actionHref="#guides"
+        />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {GUIDES.map((g) => (
-          <GuideCard key={g.name} {...g} />
-        ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {GUIDES.map((guide) => (
+            <GuideCard key={guide.name} {...guide} />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -45,39 +52,73 @@ export default function Guides() {
 function GuideCard({ name, city, languages, photo }) {
   return (
     <div
-      className="bg-white rounded-2xl overflow-hidden flex flex-col"
-      style={{ boxShadow: "0 4px 12px rgba(1,1,112,0.2)" }}
+      className="flex flex-col overflow-hidden rounded-2xl bg-white"
+      style={{ boxShadow: "0 6px 24px rgba(1,1,112,0.10)" }}
     >
       {/* Photo */}
-      <div className="overflow-hidden h-[240px] md:h-[300px]">
+      <div className="relative h-[230px] overflow-hidden">
         <img
           src={photo}
           alt={name}
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
         />
+        {/* Verified badge */}
+        <div
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full"
+          style={{
+            background: "rgba(255,255,255,0.88)",
+            boxShadow: "0 2px 8px rgba(1,1,56,0.15)",
+          }}
+          title="Verified guide"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M9 12l2 2 4-4"
+              stroke="#010170"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="12" cy="12" r="9" stroke="#010170" strokeWidth="2" />
+          </svg>
+        </div>
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-8 flex-1">
-        <div className="flex flex-col gap-3">
-          <h3 className="font-medium" style={{ fontSize: "22px", color: "#010138" }}>
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h3
+            className="font-semibold"
+            style={{ fontSize: "15px", color: "#010138" }}
+          >
             {name}
           </h3>
-          <StarRating />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2" style={{ fontSize: "15px", color: "#AAAACF" }}>
-            <MapPin size={18} color="#AAAACF" />
+        <StarRating />
+
+        <div className="flex flex-col gap-1.5">
+          <div
+            className="flex items-center gap-2"
+            style={{ fontSize: "11px", color: "#AAAACF" }}
+          >
+            <MapPin size={11} color="#AAAACF" />
             {city}
           </div>
-          <div className="flex items-center gap-2" style={{ fontSize: "15px", color: "#AAAACF" }}>
-            <Globe size={18} color="#AAAACF" />
+          <div
+            className="flex items-center gap-2"
+            style={{ fontSize: "11px", color: "#AAAACF" }}
+          >
+            <Globe size={11} color="#AAAACF" />
             {languages}
           </div>
         </div>
 
-        <OutlineButton className="w-full mt-auto" style={{ fontSize: "15px" }}>
+        <OutlineButton
+          className="mt-auto w-full"
+          style={{ borderRadius: "8px", fontSize: "11px", padding: "8px 18px" }}
+          to="/signup"
+        >
           View profile
         </OutlineButton>
       </div>

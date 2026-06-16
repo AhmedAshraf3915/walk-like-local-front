@@ -123,7 +123,7 @@ const GuideVerificationPage = () => {
         setErrorMessage("");
         return;
       }
-      navigate("/test", { replace: true });
+      navigate("/guide/profile", { replace: true });
     }
   };
 
@@ -146,7 +146,7 @@ const GuideVerificationPage = () => {
     }
 
     if (step === 4) {
-      navigate("/test", { replace: true });
+      navigate("/guide/profile", { replace: true });
       return;
     }
 

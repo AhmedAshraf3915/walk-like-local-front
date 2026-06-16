@@ -1,7 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../contexts/AuthContext.jsx";
 import useAuth from "../contexts/useAuth";
-import { getRoleBasedVerificationPath } from "../features/auth/utils/roleRedirect";
+import {
+  getRoleBasedVerificationPath,
+  normalizeRole,
+} from "../features/auth/utils/roleRedirect";
 
 import CheckEmailNoticePage from "../features/auth/pages/CheckEmailNoticePage";
 import EmailVerifiedPage from "../features/auth/pages/EmailVerifiedPage";
@@ -13,6 +16,8 @@ import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
 import TestPage from "../features/test/pages/TestPage.jsx";
 import GuideVerificationPage from "../features/guideVerification/pages/GuideVerificationPage";
 import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
+import GuideProfilePage from "../features/guide/pages/GuideProfilePage";
+import TourCreationPage from "../features/tours/pages/TourCreationPage";
 
 import {
   ForgotPassword,
@@ -21,19 +26,8 @@ import {
   PasswordResetSuccess,
 } from "../features/auth/Login/ForgotPassword";
 
-import {OnboardingRoutes} from "../features/touristVerification/onboardingRoutes.jsx";
-import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
-
-
-function RootRedirect() {
-  const { isAuthenticated, userRole } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/signup" replace />;
-  }
-
-  return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
-}
+import { OnboardingRoutes } from "../features/touristVerification/onboardingRoutes.jsx";
+import HomePage from "../pages/HomePage.jsx";
 
 function GuideVerificationRoute() {
   const { isAuthenticated, userRole } = useAuth();
@@ -49,34 +43,66 @@ function GuideVerificationRoute() {
   return <GuideVerificationPage />;
 }
 
-function AdminRoute() {
+function RequireRole({ allowedRoles, children }) {
   const { isAuthenticated, userRole } = useAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (String(userRole).toLowerCase() !== "admin") {
+  const normalizedRole = normalizeRole(userRole);
+  const normalizedAllowedRoles = allowedRoles.map((role) =>
+    normalizeRole(role),
+  );
+
+  if (!normalizedAllowedRoles.includes(normalizedRole)) {
     return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
   }
 
-  return <AdminDashboardPage />;
+  return children;
 }
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<HomePage />} />
         {/* <Route path="/" element={<RootRedirect />} /> */}
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/test" element={<TestPage />} />
-        <Route path="/admin" element={<AdminRoute />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireRole allowedRoles={["admin"]}>
+              <AdminDashboardPage />
+            </RequireRole>
+          }
+        />
         <Route
           path="/guide-verification"
           element={<GuideVerificationRoute />}
+        />
+        <Route
+          path="/guide/profile"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideProfilePage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide/tours/new"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <TourCreationPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide"
+          element={<Navigate to="/guide/profile" replace />}
         />
         <Route
           path="/auth/google/callback"
@@ -99,9 +125,7 @@ function App() {
         />
 
         <Route path="/onboarding/*" element={<OnboardingRoutes />} />
-        <Route path="*" element={<Navigate to="/signup" replace />} />
-        
-
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
   );
