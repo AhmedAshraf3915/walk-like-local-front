@@ -61,8 +61,36 @@ const uploadImage = async (file) => {
 };
 
 export const toursApi = {
+
+	getActiveTours: (params = {}) =>
+		withErrorMessage(
+			() => apiClient.get("/tours", { params }),
+			"Unable to fetch tours.",
+		),
+
+	getMyTours: (params = {}) =>
+		withErrorMessage(
+			() => apiClient.get("/tours/my-tours", { params }),
+			"Unable to fetch your tours.",
+		),
+
 	createTour: (payload) =>
 		withErrorMessage(() => apiClient.post("/tours", payload), "Unable to create tour."),
+
+	updateTour: (id, payload) =>
+		withErrorMessage(() => apiClient.patch(`/tours/${id}`, payload), "Unable to update tour."),
+
+	activateTour: (id) =>
+		withErrorMessage(() => apiClient.patch(`/tours/${id}/activate`), "Unable to activate tour."),
+
+	deactivateTour: (id) =>
+		withErrorMessage(() => apiClient.patch(`/tours/${id}/deactivate`), "Unable to deactivate tour."),
+
+	addSlot: (tourId, slotData) =>
+		withErrorMessage(() => apiClient.post(`/tours/${tourId}/slots`, slotData), "Unable to add slot."),
+
+	deleteSlot: (tourId, slotId) =>
+		withErrorMessage(() => apiClient.delete(`/tours/${tourId}/slots/${slotId}`), "Unable to delete slot."),
 
 	uploadImage,
 };

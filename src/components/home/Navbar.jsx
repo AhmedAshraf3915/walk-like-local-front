@@ -1,16 +1,27 @@
 import { useState } from "react";
 import { Bell, ChevronDown, Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { IMG } from "@/assets/images/landingPage/images.js";
+import useAuth from "@/contexts/useAuth";
 
 const NAV_LINKS = [
-  { label: "Explore", href: "#tours", hasDropdown: true },
+  { label: "Tours", href: "/tours", hasDropdown: false },
   { label: "Places", href: "#destinations", hasDropdown: false },
   { label: "Guides", href: "#guides", hasDropdown: false },
 ];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated, userRole, logout } = useAuth();
+  const navigate = useNavigate();
+  const isTourist = String(userRole).toLowerCase() === "tourist";
+  const isGuide = String(userRole).toLowerCase() === "guide";
+
+  const getDashboardLink = () => {
+    if (isTourist) return "/tourist/profile";
+    if (isGuide) return "/guide/profile";
+    return "/";
+  };
 
   return (
     <nav className="relative z-50 bg-white shadow-[0_1px_12px_rgba(1,1,56,0.07)] border-b border-[#e8e7f2]">
@@ -54,18 +65,23 @@ export default function Navbar() {
             </span>
           </button>
 
-          {/* Avatar */}
-          <Link
-            to="/signup"
-            aria-label="Profile"
-            className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-[#cccce2] bg-[#f4f4f8]"
-          >
-            <img
-              src={IMG.avatar}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          </Link>
+          {/* Auth links */}
+          {isAuthenticated ? (
+            <Link
+              to={getDashboardLink()}
+              aria-label="Dashboard"
+              className="hidden sm:flex h-9 items-center rounded-full border border-[#e0dfee] bg-[#f7f7fb] px-3 text-[12px] font-semibold text-[#010138] hover:bg-[#eeeef8]"
+            >
+              {isTourist ? "My Profile" : isGuide ? "Dashboard" : "Dashboard"}
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="hidden sm:flex h-9 items-center rounded-full bg-[#010170] px-4 text-[12px] font-semibold text-white hover:opacity-90"
+            >
+              Log in
+            </Link>
+          )}
 
           {/* Hamburger */}
           <button
@@ -86,22 +102,35 @@ export default function Navbar() {
           {menuOpen && (
             <div className="absolute right-0 top-11 z-50 flex min-w-44 flex-col gap-0.5 rounded-xl border border-[#e4e3f0] bg-white p-2 shadow-xl">
               {NAV_LINKS.map((link) => (
-                <a
+                <Link
                   key={link.label}
-                  href={link.href}
+                  to={link.href}
                   className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors"
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
-              <Link
-                to="/login"
-                className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors sm:hidden"
-                onClick={() => setMenuOpen(false)}
-              >
-                Log in
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link to={getDashboardLink()} className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors" onClick={() => setMenuOpen(false)}>
+                    {isTourist ? "My Profile" : "Dashboard"}
+                  </Link>
+                  {isTourist && (
+                    <Link to="/tourist/bookings" className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors" onClick={() => setMenuOpen(false)}>
+                      My Bookings
+                    </Link>
+                  )}
+                  <button onClick={() => { logout(); setMenuOpen(false); navigate("/"); }}
+                    className="w-full text-left rounded-lg px-3 py-2 text-[13px] font-semibold text-red-600 hover:bg-[#f4f4f8] transition-colors">
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors sm:hidden" onClick={() => setMenuOpen(false)}>
+                  Log in
+                </Link>
+              )}
             </div>
           )}
         </div>

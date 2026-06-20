@@ -25,7 +25,7 @@ export default function HeroSection() {
           className="h-full w-full object-cover"
           style={{ objectPosition: "center 30%" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(1,1,40,0.55)] to-[rgba(1,1,56,0.28)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[rgba(1,1,40,0.23)] to-[rgba(1,1,56,0.11)]" />
       </div>
 
       {/* Hero content */}

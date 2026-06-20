@@ -87,4 +87,22 @@ export const touristApi = {
       .patch("/tourists/verification/resubmit", { passport: { secureUrl, publicId } })
       .then((r) => r.data?.data ?? r.data);
   },
+
+  // ── Bookings ──
+
+  /** GET /tourists/bookings */
+  getMyBookings: (params = {}) =>
+    apiClient.get("/tourists/bookings", { params }).then((r) => r.data?.data ?? r.data),
+
+  /** POST /tourists/bookings — create booking for a tour slot */
+  createBooking: (data) =>
+    apiClient.post("/tourists/bookings", data).then((r) => r.data?.data ?? r.data),
+
+  /** PATCH /tourists/bookings/:id/cancel */
+  cancelBooking: (bookingId, reason) =>
+    apiClient.patch(`/tourists/bookings/${bookingId}/cancel`, { reason }).then((r) => r.data?.data ?? r.data),
+
+  /** GET /payments/status/:bookingId */
+  getPaymentStatus: (bookingId) =>
+    apiClient.get(`/payments/status/${bookingId}`).then((r) => r.data?.data ?? r.data),
 };

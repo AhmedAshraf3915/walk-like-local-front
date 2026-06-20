@@ -25,7 +25,7 @@ export { OnboardingNavbar, OnboardingStepBar, OnboardingFooter, OnboardingPage }
 
 import { Routes, Route } from "react-router-dom";
 
-export function OnboardingRoutes() {
+export function TouristRoutes() {
   return (
     <Routes>
       <Route path="profile" element={<ProfileDetailsPage />} />

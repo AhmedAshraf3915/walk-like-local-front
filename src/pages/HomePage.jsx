@@ -1,4 +1,5 @@
-import { ArrowRight, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, MapPin, Loader } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import Navbar from "@/components/home/Navbar.jsx";
@@ -10,8 +11,8 @@ import GuideCard from "@/components/home/GuideCard.jsx";
 import TestimonialCard from "@/components/home/TestimonialCard.jsx";
 import Footer from "@/components/home/Footer.jsx";
 
+import { toursApi } from "@/features/tours/api/toursApi";
 import {
-  TOURS,
   DESTINATIONS,
   FEATURES,
   GUIDES,
@@ -29,7 +30,7 @@ function Eyebrow({ children }) {
   );
 }
 
-function SectionHeader({ eyebrow, title, sub, actionLabel, actionHref = "#" }) {
+function SectionHeader({ eyebrow, title, sub, actionLabel, redirect }) {
   return (
     <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex max-w-2xl flex-col gap-2">
@@ -44,20 +45,91 @@ function SectionHeader({ eyebrow, title, sub, actionLabel, actionHref = "#" }) {
         )}
       </div>
       {actionLabel && (
-        <a
-          href={actionHref}
+        <Link
+          to={redirect}
           className="flex flex-shrink-0 items-center gap-1.5 text-[12px] font-medium text-[#353572] transition-opacity hover:opacity-70"
         >
           {actionLabel} <ArrowRight size={16} />
-        </a>
+        </Link>
       )}
     </div>
   );
 }
 
+// ─── Map API tour → TourCard props ───────────────────────────
+
+function mapApiTourToCard(apiTour) {
+  const groupLabels = {
+    PRIVATE: "Private tour",
+    SMALL_GROUP: "Small group",
+    LARGE_GROUP: "Large group",
+  };
+
+  const gType = apiTour.groupType ?? "PRIVATE";
+  const pricing = apiTour.pricing ?? {};
+  const priceVal = pricing[gType] ?? pricing.PRIVATE ?? 0;
+
+  return {
+    id: apiTour._id ?? apiTour.id,
+    title: apiTour.title ?? "Untitled tour",
+    matchTag: apiTour.destination
+      ? `Explore ${apiTour.destination}`
+      : null,
+    tags: apiTour.activities
+      ? apiTour.activities.map((a) =>
+          typeof a === "string" ? a : a.name,
+        ).slice(0, 3)
+      : apiTour.destination
+        ? [apiTour.destination]
+        : [],
+    guide:
+      apiTour.guide?.fullName ??
+      apiTour.guide?.name ??
+      "Local guide",
+    avatar:
+      apiTour.guide?.profilePhoto?.secureUrl ??
+      apiTour.guide?.avatar ??
+      IMG.avatar,
+    photo: apiTour.coverImage?.secureUrl ?? IMG.tourKhan,
+    rating: apiTour.rating ?? 0,
+    reviewCount: apiTour.reviewCount ?? 0,
+    duration: apiTour.duration ?? "",
+    groupType: groupLabels[gType] ?? gType,
+    price: `$${priceVal} USD`,
+  };
+}
+
 // ─── Section: AI Curated Tours ────────────────────────────────────────────────
 
 function ToursSection() {
+  const [tours, setTours] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    toursApi
+      .getActiveTours({ limit: 6 })
+      .then((res) => {
+        if (cancelled) return;
+        const raw = Array.isArray(res)
+          ? res
+          : res?.tours ?? res?.data ?? [];
+        setTours(raw.map(mapApiTourToCard));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message ?? "Failed to load tours");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section id="tours" className="bg-[#FDFDFF] px-4 py-12 sm:px-6 md:py-16">
       <div className="mx-auto max-w-6xl">
@@ -67,14 +139,34 @@ function ToursSection() {
           sub="Personalized using your interests and preferences."
           actionLabel="Browse all tours"
           actionHref="#tours"
+          redirect="/tours"
         />
 
-        {/* Scrollable on mobile, 3-col grid on desktop */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {TOURS.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader className="animate-spin text-[#010170]" size={32} />
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl bg-red-50 px-6 py-10 text-center">
+            <p className="text-red-600">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-full bg-[#010170] px-6 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Retry
+            </button>
+          </div>
+        ) : tours.length === 0 ? (
+          <div className="py-20 text-center text-[#353572]">
+            No tours available yet. Check back soon.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {tours.map((tour) => (
+              <TourCard key={tour.id} tour={tour} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -145,7 +237,7 @@ function GuidesSection() {
           title="Meet your locals."
           sub="Verified, story-rich and ready to walk you through their Egypt."
           actionLabel="View all guides"
-          actionHref="#guides"
+          redirect="/guides"
         />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
