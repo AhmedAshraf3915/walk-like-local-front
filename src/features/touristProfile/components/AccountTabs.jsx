@@ -2,9 +2,9 @@ import { NavLink } from 'react-router-dom'
 import { User, Clock, Wallet } from 'lucide-react'
 
 const tabs = [
-  { to: '/profile', label: 'Profile & Settings', icon: User },
-  { to: '/bookings', label: 'Booking history', icon: Clock },
-  { to: '/payments', label: 'Payments & Wallet', icon: Wallet },
+  { to: '/tourist/profile', label: 'Profile & Settings', icon: User },
+  { to: '/tourist/bookings', label: 'Booking history', icon: Clock },
+  { to: '/tourist/payments', label: 'Payments & Wallet', icon: Wallet },
 ]
 
 export default function AccountTabs() {

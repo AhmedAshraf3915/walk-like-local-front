@@ -10,9 +10,20 @@ const NAV_LINKS = [
   { label: "Guides", href: "#guides", hasDropdown: false },
 ];
 
+const PROFILE_PATHS = {
+  admin: "/admin/profile",
+  guide: "/guide/profile",
+  tourist: "/tourist/profile",
+};
+
+const getProfilePath = (role) => {
+  return PROFILE_PATHS[String(role).toLowerCase()] || "/profile";
+};
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userRole } = useAuth();
+  const profilePath = getProfilePath(userRole);
 
   return (
     <nav className="relative z-50 bg-white shadow-[0_1px_12px_rgba(1,1,56,0.07)] border-b border-[#e8e7f2]">
@@ -68,7 +79,7 @@ export default function Navbar() {
           {/* Avatar */}
           {isAuthenticated && (
             <Link
-              to="/signup"
+              to={profilePath}
               aria-label="Profile"
               className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-[#cccce2] bg-[#f4f4f8]"
             >
@@ -78,7 +89,7 @@ export default function Navbar() {
                 className="h-full w-full object-cover"
               />
             </Link>
-          )}
+            )}
 
           {/* Hamburger */}
           <button
@@ -109,7 +120,7 @@ export default function Navbar() {
                 </a>
               ))}
               <Link
-                to={isAuthenticated ? "/signup" : "/login"}
+                to={isAuthenticated ? profilePath : "/login"}
                 className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors"
                 onClick={() => setMenuOpen(false)}
               >

@@ -25,7 +25,10 @@ export const getRoleBasedVerificationPath = (role) => {
 		return "/guide";
 	}
 
-	return "/onboarding/profile";
+	if (normalizedRole === "tourist") {
+		return "/tourist";
+	}
+	return "/test";
 ;
 };
 

@@ -16,3 +16,24 @@ html {
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
 }
+
+
+:root {
+  --maincolor: #010170;
+  --maintaxt: #010138;
+  --mediumfont: #353572;
+  --secondarycolor: #edc84c;
+  --lighttext: #aaaacf;
+  --lightblue: #cccce2;
+  --mediabackground: #f4f4f8;
+  --background: #fdfdff;
+  --lightgold: #d4be84;
+  --darkgold: #87722b;
+  --xl: 16px;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--maintaxt);
+  background: #fff;
+}

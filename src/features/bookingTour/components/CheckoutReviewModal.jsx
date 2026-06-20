@@ -18,8 +18,8 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
   return (
     <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[var(--mediabackground)] rounded-2xl p-8 md:p-16 w-full max-w-[1600px] flex flex-col gap-12">
-        <div className="flex flex-col gap-8">
+      <div className="bg-[var(--mediabackground)] rounded-2xl p-8 m-24 md:p-16 w-full max-w-[1000px] flex flex-col gap-12">
+        <div className="flex flex-col gap-8 p-32">
           <p className="font-bold text-2xl text-[var(--mediumfont)] tracking-[4.8px] uppercase">Checkout</p>
           <p className="font-semibold text-3xl md:text-4xl text-[var(--maincolor)]">Review</p>
         </div>

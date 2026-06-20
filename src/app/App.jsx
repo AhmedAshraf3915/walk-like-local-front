@@ -34,12 +34,13 @@ import HomePage from "../pages/HomePage.jsx";
 
 
 // import TourBrowsePage from "../features/tours/pages/TourBrowsePage";
-import TourDetailPage from "../features/tours/pages/TourDetailPage";
-import TouristProfilePage from "../features/tourist/pages/TouristProfilePage";
-import TouristVerificationStatusPage from "../features/tourist/pages/TouristVerificationStatusPage";
-import MyBookingsPage from "../features/tourist/pages/MyBookingsPage";
-import BookingConfirmationPage from "../features/tourist/pages/BookingConfirmationPage";
+import ProfileSettings from "../features/touristProfile/pages/ProfileSettings.jsx";
+import BookingHistory from "../features/touristProfile/pages/BookingHistory.jsx";
+import Payments from "../features/touristProfile/pages/Payments.jsx";
 import ViewAllGuidePage from "../pages/ViewAllGuidePage.jsx";
+import VerificationPage from "../features/touristVerification/pages/VerificationPage.jsx";
+import TourDetail from "../features/tours/pages/TourDetail.jsx";
+import CheckoutResult from "../features/bookingTour/pages/CheckoutResult.jsx";
 
 
 
@@ -194,12 +195,12 @@ function App() {
         />
 
         <Route path="/onboarding/*" element={<TouristRoute />} />
-        <Route path="/tours/:id" element={<TourDetailPage />} />
+        <Route path="/tours/:id" element={<TourDetail />} />
          <Route
           path="/tourist/profile"
           element={
             <RequireRole allowedRoles={["tourist"]}>
-              <TouristProfilePage />
+              <ProfileSettings />
             </RequireRole>
           }
         />
@@ -207,7 +208,7 @@ function App() {
           path="/tourist/verification"
           element={
             <RequireRole allowedRoles={["tourist"]}>
-              <TouristVerificationStatusPage />
+              <VerificationPage />
             </RequireRole>
           }
         />
@@ -215,7 +216,15 @@ function App() {
           path="/tourist/bookings"
           element={
             <RequireRole allowedRoles={["tourist"]}>
-              <MyBookingsPage />
+              <BookingHistory />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/tourist/payments"
+          element={
+            <RequireRole allowedRoles={["tourist"]}>
+              <Payments />
             </RequireRole>
           }
         />
@@ -223,7 +232,7 @@ function App() {
           path="/tourist/bookings/:bookingId/confirmation"
           element={
             <RequireRole allowedRoles={["tourist"]}>
-              <BookingConfirmationPage />
+              <CheckoutResult />
             </RequireRole>
           }
         />
