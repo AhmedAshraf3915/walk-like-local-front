@@ -92,4 +92,25 @@ describe("AllToursPage", () => {
       }),
     );
   });
+
+  it("uses filters submitted from the landing-page hero", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/tours?destination=Luxor&search=Food%20Tour"]}
+      >
+        <AllToursPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() =>
+      expect(apiMocks.browseActiveTours).toHaveBeenCalledWith(
+        expect.objectContaining({
+          destination: "Luxor",
+          search: "Food Tour",
+          page: 1,
+          limit: 9,
+        }),
+      ),
+    );
+  });
 });

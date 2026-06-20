@@ -85,6 +85,21 @@ describe("landing content mappers", () => {
     expect(tour.photo).toBe("");
   });
 
+  it("does not request seeded Cloudinary demo images", () => {
+    const [tour] = mapActiveTours([
+      {
+        _id: "tour-with-demo-image",
+        title: "Pyramids Walk",
+        coverImage: {
+          secureUrl:
+            "https://res.cloudinary.com/demo/image/upload/v123/tours/pyramids_cover.jpg",
+        },
+      },
+    ]);
+
+    expect(tour.photo).toBe("");
+  });
+
   it("uses the private price when the catalog filters private pricing", () => {
     const [tour] = mapActiveTours(
       [

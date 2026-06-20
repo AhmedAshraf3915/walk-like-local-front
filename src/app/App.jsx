@@ -32,17 +32,15 @@ import {
 import { TouristRoutes } from "../features/touristVerification/onboardingRoutes.jsx";
 import HomePage from "../pages/HomePage.jsx";
 
-
 // import TourBrowsePage from "../features/tours/pages/TourBrowsePage";
 import ProfileSettings from "../features/touristProfile/pages/ProfileSettings.jsx";
 import BookingHistory from "../features/touristProfile/pages/BookingHistory.jsx";
 import Payments from "../features/touristProfile/pages/Payments.jsx";
 import ViewAllGuidePage from "../pages/ViewAllGuidePage.jsx";
+import ViewAllPlacesPage from "../pages/ViewAllPlacesPage.jsx";
 import VerificationPage from "../features/touristVerification/pages/VerificationPage.jsx";
 import TourDetail from "../features/tours/pages/TourDetail.jsx";
 import CheckoutResult from "../features/bookingTour/pages/CheckoutResult.jsx";
-
-
 
 function TouristRoute() {
   const { isAuthenticated, userRole } = useAuth();
@@ -196,7 +194,7 @@ function App() {
 
         <Route path="/onboarding/*" element={<TouristRoute />} />
         <Route path="/tours/:id" element={<TourDetail />} />
-         <Route
+        <Route
           path="/tourist/profile"
           element={
             <RequireRole allowedRoles={["tourist"]}>
@@ -242,6 +240,7 @@ function App() {
         />
 
         <Route path="/guides" element={<ViewAllGuidePage />} />
+        <Route path="/places" element={<ViewAllPlacesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

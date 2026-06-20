@@ -2,15 +2,23 @@ import { ArrowRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function DestinationCard({ destination }) {
-  const { name, tourCount, img } = destination;
+  const { name, tourCount, img, placeholderImage } = destination;
 
   return (
     <div className="group relative h-[280px] cursor-pointer overflow-hidden rounded-2xl shadow-[0_6px_24px_rgba(1,1,112,0.18)]">
       {/* Background image */}
       <img
-        src={img}
+        src={img || placeholderImage}
         alt={name}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+        onError={(event) => {
+          if (
+            placeholderImage &&
+            event.currentTarget.src !== placeholderImage
+          ) {
+            event.currentTarget.src = placeholderImage;
+          }
+        }}
       />
 
       {/* Gradient overlay */}

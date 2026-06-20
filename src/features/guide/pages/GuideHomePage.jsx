@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Star,
-} from "lucide-react";
+import { ArrowRight, BadgeCheck, Star } from "lucide-react";
 
 import useAuth from "@/contexts/useAuth";
 import { IMG } from "@/assets/images/landingPage/images.js";
@@ -41,7 +37,7 @@ const DEFAULT_PROFILE = {
   rating: 0,
   activeTours: 0,
   lifetimeBookings: 0,
-  photo: IMG.avatar,
+  photo: "",
 };
 
 const getAssetUrl = (value) => {
@@ -279,10 +275,7 @@ function MarketplaceSection({ tours, isLoading, errorMessage, onRetry }) {
           <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex min-w-max gap-4">
               {tours.map((tour) => (
-                <div
-                  key={tour.id}
-                  className="w-[300px] shrink-0 lg:w-[420px]"
-                >
+                <div key={tour.id} className="w-[300px] shrink-0 lg:w-[420px]">
                   <TourCard tour={tour} />
                 </div>
               ))}
@@ -317,7 +310,8 @@ function GuidesSection() {
 }
 
 const buildGuideProfile = (user, remoteVerification = {}) => {
-  const remoteGuide = remoteVerification?.guide ?? remoteVerification?.user ?? {};
+  const remoteGuide =
+    remoteVerification?.guide ?? remoteVerification?.user ?? {};
   const nestedProfile = user?.guideProfile ?? user?.profile ?? {};
   const guideVerification = {
     ...(user?.guideVerification ?? user?.verification ?? {}),

@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
-import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 import Navbar from "@/components/home/Navbar.jsx";
 import HeroSection from "@/components/home/HeroSection.jsx";
@@ -18,6 +25,12 @@ const EMPTY_FILTERS = {
   maxPrice: "",
 };
 
+const getFiltersFromSearchParams = (searchParams) => ({
+  ...EMPTY_FILTERS,
+  search: searchParams.get("search") ?? "",
+  destination: searchParams.get("destination") ?? "",
+});
+
 function TourGridSkeleton() {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -31,9 +44,118 @@ function TourGridSkeleton() {
   );
 }
 
+function DestinationSelect({ value, onChange, options, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const fieldRef = useRef(null);
+  const listboxId = useId();
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!fieldRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const selectOption = (option) => {
+    onChange(option);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={fieldRef} className="relative mt-2">
+      <button
+        type="button"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        aria-label="Destination"
+        onClick={() => setIsOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+        className={`flex h-11 w-full cursor-pointer items-center rounded-xl border px-3 pr-9 text-left text-sm font-medium normal-case tracking-normal outline-none transition duration-200 focus:ring-2 focus:ring-[#EDC84C]/30 ${
+          isOpen
+            ? "border-[#010170]/60 bg-[#F7F7FC] shadow-[0_4px_18px_rgba(1,1,56,0.12)]"
+            : "border-[#d5d4ea] bg-[#FDFDFF] hover:border-[#c3c1df]"
+        } ${value ? "text-[#010138]" : "text-[#65638a]"}`}
+      >
+        <span className="truncate">{value || placeholder}</span>
+      </button>
+
+      <ChevronDown
+        aria-hidden="true"
+        className={`pointer-events-none absolute right-3 top-[22px] h-3.5 w-3.5 -translate-y-1/2 text-[#010170]/80 transition-transform duration-200 ${
+          isOpen ? "rotate-180" : ""
+        }`}
+      />
+
+      {isOpen ? (
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Destination options"
+          className="absolute left-0 top-[calc(100%+0.55rem)] z-[80] max-h-64 min-w-full overflow-y-auto rounded-2xl border border-[#d9d8ec] bg-white p-2 shadow-[0_18px_55px_rgba(1,1,56,0.18)] ring-1 ring-[#010170]/10"
+        >
+          {["", ...options].map((option) => {
+            const isSelected = value === option;
+
+            return (
+              <button
+                key={option || "all-egypt"}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => selectOption(option)}
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition ${
+                  isSelected
+                    ? "bg-gradient-to-r from-[#ececfa] to-[#f6f5fc] text-[#010170]"
+                    : "text-[#353572] hover:bg-[#f1f0f8] hover:text-[#010138]"
+                }`}
+              >
+                <span className="whitespace-nowrap">
+                  {option || placeholder}
+                </span>
+                {isSelected ? (
+                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#010170] text-white shadow-sm">
+                    <Check aria-hidden="true" className="h-3 w-3" />
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AllToursPage() {
-  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [searchParams] = useSearchParams();
+  const initialFilters = getFiltersFromSearchParams(searchParams);
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [tours, setTours] = useState([]);
@@ -52,17 +174,14 @@ export default function AllToursPage() {
       try {
         const response = await toursApi.browseActiveTours({
           ...filters,
-          groupType:
-            filters.minPrice || filters.maxPrice ? "PRIVATE" : "",
+          groupType: filters.minPrice || filters.maxPrice ? "PRIVATE" : "",
           page,
           limit: PAGE_SIZE,
         });
 
         if (!isMounted) return;
 
-        setTours(
-          mapActiveTours(response, [], { priceGroupType: "PRIVATE" }),
-        );
+        setTours(mapActiveTours(response, [], { priceGroupType: "PRIVATE" }));
         setPagination(response?.pagination ?? {});
       } catch (error) {
         if (!isMounted) return;
@@ -115,8 +234,7 @@ export default function AllToursPage() {
 
   const totalItems = Number(pagination?.totalItems) || tours.length;
   const totalPages = Math.max(Number(pagination?.totalPages) || 1, 1);
-  const hasPreviousPage =
-    pagination?.hasPreviousPage ?? page > 1;
+  const hasPreviousPage = pagination?.hasPreviousPage ?? page > 1;
   const hasNextPage = pagination?.hasNextPage ?? page < totalPages;
   const sectionTitle = filters.destination
     ? `${filters.destination} Journeys`
@@ -127,7 +245,10 @@ export default function AllToursPage() {
       <Navbar />
       <HeroSection />
 
-      <main id="tours" className="mx-auto max-w-6xl px-4 py-12 sm:px-6 md:py-16">
+      <main
+        id="tours"
+        className="mx-auto max-w-6xl px-4 py-12 sm:px-6 md:py-16"
+      >
         <form
           onSubmit={applyFilters}
           className="rounded-2xl border border-[#e4e3f0] bg-white p-4 shadow-[0_6px_24px_rgba(1,1,112,0.08)] sm:p-5"
@@ -150,20 +271,14 @@ export default function AllToursPage() {
 
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
               Destination
-              <select
+              <DestinationSelect
                 value={draftFilters.destination}
-                onChange={(event) =>
-                  setFilterField("destination", event.target.value)
+                onChange={(nextValue) =>
+                  setFilterField("destination", nextValue)
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#010170]"
-              >
-                <option value="">All Egypt</option>
-                {EGYPT_GOVERNORATES.map((governorate) => (
-                  <option key={governorate} value={governorate}>
-                    {governorate}
-                  </option>
-                ))}
-              </select>
+                options={EGYPT_GOVERNORATES}
+                placeholder="All Egypt"
+              />
             </label>
 
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">

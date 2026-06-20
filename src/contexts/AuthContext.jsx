@@ -158,6 +158,21 @@ export const AuthProvider = ({ children }) => {
     useState(null);
 
   useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    clearAuthStorage();
+    setAuthState({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      userRole: null,
+    });
+  }, []);
+
+  useEffect(() => {
     if (!authState.isAuthenticated) {
       clearAuthStorage();
     }
