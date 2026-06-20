@@ -185,7 +185,7 @@ function GuidesSection({ guides, isLoading, errorMessage }) {
           title="Meet your locals."
           sub="Verified, story-rich and ready to walk you through their Egypt."
           actionLabel="View all guides"
-          actionHref="#guides"
+          actionHref="/guides"
         />
 
         {isLoading ? <CardSkeletons /> : null}

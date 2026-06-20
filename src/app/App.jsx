@@ -29,8 +29,33 @@ import {
   PasswordResetSuccess,
 } from "../features/auth/Login/ForgotPassword";
 
-import { OnboardingRoutes } from "../features/touristVerification/onboardingRoutes.jsx";
+import { TouristRoutes } from "../features/touristVerification/onboardingRoutes.jsx";
 import HomePage from "../pages/HomePage.jsx";
+
+
+// import TourBrowsePage from "../features/tours/pages/TourBrowsePage";
+import TourDetailPage from "../features/tours/pages/TourDetailPage";
+import TouristProfilePage from "../features/tourist/pages/TouristProfilePage";
+import TouristVerificationStatusPage from "../features/tourist/pages/TouristVerificationStatusPage";
+import MyBookingsPage from "../features/tourist/pages/MyBookingsPage";
+import BookingConfirmationPage from "../features/tourist/pages/BookingConfirmationPage";
+import ViewAllGuidePage from "../pages/ViewAllGuidePage.jsx";
+
+
+
+function TouristRoute() {
+  const { isAuthenticated, userRole } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (String(userRole).toLowerCase() !== "tourist") {
+    return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
+  }
+
+  return <TouristRoutes />;
+}
 
 function GuideVerificationRoute() {
   const { isAuthenticated, userRole } = useAuth();
@@ -168,7 +193,46 @@ function App() {
           element={<PasswordResetSuccess />}
         />
 
-        <Route path="/onboarding/*" element={<OnboardingRoutes />} />
+        <Route path="/onboarding/*" element={<TouristRoute />} />
+        <Route path="/tours/:id" element={<TourDetailPage />} />
+         <Route
+          path="/tourist/profile"
+          element={
+            <RequireRole allowedRoles={["tourist"]}>
+              <TouristProfilePage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/tourist/verification"
+          element={
+            <RequireRole allowedRoles={["tourist"]}>
+              <TouristVerificationStatusPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/tourist/bookings"
+          element={
+            <RequireRole allowedRoles={["tourist"]}>
+              <MyBookingsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/tourist/bookings/:bookingId/confirmation"
+          element={
+            <RequireRole allowedRoles={["tourist"]}>
+              <BookingConfirmationPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/tourist"
+          element={<Navigate to="/tourist/profile" replace />}
+        />
+
+        <Route path="/guides" element={<ViewAllGuidePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

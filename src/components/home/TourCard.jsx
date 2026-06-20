@@ -145,7 +145,8 @@ export default function TourCard({ tour }) {
         </div>
 
         <Link
-          to={href}
+          key={tour.id}
+          to={`/tours/${tour.id}`}
           className="mt-auto flex items-center justify-center rounded-lg bg-gradient-to-r from-[#010170] to-[#5656A0] px-4 py-2.5 text-[11px] font-semibold text-white shadow-[0_4px_12px_rgba(1,1,112,0.25)] transition-opacity hover:opacity-90"
         >
           View tour

@@ -19,15 +19,15 @@ function FormField({
   className = "",
 }) {
   return (
-    <div className={`flex flex-col gap-3 ${className}`}>
-      <label className="text-base text-[#010138]">{label}</label>
-      <div className="border border-[#010170] rounded-2xl px-6 py-4 bg-white/20">
+    <div className={`flex flex-col gap-1.5 sm:gap-2 ${className}`}>
+      <label className="text-xs sm:text-sm text-[#010138]">{label}</label>
+      <div className="border border-[#010170] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 bg-white/20">
         <input
           type="text"
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-transparent text-sm text-[#5656a0] placeholder-[#5656a0] capitalize outline-none"
+          className="w-full bg-transparent text-xs sm:text-sm text-[#5656a0] placeholder-[#5656a0] capitalize outline-none"
         />
       </div>
     </div>
@@ -45,29 +45,29 @@ export default function PaymentFormPage() {
 
   return (
     <OnboardingPage>
-      <div className="max-w-[1440px] mx-auto px-8 py-12 flex flex-col gap-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex flex-col gap-6 sm:gap-8 lg:gap-10">
         <OnboardingStepBar step={3} />
 
-        <div className="text-center flex flex-col gap-5">
-          <p className="text-sm font-light tracking-[0.2em] text-[#010138] uppercase">
+        <div className="text-center flex flex-col gap-2 sm:gap-3">
+          <p className="text-[10px] sm:text-xs lg:text-sm font-light tracking-[0.2em] text-[#010138] uppercase">
             Step 3 of 3
           </p>
-          <h1 className="text-4xl font-semibold tracking-wide text-[#010138]">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-wide text-[#010138]">
             Add Payment Method
           </h1>
-          <p className="text-2xl text-[#353572]">
+          <p className="text-sm sm:text-base lg:text-lg text-[#353572]">
             Securely save a card so booking a trip is one tap away.
           </p>
         </div>
 
         {/* Card + form */}
-        <div className="flex flex-col items-center gap-10">
+        <div className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8">
           {/* Card preview */}
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-2 sm:gap-3">
             <CreditCard />
             {/* Placeholder add card link */}
             <button
-              className="flex items-center gap-2 h-12 px-12 rounded-2xl border border-[#010170] text-base font-medium text-[#010138] hover:bg-[#f4f4f8] transition-colors w-[400px] justify-center"
+              className="flex items-center gap-2 h-10 sm:h-11 px-6 sm:px-10 rounded-xl sm:rounded-2xl border border-[#010170] text-xs sm:text-sm font-medium text-[#010138] hover:bg-[#f4f4f8] transition-colors w-full max-w-sm justify-center"
               onClick={() => navigate("/onboarding/payment")}
             >
               ← Change card
@@ -75,7 +75,7 @@ export default function PaymentFormPage() {
           </div>
 
           {/* Form */}
-          <div className="w-full max-w-[700px] flex flex-col gap-8">
+          <div className="w-full max-w-lg flex flex-col gap-4 sm:gap-5 lg:gap-6">
             <FormField
               label="Name on card"
               placeholder="Sarah Abdo"
@@ -88,7 +88,7 @@ export default function PaymentFormPage() {
               value={cardNum}
               onChange={setCardNum}
             />
-            <div className="flex gap-6">
+            <div className="flex gap-3 sm:gap-4">
               <FormField
                 label="Expiry date"
                 placeholder="MM/YY"
@@ -101,7 +101,7 @@ export default function PaymentFormPage() {
                 placeholder="999"
                 value={cvv}
                 onChange={setCvv}
-                className="w-40"
+                className="w-28 sm:w-32"
               />
             </div>
 
@@ -110,7 +110,7 @@ export default function PaymentFormPage() {
               onClick={() => {
                 if (isValid) navigate("/onboarding/payment-done");
               }}
-              className="h-12 px-12 rounded-2xl text-base font-medium w-full transition-colors"
+              className="h-10 sm:h-11 px-8 sm:px-10 rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium w-full transition-colors"
               style={{
                 background: isValid
                   ? "linear-gradient(to right, #010170, #5656a0)"
@@ -125,9 +125,9 @@ export default function PaymentFormPage() {
         </div>
 
         {/* Security note */}
-        <div className="flex items-center justify-center gap-2 text-black">
-          <img src={lockIcon} alt="lock" className="w-5 h-5 object-contain" />
-          <span className="text-sm font-light">Your payment details are encrypted end-to-end.</span>
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-black">
+          <img src={lockIcon} alt="lock" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
+          <span className="text-[11px] sm:text-sm font-light">Your payment details are encrypted end-to-end.</span>
         </div>
       </div>
 

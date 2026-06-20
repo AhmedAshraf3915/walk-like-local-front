@@ -25,7 +25,8 @@ export const getRoleBasedVerificationPath = (role) => {
 		return "/guide";
 	}
 
-	return "/test";
+	return "/onboarding/profile";
+;
 };
 
 export const resolvePostAuthPath = ({ role, nextPath }) => {
