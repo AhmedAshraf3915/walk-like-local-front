@@ -1,4 +1,5 @@
-import { Clock, Users } from "lucide-react";
+import { useState } from "react";
+import { Clock, ImageIcon, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function StarIcon({ filled }) {
@@ -31,27 +32,47 @@ export default function TourCard({ tour }) {
   const {
     title,
     matchTag,
-    tags,
+    tags = [],
     guide,
     avatar,
     photo,
+    fallbackAvatar,
     rating,
     reviewCount,
     duration,
     groupType,
     price,
+    href = "/signup",
   } = tour;
+  const [imageFailed, setImageFailed] = useState(false);
+  const hasTourImage = Boolean(photo) && !imageFailed;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_24px_rgba(1,1,112,0.10)] transition-shadow hover:shadow-[0_12px_32px_rgba(1,1,112,0.16)]">
       {/* Photo */}
-      <div className="relative h-[220px] flex-shrink-0 overflow-hidden">
-        <img
-          src={photo}
-          alt={title}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
+      <div className="relative h-[220px] flex-shrink-0">
+        <div className="absolute inset-0 overflow-hidden">
+          {hasTourImage ? (
+            <>
+              <img
+                src={photo}
+                alt={title}
+                onError={() => setImageFailed(true)}
+                className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
+            </>
+          ) : (
+            <div className="grid h-full place-items-center bg-gradient-to-br from-[#ececf7] to-[#d9d9eb] text-center text-[#65638a]">
+              <div>
+                <ImageIcon className="mx-auto h-9 w-9" strokeWidth={1.5} />
+                <p className="mt-2 text-xs font-semibold">
+                  Tour image coming soon
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Badges */}
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
@@ -73,17 +94,26 @@ export default function TourCard({ tour }) {
         </div>
 
         {/* Guide strip */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-end bg-[rgba(204,204,226,0.78)] px-4 py-1.5 backdrop-blur-sm">
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-end bg-[rgba(204,204,226,0.78)] px-4 py-1.5 backdrop-blur-sm">
           <span className="text-[10px] font-medium text-[#010138]">
             Your guide: {guide} ✓
           </span>
         </div>
 
         {/* Avatar overlap */}
-        <div className="absolute -bottom-5 left-4 h-11 w-11 overflow-hidden rounded-full border-2 border-white shadow-md">
+        <div className="absolute -bottom-5 left-4 z-20 h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-white shadow-[0_4px_12px_rgba(1,1,56,0.24)]">
           <img
             src={avatar}
             alt={guide}
+            onError={(event) => {
+              if (
+                fallbackAvatar &&
+                !event.currentTarget.dataset.fallbackApplied
+              ) {
+                event.currentTarget.dataset.fallbackApplied = "true";
+                event.currentTarget.src = fallbackAvatar;
+              }
+            }}
             className="h-full w-full object-cover"
           />
         </div>
@@ -115,7 +145,7 @@ export default function TourCard({ tour }) {
         </div>
 
         <Link
-          to="/signup"
+          to={href}
           className="mt-auto flex items-center justify-center rounded-lg bg-gradient-to-r from-[#010170] to-[#5656A0] px-4 py-2.5 text-[11px] font-semibold text-white shadow-[0_4px_12px_rgba(1,1,112,0.25)] transition-opacity hover:opacity-90"
         >
           View tour

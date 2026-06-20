@@ -91,7 +91,7 @@ const ProfileStep = ({
           </button>
         </div>
         <p className="mt-1 text-[17px] text-[#33325b]">
-          Pick your interests to helps us match travelers to your style.
+          Pick your interests to help us match travelers to your style.
         </p>
 
         <div className="mt-5 flex flex-wrap gap-3">

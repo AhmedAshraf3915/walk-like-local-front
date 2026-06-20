@@ -16,14 +16,38 @@ const getErrorMessage = (error, fallbackMessage) => {
 	return fallbackMessage;
 };
 
-const withErrorMessage = async (request, fallbackMessage) => {
+const withErrorMessage = async (
+	request,
+	fallbackMessage,
+	transform = unwrapResponseData,
+) => {
 	try {
 		const response = await request();
-		return unwrapResponseData(response);
+		return transform(response);
 	} catch (error) {
 		throw new Error(getErrorMessage(error, fallbackMessage), { cause: error });
 	}
 };
+
+const unwrapToursPage = (response) => {
+	const responseBody = response?.data ?? {};
+	const data = responseBody?.data ?? responseBody;
+	const items = Array.isArray(data)
+		? data
+		: data?.tours ?? data?.items ?? data?.results ?? data?.docs ?? [];
+
+	return {
+		items,
+		pagination: data?.pagination ?? responseBody?.pagination ?? {},
+	};
+};
+
+const compactParams = (params) =>
+	Object.fromEntries(
+		Object.entries(params).filter(
+			([, value]) => value !== "" && value !== null && value !== undefined,
+		),
+	);
 
 const cloudinaryClient = axios.create({ timeout: 30000 });
 
@@ -61,6 +85,48 @@ const uploadImage = async (file) => {
 };
 
 export const toursApi = {
+	browseActiveTours: ({
+		page = 1,
+		limit = 12,
+		search = "",
+		destination = "",
+		groupType = "",
+		minPrice = "",
+		maxPrice = "",
+		sortBy = "createdAt",
+		sortOrder = "desc",
+	} = {}) =>
+		withErrorMessage(
+			() =>
+				apiClient.get("/tours", {
+					params: compactParams({
+						page,
+						limit,
+						search,
+						destination,
+						groupType,
+						minPrice,
+						maxPrice,
+						sortBy,
+						sortOrder,
+					}),
+					timeout: 60000,
+				}),
+			"Unable to load active tours.",
+			unwrapToursPage,
+		),
+
+	getMyTours: ({ page = 1, limit = 12 } = {}) =>
+		withErrorMessage(
+			() =>
+				apiClient.get("/tours/my-tours", {
+					params: { page, limit },
+					timeout: 60000,
+				}),
+			"Unable to load your tours.",
+			unwrapToursPage,
+		),
+
 	createTour: (payload) =>
 		withErrorMessage(() => apiClient.post("/tours", payload), "Unable to create tour."),
 

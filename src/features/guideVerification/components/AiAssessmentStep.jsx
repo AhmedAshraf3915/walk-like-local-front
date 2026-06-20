@@ -39,8 +39,9 @@ const AiAssessmentStep = ({
               <button
                 key={language}
                 type="button"
+                disabled={startingAiSession}
                 onClick={() => onLanguageToggle(language)}
-                className="rounded-full bg-[#afadd2] px-6 py-2 text-[18px] text-[#1c1b67]"
+                className="rounded-full bg-[#afadd2] px-6 py-2 text-[18px] text-[#1c1b67] disabled:cursor-wait disabled:opacity-60"
               >
                 {language}
                 {language === "Arabic" ? "" : " x"}
@@ -57,8 +58,9 @@ const AiAssessmentStep = ({
               <button
                 key={language}
                 type="button"
+                disabled={startingAiSession}
                 onClick={() => onLanguageToggle(language)}
-                className={`rounded-full border px-8 py-2 text-[16px] ${
+                className={`rounded-full border px-8 py-2 text-[16px] disabled:cursor-wait disabled:opacity-60 ${
                   active
                     ? "border-[#afadd2] bg-[#efeffa] text-[#2b2a63]"
                     : "border-[#b2b1d7] bg-white text-[#55548a]"
@@ -80,7 +82,7 @@ const AiAssessmentStep = ({
             }}
             className="inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white disabled:opacity-60"
           >
-            {startingAiSession ? "Starting..." : "Let&apos;s start"}{" "}
+            {startingAiSession ? "Starting..." : "Let's start"}{" "}
             <ArrowRight className="h-5 w-5" />
           </button>
         </div>

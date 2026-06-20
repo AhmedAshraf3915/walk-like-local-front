@@ -41,6 +41,17 @@ const getAssetFromStatus = (statusPayload, key) => {
 const getStatusPayload = (data) =>
 	data?.verification ?? data?.guideVerification ?? data ?? {};
 
+const toVerificationAssetPayload = (asset) => {
+	if (!asset?.secureUrl || !asset?.publicId) {
+		return null;
+	}
+
+	return {
+		secureUrl: asset.secureUrl,
+		publicId: asset.publicId,
+	};
+};
+
 /**
  * Manages all verification-related state: assets, verification status, file
  * input refs, upload handling, skip toggles, and verification submission.
@@ -69,6 +80,10 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 
 	const hasAllUploadedAssets = REQUIRED_ASSET_KEYS.every((key) =>
 		Boolean(assets[key]),
+	);
+
+	const hasSkippedRequiredAssets = REQUIRED_ASSET_KEYS.some(
+		(key) => !assets[key] && verificationSkips[key],
 	);
 
 	useEffect(() => {
@@ -121,6 +136,10 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 				...currentAssets,
 				[field]: { ...uploadedAsset, name: file.name },
 			}));
+			setVerificationSkips((currentSkips) => ({
+				...currentSkips,
+				[field]: false,
+			}));
 		} catch (error) {
 			setErrorMessage(error.message ?? "Upload failed.");
 		} finally {
@@ -147,7 +166,7 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 	};
 
 	const submitVerification = async () => {
-		if (!hasAllRequiredAssets) {
+		if (!hasAllUploadedAssets) {
 			setErrorMessage("Please upload all required files before continuing.");
 			return;
 		}
@@ -157,10 +176,10 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 
 		const payload = {
 			nationality: assets.nationality || "Egypt",
-			nationalId: assets.nationalId,
-			tourismLicense: assets.tourismLicense,
-			profilePhoto: assets.profilePhoto,
-			introductionVideo: assets.introductionVideo,
+			nationalId: toVerificationAssetPayload(assets.nationalId),
+			tourismLicense: toVerificationAssetPayload(assets.tourismLicense),
+			profilePhoto: toVerificationAssetPayload(assets.profilePhoto),
+			introductionVideo: toVerificationAssetPayload(assets.introductionVideo),
 		};
 
 		try {
@@ -187,6 +206,7 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 		loadingStatus,
 		hasAllRequiredAssets,
 		hasAllUploadedAssets,
+		hasSkippedRequiredAssets,
 		nationalIdInputRef,
 		licenseInputRef,
 		profilePhotoInputRef,

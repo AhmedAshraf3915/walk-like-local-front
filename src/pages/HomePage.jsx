@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -11,13 +12,17 @@ import TestimonialCard from "@/components/home/TestimonialCard.jsx";
 import Footer from "@/components/home/Footer.jsx";
 
 import {
-  TOURS,
   DESTINATIONS,
   FEATURES,
-  GUIDES,
   REVIEWS,
 } from "@/data/homeData.js";
 import { IMG } from "@/assets/images/landingPage/images.js";
+import { toursApi } from "@/features/tours/api/toursApi.js";
+import { guidesApi } from "@/features/guide/api/guidesApi.js";
+import {
+  mapActiveTours,
+  mapPublicGuides,
+} from "@/features/landingPage/utils/landingContentMappers.js";
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -44,20 +49,47 @@ function SectionHeader({ eyebrow, title, sub, actionLabel, actionHref = "#" }) {
         )}
       </div>
       {actionLabel && (
-        <a
-          href={actionHref}
+        <Link
+          to={actionHref}
           className="flex flex-shrink-0 items-center gap-1.5 text-[12px] font-medium text-[#353572] transition-opacity hover:opacity-70"
         >
           {actionLabel} <ArrowRight size={16} />
-        </a>
+        </Link>
       )}
+    </div>
+  );
+}
+
+function CardSkeletons() {
+  return (
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {[0, 1, 2].map((item) => (
+        <div
+          key={item}
+          className="h-[430px] animate-pulse rounded-2xl bg-[#eeeeF6]"
+        />
+      ))}
+    </div>
+  );
+}
+
+function ContentMessage({ children, tone = "empty" }) {
+  return (
+    <div
+      className={`rounded-2xl border px-5 py-8 text-center text-sm ${
+        tone === "error"
+          ? "border-[#efc2c2] bg-[#fff5f5] text-[#8f2929]"
+          : "border-[#e4e3f0] bg-[#f8f8fc] text-[#65638a]"
+      }`}
+    >
+      {children}
     </div>
   );
 }
 
 // ─── Section: AI Curated Tours ────────────────────────────────────────────────
 
-function ToursSection() {
+function ToursSection({ tours, isLoading, errorMessage }) {
   return (
     <section id="tours" className="bg-[#FDFDFF] px-4 py-12 sm:px-6 md:py-16">
       <div className="mx-auto max-w-6xl">
@@ -65,16 +97,24 @@ function ToursSection() {
           eyebrow="AI curated"
           title="Tailored For Your Travel Style."
           sub="Personalized using your interests and preferences."
-          actionLabel="Browse all tours"
-          actionHref="#tours"
+          actionLabel="View all tours"
+          actionHref="/tours"
         />
 
-        {/* Scrollable on mobile, 3-col grid on desktop */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {TOURS.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
-          ))}
-        </div>
+        {isLoading ? <CardSkeletons /> : null}
+        {!isLoading && errorMessage && tours.length === 0 ? (
+          <ContentMessage tone="error">{errorMessage}</ContentMessage>
+        ) : null}
+        {!isLoading && !errorMessage && tours.length === 0 ? (
+          <ContentMessage>No active tours are available yet.</ContentMessage>
+        ) : null}
+        {!isLoading && tours.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {tours.map((tour) => (
+              <TourCard key={tour.id} tour={tour} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -136,7 +176,7 @@ function WhyChooseUsSection() {
 
 // ─── Section: Guides ──────────────────────────────────────────────────────────
 
-function GuidesSection() {
+function GuidesSection({ guides, isLoading, errorMessage }) {
   return (
     <section id="guides" className="bg-[#FDFDFF] px-4 py-12 sm:px-6 md:py-16">
       <div className="mx-auto max-w-6xl">
@@ -148,11 +188,20 @@ function GuidesSection() {
           actionHref="#guides"
         />
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {GUIDES.map((guide) => (
-            <GuideCard key={guide.id} guide={guide} />
-          ))}
-        </div>
+        {isLoading ? <CardSkeletons /> : null}
+        {!isLoading && errorMessage && guides.length === 0 ? (
+          <ContentMessage tone="error">{errorMessage}</ContentMessage>
+        ) : null}
+        {!isLoading && !errorMessage && guides.length === 0 ? (
+          <ContentMessage>No public guide profiles are available yet.</ContentMessage>
+        ) : null}
+        {!isLoading && guides.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {guides.map((guide) => (
+              <GuideCard key={guide.id} guide={guide} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -260,14 +309,74 @@ function BecomeGuideSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const [content, setContent] = useState({
+    tours: [],
+    guides: [],
+    toursLoading: true,
+    guidesLoading: true,
+    toursError: "",
+    guidesError: "",
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadLandingContent = async () => {
+      const [toursResult, guidesResult] = await Promise.allSettled([
+        toursApi.browseActiveTours({ page: 1, limit: 3 }),
+        guidesApi.getPublicGuides({ page: 1, limit: 3 }),
+      ]);
+
+      if (!isMounted) return;
+
+      const guides =
+        guidesResult.status === "fulfilled"
+          ? mapPublicGuides(guidesResult.value).slice(0, 3)
+          : [];
+      const tours =
+        toursResult.status === "fulfilled"
+          ? mapActiveTours(toursResult.value, guides).slice(0, 3)
+          : [];
+
+      setContent({
+        tours,
+        guides,
+        toursLoading: false,
+        guidesLoading: false,
+        toursError:
+          toursResult.status === "rejected"
+            ? toursResult.reason?.message ?? "Unable to load active tours."
+            : "",
+        guidesError:
+          guidesResult.status === "rejected"
+            ? guidesResult.reason?.message ?? "Unable to load public guides."
+            : "",
+      });
+    };
+
+    void loadLandingContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="overflow-x-hidden bg-[#FDFDFF]">
       <Navbar />
       <HeroSection />
-      <ToursSection />
+      <ToursSection
+        tours={content.tours}
+        isLoading={content.toursLoading}
+        errorMessage={content.toursError}
+      />
       <DestinationsSection />
       <WhyChooseUsSection />
-      <GuidesSection />
+      <GuidesSection
+        guides={content.guides}
+        isLoading={content.guidesLoading}
+        errorMessage={content.guidesError}
+      />
       <HeritageSection />
       <ReviewsSection />
       <BecomeGuideSection />

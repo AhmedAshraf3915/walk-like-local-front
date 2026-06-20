@@ -9,9 +9,25 @@ const LANGUAGE_TO_CODE = {
 	German: "de",
 	Italian: "it",
 	Spanish: "es",
+	French: "fr",
 };
 
-const toLanguageCode = (language) => LANGUAGE_TO_CODE[language] ?? "";
+const SUPPORTED_LANGUAGE_CODES = new Set(Object.values(LANGUAGE_TO_CODE));
+
+const toLanguageCode = (language) => {
+	if (typeof language !== "string") {
+		return "";
+	}
+
+	const trimmedLanguage = language.trim();
+	const lowerLanguage = trimmedLanguage.toLowerCase();
+
+	if (SUPPORTED_LANGUAGE_CODES.has(lowerLanguage)) {
+		return lowerLanguage;
+	}
+
+	return LANGUAGE_TO_CODE[trimmedLanguage] ?? "";
+};
 
 const extractSessionId = (payload) =>
 	payload?.sessionId ??
@@ -92,9 +108,18 @@ export const useAiAssessment = ({ setErrorMessage }) => {
 	};
 
 	const startSession = async () => {
-		const languageCodes = selectedLanguages
-			.map(toLanguageCode)
-			.filter((value) => Boolean(value));
+		const languageCodes = [
+			...new Set(
+				selectedLanguages
+					.map(toLanguageCode)
+					.filter((value) => Boolean(value)),
+			),
+		];
+
+		if (languageCodes.length === 0) {
+			setErrorMessage("Select at least one supported language to start the test.");
+			return;
+		}
 
 		const preferredLanguage = languageCodes.find((code) => code !== "ar") || languageCodes[0] || "en";
 
@@ -102,6 +127,9 @@ export const useAiAssessment = ({ setErrorMessage }) => {
 		setErrorMessage("");
 
 		try {
+			// The language-test API only accepts languages already stored on the
+			// guide profile, so persist the selection before checking/starting it.
+			await guideVerificationApi.updateGuideLanguages({ languages: languageCodes });
 			await guideVerificationApi.getLanguageTestStatus(languageCodes);
 			const startResponse = await guideVerificationApi.startLanguageTest({
 				language: preferredLanguage,

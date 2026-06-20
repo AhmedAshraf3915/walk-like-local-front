@@ -35,7 +35,16 @@ function VerifiedBadge() {
 }
 
 export default function GuideCard({ guide }) {
-  const { name, city, languages, rating, reviewCount, photo } = guide;
+  const {
+    name,
+    city,
+    languages,
+    rating,
+    reviewCount,
+    photo,
+    fallbackPhoto,
+    href = "/signup",
+  } = guide;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_24px_rgba(1,1,112,0.10)] transition-shadow hover:shadow-[0_12px_32px_rgba(1,1,112,0.15)]">
@@ -44,6 +53,12 @@ export default function GuideCard({ guide }) {
         <img
           src={photo}
           alt={name}
+          onError={(event) => {
+            if (fallbackPhoto && !event.currentTarget.dataset.fallbackApplied) {
+              event.currentTarget.dataset.fallbackApplied = "true";
+              event.currentTarget.src = fallbackPhoto;
+            }
+          }}
           className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
         />
         <VerifiedBadge />
@@ -68,7 +83,7 @@ export default function GuideCard({ guide }) {
         </div>
 
         <Link
-          to="/signup"
+          to={href}
           className="mt-auto flex items-center justify-center rounded-lg border border-[#010170] px-4 py-2 text-[11px] font-semibold text-[#010138] shadow-[0_3px_8px_rgba(1,1,112,0.12)] transition-opacity hover:opacity-75"
         >
           View profile

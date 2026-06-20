@@ -22,7 +22,7 @@ export const getRoleBasedVerificationPath = (role) => {
 	}
 
 	if (normalizedRole === "guide") {
-		return "/guide-verification";
+		return "/guide";
 	}
 
 	return "/test";

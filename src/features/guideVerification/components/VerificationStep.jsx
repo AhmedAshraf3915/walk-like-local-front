@@ -67,7 +67,7 @@ const VerificationStep = ({
             uploadedAsset={assets.nationalId}
             skipped={verificationSkips.nationalId}
             busy={uploadingField === "nationalId"}
-            canSkip
+            canSkip={!assets.nationalId}
             onSkip={() => toggleVerificationSkip("nationalId")}
             onClick={() => openFilePicker("nationalId")}
           />
@@ -78,7 +78,7 @@ const VerificationStep = ({
             uploadedAsset={assets.tourismLicense}
             skipped={verificationSkips.tourismLicense}
             busy={uploadingField === "tourismLicense"}
-            canSkip
+            canSkip={!assets.tourismLicense}
             onSkip={() => toggleVerificationSkip("tourismLicense")}
             onClick={() => openFilePicker("tourismLicense")}
           />
@@ -100,7 +100,7 @@ const VerificationStep = ({
             uploadedAsset={assets.profilePhoto}
             skipped={verificationSkips.profilePhoto}
             busy={uploadingField === "profilePhoto"}
-            canSkip
+            canSkip={!assets.profilePhoto}
             onSkip={() => toggleVerificationSkip("profilePhoto")}
             onClick={() => openFilePicker("profilePhoto")}
           />
@@ -112,7 +112,7 @@ const VerificationStep = ({
             uploadedAsset={assets.introductionVideo}
             skipped={verificationSkips.introductionVideo}
             busy={uploadingField === "introductionVideo"}
-            canSkip
+            canSkip={!assets.introductionVideo}
             onSkip={() => toggleVerificationSkip("introductionVideo")}
             onClick={() => openFilePicker("introductionVideo")}
           />
@@ -184,10 +184,10 @@ const UploadCard = ({
       <p className="mt-3 text-sm text-[#161594]">
         {busy
           ? "Uploading..."
-          : skipped
-            ? "Skipped"
-            : uploadedAsset?.name
+          : uploadedAsset?.name
               ? `Uploaded: ${uploadedAsset.name}`
+              : skipped
+                ? "Skipped for now"
               : "Tap to upload"}
       </p>
       {canSkip ? (
@@ -228,10 +228,10 @@ const UploadCircleCard = ({
       <p className="mt-3 text-sm text-[#161594]">
         {busy
           ? "Uploading..."
-          : skipped
-            ? "Skipped"
-            : uploadedAsset?.name
+          : uploadedAsset?.name
               ? `Uploaded: ${uploadedAsset.name}`
+              : skipped
+                ? "Skipped for now"
               : "Tap to upload"}
       </p>
       {canSkip ? (

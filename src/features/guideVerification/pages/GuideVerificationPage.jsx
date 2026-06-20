@@ -11,12 +11,14 @@ import { useVerificationAssets } from "@/features/guideVerification/hooks/useVer
 import { useAiAssessment } from "@/features/guideVerification/hooks/useAiAssessment";
 import { useGuideProfile } from "@/features/guideVerification/hooks/useGuideProfile";
 import { usePaymentMethod } from "@/features/payment/hooks/usePaymentMethod";
+import useAuth from "@/contexts/useAuth";
 import VerificationStep from "@/features/guideVerification/components/VerificationStep";
 import AiAssessmentStep from "@/features/guideVerification/components/AiAssessmentStep";
 import ProfileStep from "@/features/guideVerification/components/ProfileStep";
 import Stepper from "@/features/guideVerification/components/Stepper";
 import PaymentMethodPage from "@/features/payment/components/PaymentMethodPage";
 import GuideVerificationFooter from "@/features/guideVerification/components/GuideVerificationFooter";
+import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 
 // Heading text shown above the step content area.
 const STEP_HEADINGS = {
@@ -58,6 +60,7 @@ const getContinueLabel = ({
 
 const GuideVerificationPage = () => {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const [step, setStep] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -74,6 +77,12 @@ const GuideVerificationPage = () => {
         verification.verificationStatus === "none" ||
         verification.verificationStatus === "rejected"
       ) {
+        if (verification.hasSkippedRequiredAssets) {
+          setStep(2);
+          setErrorMessage("");
+          return;
+        }
+
         await verification.submitVerification();
         return;
       }
@@ -100,9 +109,13 @@ const GuideVerificationPage = () => {
       }
 
       try {
-        await guideProfile.submitProfile({
+        const savedProfile = await guideProfile.submitProfile({
           selectedLanguages: aiAssessment.selectedLanguages,
         });
+
+        if (savedProfile) {
+          updateUser(savedProfile);
+        }
       } catch (error) {
         setErrorMessage(error.message ?? "Unable to save profile right now.");
         return;
@@ -123,7 +136,7 @@ const GuideVerificationPage = () => {
         setErrorMessage("");
         return;
       }
-      navigate("/guide/profile", { replace: true });
+      navigate("/guide", { replace: true });
     }
   };
 
@@ -146,7 +159,7 @@ const GuideVerificationPage = () => {
     }
 
     if (step === 4) {
-      navigate("/guide/profile", { replace: true });
+      navigate("/guide", { replace: true });
       return;
     }
 
@@ -181,7 +194,7 @@ const GuideVerificationPage = () => {
     (step === 1 &&
       (verification.verificationStatus === "none" ||
         verification.verificationStatus === "rejected") &&
-      !verification.hasAllUploadedAssets) ||
+      !verification.hasAllRequiredAssets) ||
     (step === 2 && !aiAssessment.aiTestCompleted) ||
     (step === 3 && !guideProfile.isProfileReady);
 
@@ -307,19 +320,10 @@ const GuideVerificationPage = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#f4f3f8] text-[#101041]">
-      <header className="border-b border-[#e1e0ef] bg-white shadow-[0_1px_12px_rgba(22,21,67,0.06)]">
-        <div className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-6 lg:px-10">
-          <p className="text-[34px] font-semibold tracking-wide">
-            Walk like a Local
-          </p>
-          <button
-            type="button"
-            className="rounded-full border border-[#c8c7db] bg-white px-5 py-2 text-sm text-[#2a2953] shadow-[0_2px_8px_rgba(20,19,70,0.05)]"
-          >
-            Joining as a local guide
-          </button>
-        </div>
-      </header>
+      <GuideNavbar
+        verified={verification.verificationStatus === "approved"}
+        profilePhoto={verification.assets.profilePhoto}
+      />
 
       <main className="max-w-350 mx-auto pb-40 pt-8 sm:px-6">
         <div className="mx-auto my-11 w-full max-w-[1200px]">

@@ -16,8 +16,11 @@ import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
 import TestPage from "../features/test/pages/TestPage.jsx";
 import GuideVerificationPage from "../features/guideVerification/pages/GuideVerificationPage";
 import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
+import GuideHomePage from "../features/guide/pages/GuideHomePage";
 import GuideProfilePage from "../features/guide/pages/GuideProfilePage";
 import TourCreationPage from "../features/tours/pages/TourCreationPage";
+import AllToursPage from "../features/tours/pages/AllToursPage";
+import { useGuideVerificationStatus } from "../features/guideVerification/hooks/useGuideVerificationStatus";
 
 import {
   ForgotPassword,
@@ -62,11 +65,48 @@ function RequireRole({ allowedRoles, children }) {
   return children;
 }
 
+function RequireVerifiedGuide({ children }) {
+  const { isAuthenticated, user, userRole } = useAuth();
+  const isGuide = normalizeRole(userRole) === "guide";
+  const { isVerified, isLoading } = useGuideVerificationStatus({
+    user,
+    enabled: isAuthenticated && isGuide,
+  });
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isGuide) {
+    return <Navigate to={getRoleBasedVerificationPath(userRole)} replace />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#FDFDFF] px-4 text-center text-[#010138]">
+        <div>
+          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-[#d9d8ec] border-t-[#010170]" />
+          <p className="mt-4 text-sm font-semibold">
+            Confirming guide verification...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isVerified) {
+    return <Navigate to="/guide-verification" replace />;
+  }
+
+  return children;
+}
+
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/tours" element={<AllToursPage />} />
         {/* <Route path="/" element={<RootRedirect />} /> */}
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/register" element={<Navigate to="/signup" replace />} />
@@ -85,6 +125,14 @@ function App() {
           element={<GuideVerificationRoute />}
         />
         <Route
+          path="/guide"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideHomePage />
+            </RequireRole>
+          }
+        />
+        <Route
           path="/guide/profile"
           element={
             <RequireRole allowedRoles={["guide"]}>
@@ -95,14 +143,10 @@ function App() {
         <Route
           path="/guide/tours/new"
           element={
-            <RequireRole allowedRoles={["guide"]}>
+            <RequireVerifiedGuide>
               <TourCreationPage />
-            </RequireRole>
+            </RequireVerifiedGuide>
           }
-        />
-        <Route
-          path="/guide"
-          element={<Navigate to="/guide/profile" replace />}
         />
         <Route
           path="/auth/google/callback"

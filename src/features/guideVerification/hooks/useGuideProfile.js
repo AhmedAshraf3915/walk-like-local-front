@@ -8,9 +8,25 @@ const LANGUAGE_TO_CODE = {
 	German: "de",
 	Italian: "it",
 	Spanish: "es",
+	French: "fr",
 };
 
-const toLanguageCode = (language) => LANGUAGE_TO_CODE[language] ?? "";
+const SUPPORTED_LANGUAGE_CODES = new Set(Object.values(LANGUAGE_TO_CODE));
+
+const toLanguageCode = (language) => {
+	if (typeof language !== "string") {
+		return "";
+	}
+
+	const trimmedLanguage = language.trim();
+	const lowerLanguage = trimmedLanguage.toLowerCase();
+
+	if (SUPPORTED_LANGUAGE_CODES.has(lowerLanguage)) {
+		return lowerLanguage;
+	}
+
+	return LANGUAGE_TO_CODE[trimmedLanguage] ?? "";
+};
 
 /**
  * Manages guide profile state: bio, years of experience, interests, and their
@@ -73,25 +89,28 @@ export const useGuideProfile = () => {
 
 			const profilePayload = {};
 
-			if (trimmedBio) {
+			if (!profileSkips.bio && trimmedBio) {
 				profilePayload.bio = trimmedBio;
 			}
 
-			if (profile.interests.length > 0) {
+			if (!profileSkips.interests && profile.interests.length > 0) {
 				profilePayload.interests = profile.interests;
 			}
 
-			if (profile.yearsOfExperience) {
+			if (!profileSkips.yearsOfExperience && profile.yearsOfExperience) {
 				profilePayload.experience = {
 					year: profile.yearsOfExperience,
 				};
 			}
 
-			if (Object.keys(profilePayload).length === 0) {
-				return;
+			if (Object.keys(profilePayload).length > 0) {
+				await guideVerificationApi.completeGuideProfile(profilePayload);
 			}
 
-			await guideVerificationApi.completeGuideProfile(profilePayload);
+			return {
+				...profilePayload,
+				...(languages.length > 0 ? { languages } : {}),
+			};
 		} finally {
 			setSubmittingProfile(false);
 		}

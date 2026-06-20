@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Bell, ChevronDown, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { IMG } from "@/assets/images/landingPage/images.js";
+import useAuth from "@/contexts/useAuth";
 
 const NAV_LINKS = [
   { label: "Explore", href: "#tours", hasDropdown: true },
@@ -11,6 +12,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   return (
     <nav className="relative z-50 bg-white shadow-[0_1px_12px_rgba(1,1,56,0.07)] border-b border-[#e8e7f2]">
@@ -54,18 +56,29 @@ export default function Navbar() {
             </span>
           </button>
 
+          {!isAuthenticated && (
+            <Link
+              to="/login"
+              className="hidden sm:inline-flex h-9 items-center justify-center rounded-full border border-[#d7d6e8] bg-white px-4 text-[12px] font-semibold text-[#010138] hover:bg-[#f7f7fb] transition-colors"
+            >
+              Sign in / Log in
+            </Link>
+          )}
+
           {/* Avatar */}
-          <Link
-            to="/signup"
-            aria-label="Profile"
-            className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-[#cccce2] bg-[#f4f4f8]"
-          >
-            <img
-              src={IMG.avatar}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          </Link>
+          {isAuthenticated && (
+            <Link
+              to="/signup"
+              aria-label="Profile"
+              className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-[#cccce2] bg-[#f4f4f8]"
+            >
+              <img
+                src={IMG.avatar}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            </Link>
+          )}
 
           {/* Hamburger */}
           <button
@@ -73,7 +86,7 @@ export default function Navbar() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((o) => !o)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e0dfee] bg-[#f7f7fb] hover:bg-[#eeeef8] transition-colors"
+            className="flex md:hidden h-9 w-9 items-center justify-center rounded-full border border-[#e0dfee] bg-[#f7f7fb] hover:bg-[#eeeef8] transition-colors"
           >
             {menuOpen ? (
               <X size={15} className="text-[#010138]" />
@@ -84,7 +97,7 @@ export default function Navbar() {
 
           {/* Mobile dropdown */}
           {menuOpen && (
-            <div className="absolute right-0 top-11 z-50 flex min-w-44 flex-col gap-0.5 rounded-xl border border-[#e4e3f0] bg-white p-2 shadow-xl">
+            <div className="absolute right-0 top-11 z-50 flex min-w-44 flex-col gap-0.5 rounded-xl border border-[#e4e3f0] bg-white p-2 shadow-xl md:hidden">
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.label}
@@ -96,11 +109,11 @@ export default function Navbar() {
                 </a>
               ))}
               <Link
-                to="/login"
-                className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors sm:hidden"
+                to={isAuthenticated ? "/signup" : "/login"}
+                className="rounded-lg px-3 py-2 text-[13px] font-semibold text-[#010138] hover:bg-[#f4f4f8] transition-colors"
                 onClick={() => setMenuOpen(false)}
               >
-                Log in
+                {isAuthenticated ? "Profile" : "Sign in / Log in"}
               </Link>
             </div>
           )}

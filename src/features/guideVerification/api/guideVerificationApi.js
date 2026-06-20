@@ -3,7 +3,21 @@ import { apiClient } from "@/services/apiClient";
 
 const unwrapResponseData = (response) => response?.data?.data ?? response?.data ?? null;
 
+const GUIDE_REQUEST_TIMEOUT_MS = 60000;
+const AI_REQUEST_TIMEOUT_MS = 120000;
+const IMAGE_UPLOAD_TIMEOUT_MS = 90000;
+const MEDIA_UPLOAD_TIMEOUT_MS = 180000;
+
+const isTimeoutError = (error) =>
+	error?.code === "ECONNABORTED" ||
+	error?.code === "ETIMEDOUT" ||
+	/timeout.*exceeded|timed out/i.test(String(error?.message ?? ""));
+
 const getErrorMessage = (error, fallbackMessage) => {
+	if (isTimeoutError(error)) {
+		return `${fallbackMessage} The request took too long. Please check your connection and try again.`;
+	}
+
 	const responseMessage =
 		error?.response?.data?.message ??
 		error?.response?.data?.error ??
@@ -25,7 +39,7 @@ const withErrorMessage = async (request, fallbackMessage) => {
 	}
 };
 
-const cloudinaryClient = axios.create({ timeout: 30000 });
+const cloudinaryClient = axios.create();
 
 const toCloudinaryAsset = (responseData) => ({
 	secureUrl: responseData?.secure_url ?? "",
@@ -50,6 +64,10 @@ const uploadToCloudinary = async ({ file, resourceType, folder }) => {
 	return withErrorMessage(
 		async () => {
 			const response = await cloudinaryClient.post(endpoint, formData, {
+				timeout:
+					resourceType === "image"
+						? IMAGE_UPLOAD_TIMEOUT_MS
+						: MEDIA_UPLOAD_TIMEOUT_MS,
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},
@@ -64,7 +82,10 @@ const uploadToCloudinary = async ({ file, resourceType, folder }) => {
 export const guideVerificationApi = {
 	getVerificationStatus: () =>
 		withErrorMessage(
-			() => apiClient.get("/guides/verification-status"),
+			() =>
+				apiClient.get("/guides/verification-status", {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to get verification status.",
 		),
 
@@ -73,67 +94,100 @@ export const guideVerificationApi = {
 			() =>
 				apiClient.get("/guides/language-test/status", {
 					params: languages.length > 0 ? { languages: languages.join(",") } : {},
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
 				}),
 			"Unable to get language test status.",
 		),
 
 	startLanguageTest: (payload) =>
 		withErrorMessage(
-			() => apiClient.post("/guides/language-test/start", payload),
+			() =>
+				apiClient.post("/guides/language-test/start", payload, {
+					timeout: AI_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to start language test.",
 		),
 
 	getLanguageTestSession: (sessionId) =>
 		withErrorMessage(
-			() => apiClient.get(`/guides/language-test/${sessionId}`),
+			() =>
+				apiClient.get(`/guides/language-test/${sessionId}`, {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to get language test session.",
 		),
 
 	submitLanguageTest: (sessionId, payload) =>
 		withErrorMessage(
-			() => apiClient.post(`/guides/language-test/${sessionId}/submit`, payload),
+			() =>
+				apiClient.post(`/guides/language-test/${sessionId}/submit`, payload, {
+					timeout: AI_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to submit language test.",
 		),
 
 	reportLanguageTestIntegrityEvents: (sessionId, payload) =>
 		withErrorMessage(
-			() => apiClient.post(`/guides/language-test/${sessionId}/integrity-events`, payload),
+			() =>
+				apiClient.post(
+					`/guides/language-test/${sessionId}/integrity-events`,
+					payload,
+					{ timeout: GUIDE_REQUEST_TIMEOUT_MS },
+				),
 			"Unable to report language test integrity events.",
 		),
 
 	getLanguageTestHistory: () =>
 		withErrorMessage(
-			() => apiClient.get("/guides/language-test/history"),
+			() =>
+				apiClient.get("/guides/language-test/history", {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to get language test history.",
 		),
 
 	submitVerification: (payload) =>
 		withErrorMessage(
-			() => apiClient.post("/guides/verification", payload),
+			() =>
+				apiClient.post("/guides/verification", payload, {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to submit verification documents.",
 		),
 
 	resubmitVerification: (payload) =>
 		withErrorMessage(
-			() => apiClient.patch("/guides/verification/resubmit", payload),
+			() =>
+				apiClient.patch("/guides/verification/resubmit", payload, {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to resubmit verification documents.",
 		),
 
 	updateGuideLanguages: (payload) =>
 		withErrorMessage(
-			() => apiClient.put("/guides/profile/languages", payload),
+			() =>
+				apiClient.put("/guides/profile/languages", payload, {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to save guide languages.",
 		),
 
 	completeGuideProfile: (payload) =>
 		withErrorMessage(
-			() => apiClient.patch("/guides/profile", payload),
+			() =>
+				apiClient.patch("/guides/profile", payload, {
+					timeout: GUIDE_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to complete guide profile.",
 		),
 
 	submitAiLanguageTest: (payload) =>
 		withErrorMessage(
-			() => apiClient.post("/guides/ai-language-test", payload),
+			() =>
+				apiClient.post("/guides/ai-language-test", payload, {
+					timeout: AI_REQUEST_TIMEOUT_MS,
+				}),
 			"Unable to submit AI language test.",
 		),
 

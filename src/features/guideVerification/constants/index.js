@@ -22,7 +22,7 @@ export const INTEREST_OPTIONS = [
 	"Sun rise",
 ];
 
-export const LANGUAGE_OPTIONS = ["Arabic", "English", "German", "Italian", "Spanish"];
+export const LANGUAGE_OPTIONS = ["Arabic", "English", "German", "Italian", "Spanish", "French"];
 
 export const AI_TEST_QUESTIONS = [
 	{

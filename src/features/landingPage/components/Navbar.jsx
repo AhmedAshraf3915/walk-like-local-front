@@ -2,9 +2,11 @@ import { Bell, ChevronDown, Menu, X } from "lucide-react";
 import { IMG } from "../../../assets/images/landingPage/images.js";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import useAuth from "@/contexts/useAuth";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   return (
     <nav
@@ -65,28 +67,44 @@ export default function Navbar() {
             </span>
           </button>
 
+          {!isAuthenticated && (
+            <Link
+              to="/login"
+              className="hidden sm:inline-flex h-9 items-center justify-center rounded-full px-4 text-xs font-semibold text-[#010138] transition-colors hover:bg-[#f0effa]"
+              style={{
+                border: "1px solid rgba(204,204,226,0.7)",
+                background: "#fff",
+              }}
+            >
+              Sign in / Log in
+            </Link>
+          )}
+
           {/* Profile avatar */}
-          <Link
-            to="/signup"
-            aria-label="Profile"
-            className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2"
-            style={{ borderColor: "#CCCCE2", background: "#F4F4F8" }}
-          >
-            <img
-              src={IMG.avatar}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          </Link>
+          {isAuthenticated && (
+            <Link
+              to="/signup"
+              aria-label="Profile"
+              className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2"
+              style={{ borderColor: "#CCCCE2", background: "#F4F4F8" }}
+            >
+              <img
+                src={IMG.avatar}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            </Link>
+          )}
 
           {/* Hamburger */}
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#f0effa]"
+            className="flex md:hidden h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#f0effa]"
             style={{ border: "1px solid rgba(204,204,226,0.55)" }}
             aria-label="Menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
+            aria-controls="mobile-nav-dropdown"
           >
             {menuOpen ? (
               <X size={15} color="#010138" />
@@ -97,7 +115,8 @@ export default function Navbar() {
 
           {menuOpen && (
             <div
-              className="absolute right-0 top-11 flex min-w-44 flex-col gap-1 rounded-xl p-2 shadow-xl"
+              id="mobile-nav-dropdown"
+              className="absolute right-0 top-11 flex min-w-44 flex-col gap-1 rounded-xl p-2 shadow-xl md:hidden"
               style={{
                 background: "#fff",
                 border: "1px solid rgba(204,204,226,0.75)",
@@ -126,11 +145,11 @@ export default function Navbar() {
                 Guides
               </a>
               <Link
-                to="/signup"
+                to={isAuthenticated ? "/signup" : "/login"}
                 className="rounded-lg px-3 py-2 text-xs font-semibold text-[#010138] hover:bg-[#F4F4F8]"
                 onClick={() => setMenuOpen(false)}
               >
-                Sign up / Log in
+                {isAuthenticated ? "Profile" : "Sign in / Log in"}
               </Link>
             </div>
           )}
