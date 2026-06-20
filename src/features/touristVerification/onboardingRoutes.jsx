@@ -1,29 +1,19 @@
 /**
  * Onboarding Routes
-
  */
 
-// import {
-//   ProfileDetailsPage,
-//   VerificationPage,
-//   VerificationDonePage,
-//   PaymentMethodPage,
-//   PaymentFormPage,
-//   PaymentDonePage,
-// } from "./index.js";
-
-
-import ProfileDetailsPage  from "./pages/ProfileDetailsPage";
-import  VerificationPage  from "./pages/VerificationPage";
-import  VerificationDonePage  from "./pages/VerificationDonePage";
-import  PaymentMethodPage  from "./pages/PaymentMethodPage";
-import  PaymentFormPage  from "./pages/PaymentFormPage";
-import  PaymentDonePage  from "./pages/PaymentDonePage";
-export { OnboardingNavbar, OnboardingStepBar, OnboardingFooter, OnboardingPage } from "./layouts/OnboardingLayout";
-
-
+import ProfileDetailsPage from "./pages/ProfileDetailsPage";
+import VerificationPage from "./pages/VerificationPage";
+import VerificationDonePage from "./pages/VerificationDonePage";
+import PaymentMethodPage from "./pages/PaymentMethodPage";
+import PaymentFormPage from "./pages/PaymentFormPage";
+import PaymentDonePage from "./pages/PaymentDonePage";
 
 import { Routes, Route } from "react-router-dom";
+import { OnboardingNavbar, OnboardingStepBar, OnboardingFooter, OnboardingPage } from "./layouts/OnboardingLayout";
+
+// Re-export for use in other files
+export { OnboardingNavbar, OnboardingStepBar, OnboardingFooter, OnboardingPage };
 
 export function TouristRoutes() {
   return (
@@ -37,4 +27,3 @@ export function TouristRoutes() {
     </Routes>
   );
 }
-

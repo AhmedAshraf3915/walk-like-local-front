@@ -1,36 +1,38 @@
 import { Link } from "react-router-dom";
 
-// ── Design tokens ────────────────────────────────────────────
-// maincolor:   #010170  (deep navy)
-// maintaxt:    #010138  (near-black navy)
-// mediumfont:  #353572  (medium navy)
-// lightblue:   #cccce2  (muted lavender)
-// lighttext:   #aaaacf  (light purple-grey)
-// secondarycolor: #edc84c (gold)
-// darkgold:    #87722b
-// background:  #fdfdff
-// mediabackground: #f4f4f8
+import { IMG } from "@/assets/images/landingPage/images.js";
+import { ICONS } from "@/assets/images/touristVerification/images.js";
+
+
 
 // 
 // Navbar
 // 
-const localGuideIcon = "https://www.figma.com/api/mcp/asset/d0664280-0d87-49d3-bb42-59b730240e64";
+
+const localGuideIcon = ICONS.localGuideIcon;
+const checkIcon = ICONS.checkGoldIcon;
+const goldLine = ICONS.goldLine;
+const greyLine = ICONS.greyLine;
+const leftArrowIcon = ICONS.leftArrowIcon;
+const rightArrowIcon = ICONS.rightArrowIcon;
+
 
 export function OnboardingNavbar() {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[rgba(1,1,112,0.25)] shadow-[0_8px_24px_rgba(1,1,112,0.1)]">
       <div className="max-w-[1728px] mx-auto px-4 sm:px-6 lg:px-10 h-14 sm:h-16 flex items-center justify-between">
         {/* Logo */}
-        <span
-          className="text-lg sm:text-xl lg:text-2xl font-['EB_Garamond',serif] tracking-widest"
-          style={{
-            background: "linear-gradient(to right, #010138, #87722b)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
+        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
+          <img
+            src={IMG.WLLLogo}
+            alt="Walk Like A Local"
+            className="h-7 w-7 [filter:brightness(0)_saturate(100%)_invert(9%)_sepia(68%)_saturate(4043%)_hue-rotate(239deg)_brightness(79%)_contrast(111%)]"
+          />
+          <span className="">
           Walk like a Local
         </span>
+        </Link>
+
         {/* Role badge */}
         <div className="flex items-center gap-1.5 sm:gap-2 bg-[#f4f4f8] border border-[#aaaacf] rounded-full px-3 sm:px-5 py-1.5 sm:py-2 text-[11px] sm:text-sm text-[#010170] font-['Inter',sans-serif]">
           <img src={localGuideIcon} alt="" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
@@ -45,7 +47,6 @@ export function OnboardingNavbar() {
 // Step indicator
 // ─────────────────────────────────────────────────────────────
 
-const checkIcon = "https://www.figma.com/api/mcp/asset/f3438db5-e057-4add-8252-e16fb804f178";
 
 function StepNode({
   number,
@@ -83,8 +84,7 @@ function StepNode({
   );
 }
 
-const goldLine = "https://www.figma.com/api/mcp/asset/cadbc38a-4da0-43cc-bb06-90e2f5c98b48";
-const greyLine = "https://www.figma.com/api/mcp/asset/0f0d0688-ddc8-4a98-89d2-47cbf2b8619c";
+
 
 function StepConnector({ gold }) {
   return (
@@ -120,8 +120,7 @@ const statuses =
 // ─────────────────────────────────────────────────────────────
 // Bottom nav bar
 // ─────────────────────────────────────────────────────────────
-const leftArrowIcon = "https://www.figma.com/api/mcp/asset/9f189207-f234-49c4-b2c1-c6e4feb76c99";
-const rightArrowIcon = "https://www.figma.com/api/mcp/asset/e43372b7-bf7b-4011-a5dd-3565c059b826";
+
 
 
 export function OnboardingFooter({

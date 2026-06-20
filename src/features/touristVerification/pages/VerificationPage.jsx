@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   OnboardingPage,
@@ -8,38 +8,57 @@ import {
 import { touristApi } from "../api/touristApi";
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
 
-
-const uploadIcon   = ICONS.uploadIcon;
+const uploadIcon = ICONS.uploadIcon;
 const checkGoldIcon = ICONS.checkGoldIcon;
 const verifiedIcon = ICONS.verifiedIcon;
-const lockIcon     = ICONS.lockIcon;
+const lockIcon = ICONS.lockIcon;
 
 export default function VerificationPage() {
-  const navigate  = useNavigate();
-  const inputRef  = useRef(null);
+  const navigate = useNavigate();
+  const inputRef = useRef(null);
 
-  const [selectedFile, setSelectedFile] = useState(null);  // File object
-  const [uploading, setUploading]        = useState(false);
-  const [uploadError, setUploadError]    = useState(null);
-  const [submitted, setSubmitted]        = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
-  // ── File chosen 
+  // ── Check verification status on mount ──
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const status = await touristApi.getVerificationStatus();
+        setVerificationStatus(status);
+        
+        // If already verified or pending, redirect to appropriate page
+        if (status === "approved") {
+          navigate("/onboarding/payment");
+        } else if (status === "pending") {
+          // Show pending state or redirect to verification-done
+          navigate("/onboarding/verification-done");
+        }
+      } catch (error) {
+        console.error("Failed to get verification status:", error);
+      } finally {
+        setLoadingStatus(false);
+      }
+    };
+    checkStatus();
+  }, [navigate]);
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
     setUploadError(null);
-    setSubmitted(false);
   };
 
-  // ── Submit passport to backend 
   const handleSubmit = async () => {
     if (!selectedFile) return;
     setUploading(true);
     setUploadError(null);
     try {
       await touristApi.submitPassport(selectedFile);
-      setSubmitted(true);
       navigate("/onboarding/verification-done");
     } catch (err) {
       setUploadError(
@@ -52,13 +71,21 @@ export default function VerificationPage() {
 
   const fileReady = Boolean(selectedFile) && !uploading;
 
+  if (loadingStatus) {
+    return (
+      <OnboardingPage>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-12 h-12 border-4 border-[#010170] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </OnboardingPage>
+    );
+  }
+
   return (
     <OnboardingPage>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex flex-col gap-6 sm:gap-8 lg:gap-10">
-        {/* Step bar */}
         <OnboardingStepBar step={2} />
 
-        {/* Hero copy */}
         <div className="text-center flex flex-col gap-2 sm:gap-3">
           <p className="text-[10px] sm:text-xs lg:text-sm font-light tracking-[0.2em] text-[#010138] uppercase">
             Step 2 of 3
@@ -71,10 +98,18 @@ export default function VerificationPage() {
           </p>
         </div>
 
+        {/* عرض حالة التحقق الحالية إذا كانت مرفوضة */}
+        {verificationStatus === "rejected" && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+            <p className="text-red-600 font-medium">
+              Your verification was rejected. Please upload a new document.
+            </p>
+          </div>
+        )}
+
         {/* Upload card */}
         <div className="bg-white border border-[#353572] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
-
             {/* Upload zone */}
             <div
               className={`flex-1 w-full min-w-[240px] bg-[#f4f4f8] rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-3 sm:gap-4 py-8 sm:py-10 lg:py-12 cursor-pointer transition-colors ${
@@ -85,13 +120,11 @@ export default function VerificationPage() {
               onClick={() => !uploading && inputRef.current?.click()}
             >
               {uploading ? (
-                /* Uploading spinner */
                 <>
                   <div className="w-10 h-10 sm:w-12 sm:h-12 border-3 sm:border-4 border-[#010170] border-t-transparent rounded-full animate-spin" />
                   <p className="text-sm sm:text-base text-[#353572] animate-pulse">Uploading…</p>
                 </>
               ) : selectedFile ? (
-                /* File chosen — show gold check + filename */
                 <>
                   <div
                     className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center"
@@ -101,7 +134,6 @@ export default function VerificationPage() {
                   </div>
                   <div className="text-center px-3">
                     <p className="text-sm sm:text-base text-[#353572]">Document ready</p>
-                    {/* File name */}
                     <p className="text-xs sm:text-sm font-medium text-[#010170] mt-1 break-all">
                       {selectedFile.name}
                     </p>
@@ -111,11 +143,12 @@ export default function VerificationPage() {
                   </div>
                 </>
               ) : (
-                /* Empty state */
                 <>
                   <img src={uploadIcon} alt="upload" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
                   <div className="text-center">
-                    <p className="text-sm sm:text-base text-[#353572]">Upload ID or passport</p>
+                    <p className="text-sm sm:text-base text-[#353572]">
+                      {verificationStatus === "rejected" ? "Upload new ID or passport" : "Upload ID or passport"}
+                    </p>
                     <p className="text-xs text-[#aaaacf] mt-1">JPG, PNG or PDF · max 10 MB</p>
                   </div>
                 </>
@@ -141,19 +174,21 @@ export default function VerificationPage() {
               <div>
                 <p className="text-sm sm:text-base lg:text-lg font-medium text-[#010138]">Verified Tourist Badge</p>
                 <p className="text-xs sm:text-sm text-[#353572] mt-1">
-                  Unlocked once your document is reviewed.
+                  {verificationStatus === "pending" 
+                    ? "Your document is being reviewed." 
+                    : verificationStatus === "rejected"
+                    ? "Please resubmit your document."
+                    : "Unlocked once your document is reviewed."}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Error */}
           {uploadError && (
             <p className="mt-4 text-center text-xs sm:text-sm text-red-500">{uploadError}</p>
           )}
 
-          {/* Submit button — shown only when file is chosen */}
-          {selectedFile && !submitted && (
+          {selectedFile && (
             <div className="mt-4 sm:mt-6 flex justify-center">
               <button
                 onClick={handleSubmit}
@@ -163,7 +198,7 @@ export default function VerificationPage() {
                   background: "linear-gradient(to right, #010170, #5656a0)",
                 }}
               >
-                {uploading ? "Submitting…" : "Submit for Verification"}
+                {verificationStatus === "rejected" ? "Resubmit for Verification" : "Submit for Verification"}
               </button>
             </div>
           )}

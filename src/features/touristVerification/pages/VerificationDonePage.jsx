@@ -1,18 +1,53 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   OnboardingPage,
   OnboardingStepBar,
   OnboardingFooter,
 } from "../layouts/OnboardingLayout";
+import { touristApi } from "../api/touristApi";
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
 
-
 const checkGoldIcon = ICONS.checkGoldIcon;
-const verifiedIcon  = ICONS.verifiedIcon;
-const lockIcon      = ICONS.lockIcon;
+const verifiedIcon = ICONS.verifiedIcon;
+const lockIcon = ICONS.lockIcon;
 
 export default function VerificationDonePage() {
   const navigate = useNavigate();
+  const [status, setStatus] = useState("pending");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const verificationStatus = await touristApi.getVerificationStatus();
+        setStatus(verificationStatus);
+        
+        // If approved, allow continue to payment
+        // If rejected, redirect back to verification page
+        if (verificationStatus === "approved") {
+          // Navigate to payment after a short delay or automatically
+        } else if (verificationStatus === "rejected") {
+          navigate("/onboarding/verification");
+        }
+      } catch (error) {
+        console.error("Failed to get verification status:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkStatus();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <OnboardingPage>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-12 h-12 border-4 border-[#010170] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </OnboardingPage>
+    );
+  }
 
   return (
     <OnboardingPage>
@@ -31,12 +66,9 @@ export default function VerificationDonePage() {
           </p>
         </div>
 
-        {/* Upload card — file selected state */}
         <div className="bg-white border border-[#353572] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
-            {/* Upload zone — uploaded state */}
             <div className="flex-1 w-full min-w-[240px] bg-[#f4f4f8] border-3 sm:border-4 border-dashed border-[#010170] rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-3 sm:gap-4 py-8 sm:py-10 lg:py-12">
-              {/* Gold check circle */}
               <div
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center"
                 style={{ background: "linear-gradient(to bottom, #edc84c, #87722b)" }}
@@ -44,12 +76,17 @@ export default function VerificationDonePage() {
                 <img src={checkGoldIcon} alt="uploaded" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
               </div>
               <div className="text-center">
-                <p className="text-sm sm:text-base text-[#353572]">Upload ID or passport</p>
-                <p className="text-xs text-[#aaaacf] mt-1">MyID.JPG</p>
+                <p className="text-sm sm:text-base text-[#353572]">
+                  {status === "pending" ? "Document submitted for review" : "Document verified"}
+                </p>
+                <p className="text-xs text-[#aaaacf] mt-1">
+                  {status === "pending" 
+                    ? "Your passport is being reviewed. This usually takes 24-48 hours." 
+                    : "Your identity has been verified successfully!"}
+                </p>
               </div>
             </div>
 
-            {/* Badge preview */}
             <div className="flex flex-row lg:flex-col items-center gap-3 sm:gap-4 lg:gap-5 text-center shrink-0">
               <div
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center"
@@ -60,7 +97,9 @@ export default function VerificationDonePage() {
               <div>
                 <p className="text-sm sm:text-base lg:text-lg font-medium text-[#010138]">Verified Tourist Badge</p>
                 <p className="text-xs sm:text-sm text-[#353572] mt-1">
-                  Unlocked once your document is reviewed.
+                  {status === "pending" 
+                    ? "Your badge will be unlocked once approved." 
+                    : "Your badge is active!"}
                 </p>
               </div>
             </div>
@@ -77,11 +116,11 @@ export default function VerificationDonePage() {
 
       <OnboardingFooter
         backTo="/onboarding/verification"
-        continueTo="/onboarding/payment"
-        continueLabel="Continue"
-        continueEnabled
-        skipLabel="Skip for now"
-        onSkip={() => navigate("/onboarding/payment")}
+        continueTo={status === "pending" ? null : "/onboarding/payment"}
+        continueLabel={status === "pending" ? "Wait for Review" : "Continue"}
+        continueEnabled={status !== "pending"}
+        skipLabel={status === "pending" ? "Continue anyway" : null}
+        onSkip={status === "pending" ? () => navigate("/onboarding/payment") : null}
       />
     </OnboardingPage>
   );

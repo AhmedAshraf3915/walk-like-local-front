@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Navbar from "@/components/home/Navbar.jsx";
 import AccountTabs from '../components/AccountTabs'
 import CancelModal from '../components/CancelModal'
+import { getMyBookings, cancelBooking } from '../services/Booking.js'
 import {
   Hourglass,
   Calendar,
@@ -13,62 +14,8 @@ import {
   Gift,
   QrCode,
   MessageCircle,
+  Loader2,
 } from 'lucide-react'
-
-const upcoming = [
-  {
-    id: 1,
-    title: 'Coptic Cairo Heritage Walk',
-    guide: 'Nour Hassan',
-    city: 'Cairo',
-    date: 'Sat, Jun 21',
-    time: '09:00',
-    daysToGo: '7 days to go',
-    price: '$30',
-    withinRefundWindow: true,
-    isToday: true,
-    image:
-      'https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=600&h=450&fit=crop',
-  },
-  {
-    id: 2,
-    title: 'Khan El-Khalili Night Bites',
-    guide: 'Nour Hassan',
-    city: 'Cairo',
-    date: 'Wed, Jun 25',
-    time: '09:00',
-    daysToGo: '13 days to go',
-    price: '$56',
-    withinRefundWindow: false,
-    isToday: false,
-  },
-]
-
-const past = [
-  { id: 1, title: 'Coptic Cairo Heritage Walk', guide: 'Nour Hassan', city: 'Cairo', date: 'Sat, Jun 21', price: '$30' },
-  { id: 2, title: 'Coptic Cairo Heritage Walk', guide: 'Nour Hassan', city: 'Cairo', date: 'Sat, Jun 21', price: '$30' },
-]
-
-const cancelled = [
-  {
-    id: 1,
-    title: 'Coptic Cairo Heritage Walk',
-    guide: 'Nour Hassan',
-    city: 'Cairo',
-    date: 'Sat, Jun 21',
-    reason: 'Guide cancelled',
-    credit: '+$70',
-  },
-  {
-    id: 2,
-    title: 'Coptic Cairo Heritage Walk',
-    guide: 'Nour Hassan',
-    city: 'Cairo',
-    date: 'Sat, Jun 21',
-    reason: 'Tourist cancelled',
-    credit: '+$70',
-  },
-]
 
 function Pill({ icon: Icon, label }) {
   return (
@@ -79,17 +26,49 @@ function Pill({ icon: Icon, label }) {
   )
 }
 
+// Maps a raw booking object from the API into the shape the UI cards expect.
+function normalizeBooking(b) {
+  const tour = b.tour || b.tourId || {}
+  const slot = b.slot || b.slotId || {}
+  const startDate = slot.date || slot.startDate || b.date
+  const startTime = slot.time || slot.startTime || ''
+
+  const daysToGo = startDate
+    ? Math.max(0, Math.ceil((new Date(startDate) - new Date()) / (1000 * 60 * 60 * 24)))
+    : null
+
+  return {
+    id: b._id || b.id,
+    raw: b,
+    title: tour.title || tour.name || b.title || 'Tour',
+    guide: tour.guideName || b.guideName || tour.guide?.fullName || '',
+    city: tour.city || tour.location || '',
+    date: startDate ? new Date(startDate).toDateString() : '',
+    time: startTime,
+    daysToGo: daysToGo !== null ? `${daysToGo} days to go` : '',
+    isToday: daysToGo === 0,
+    price: b.totalPrice ? `$${b.totalPrice}` : b.pricing?.total ? `$${b.pricing.total}` : '',
+    status: (b.status || '').toLowerCase(),
+    withinRefundWindow: daysToGo === null ? false : daysToGo * 24 > 24,
+    image: tour.coverImage || tour.images?.[0] || null,
+    reason: b.cancellation?.reason || b.cancelReason || '',
+    credit: b.compensationCoupon ? `+${b.compensationCoupon.discountPercent}% coupon` : '',
+  }
+}
+
 function TodayCard({ booking }) {
   return (
     <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[8px_8px_24px_0px_rgba(1,1,112,0.15)] px-8 md:px-12 py-10 w-full">
       <div className="flex flex-col gap-8">
         <div className="flex flex-wrap gap-10 items-start justify-between">
           <div className="flex flex-wrap gap-10">
-            <img
-              src={booking.image}
-              alt={booking.title}
-              className="w-[314px] h-[231px] object-cover rounded-2xl shrink-0"
-            />
+            {booking.image && (
+              <img
+                src={booking.image}
+                alt={booking.title}
+                className="w-[314px] h-[231px] object-cover rounded-2xl shrink-0"
+              />
+            )}
             <div className="flex flex-col gap-10">
               <p className="text-[var(--secondarycolor)] font-semibold tracking-[1.4px] uppercase text-lg">Confirmed</p>
               <div className="flex flex-col gap-4">
@@ -123,7 +102,6 @@ function TodayCard({ booking }) {
 }
 
 function UpcomingCard({ booking, onCancel }) {
-  // "near-term" bookings (not today, but with days-to-go) get a Message guide button too
   return (
     <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[8px_8px_24px_0px_rgba(1,1,112,0.15)] px-8 md:px-12 py-8 flex-1 min-w-[320px]">
       <div className="flex flex-col gap-10">
@@ -217,15 +195,17 @@ function CancelledCard({ booking }) {
 
         <div className="flex flex-wrap gap-4">
           <Pill icon={Calendar} label={booking.date} />
-          <Pill icon={XIcon} label={booking.reason} />
+          <Pill icon={XIcon} label={booking.reason || 'Cancelled'} />
         </div>
 
         <hr className="border-[var(--lighttext)]" />
 
-        <div className="bg-[rgba(237,200,76,0.05)] border border-[var(--lightgold)] rounded-2xl px-8 py-3 flex items-center gap-4">
-          <Gift className="size-6 text-[var(--maincolor)]" />
-          <p className="text-[var(--maincolor)] text-lg">Wallet credit {booking.credit}</p>
-        </div>
+        {booking.credit && (
+          <div className="bg-[rgba(237,200,76,0.05)] border border-[var(--lightgold)] rounded-2xl px-8 py-3 flex items-center gap-4">
+            <Gift className="size-6 text-[var(--maincolor)]" />
+            <p className="text-[var(--maincolor)] text-lg">{booking.credit}</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -234,6 +214,38 @@ function CancelledCard({ booking }) {
 export default function BookingHistory() {
   const [tab, setTab] = useState('upcoming')
   const [cancelTarget, setCancelTarget] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [bookings, setBookings] = useState([])
+  const [cancelling, setCancelling] = useState(false)
+
+  const extractErrorMessage = (err) =>
+    err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Something went wrong'
+
+  const loadBookings = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await getMyBookings()
+      const list = res?.data?.bookings || res?.bookings || res?.data || res || []
+      setBookings(Array.isArray(list) ? list.map(normalizeBooking) : [])
+    } catch (err) {
+      setError(extractErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadBookings()
+  }, [])
+
+  const upcoming = useMemo(
+    () => bookings.filter((b) => ['pending_payment', 'confirmed', 'active'].includes(b.status)),
+    [bookings]
+  )
+  const past = useMemo(() => bookings.filter((b) => b.status === 'completed'), [bookings])
+  const cancelled = useMemo(() => bookings.filter((b) => b.status === 'cancelled'), [bookings])
 
   const tabs = [
     { key: 'upcoming', label: 'Upcoming', count: upcoming.length },
@@ -241,11 +253,43 @@ export default function BookingHistory() {
     { key: 'cancelled', label: 'Cancelled', count: cancelled.length },
   ]
 
+  const handleConfirmCancel = async (booking, reason) => {
+    setCancelling(true)
+    setError(null)
+    try {
+      await cancelBooking(booking.id, reason)
+      await loadBookings()
+      setCancelTarget(null)
+    } catch (err) {
+      setError(extractErrorMessage(err))
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
+          <Loader2 className="size-10 animate-spin text-[var(--maincolor)]" />
+          <p className="text-xl text-[var(--mediumfont)]">Loading your bookings…</p>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16 flex flex-col gap-16">
         <AccountTabs />
+
+        {error && (
+          <div className="bg-[rgba(228,29,29,0.1)] border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] rounded-2xl px-6 py-4 text-lg">
+            {error}
+          </div>
+        )}
 
         <div className="flex justify-center w-full">
           <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[0px_4px_12px_0px_rgba(1,1,112,0.2)] p-4 inline-flex flex-wrap gap-2">
@@ -274,27 +318,35 @@ export default function BookingHistory() {
 
         <div className="flex flex-col gap-6 w-full">
           {tab === 'upcoming' &&
-            upcoming.map((b) =>
-              b.isToday ? (
-                <TodayCard key={b.id} booking={b} />
-              ) : (
-                <div key={b.id} className="flex flex-wrap gap-6">
-                  <UpcomingCard booking={b} onCancel={setCancelTarget} />
-                </div>
+            (upcoming.length === 0 ? (
+              <p className="text-xl text-[var(--mediumfont)] text-center">No upcoming bookings yet.</p>
+            ) : (
+              upcoming.map((b) =>
+                b.isToday ? (
+                  <TodayCard key={b.id} booking={b} />
+                ) : (
+                  <div key={b.id} className="flex flex-wrap gap-6">
+                    <UpcomingCard booking={b} onCancel={setCancelTarget} />
+                  </div>
+                )
               )
-            )}
+            ))}
           {tab === 'past' && (
             <div className="flex flex-wrap gap-6">
-              {past.map((b) => (
-                <PastCard key={b.id} booking={b} />
-              ))}
+              {past.length === 0 ? (
+                <p className="text-xl text-[var(--mediumfont)] text-center w-full">No past tours yet.</p>
+              ) : (
+                past.map((b) => <PastCard key={b.id} booking={b} />)
+              )}
             </div>
           )}
           {tab === 'cancelled' && (
             <div className="flex flex-wrap gap-6">
-              {cancelled.map((b) => (
-                <CancelledCard key={b.id} booking={b} />
-              ))}
+              {cancelled.length === 0 ? (
+                <p className="text-xl text-[var(--mediumfont)] text-center w-full">No cancelled bookings.</p>
+              ) : (
+                cancelled.map((b) => <CancelledCard key={b.id} booking={b} />)
+              )}
             </div>
           )}
         </div>
@@ -302,8 +354,8 @@ export default function BookingHistory() {
 
       <CancelModal
         booking={cancelTarget}
-        onClose={() => setCancelTarget(null)}
-        onConfirm={() => setCancelTarget(null)}
+        onClose={() => !cancelling && setCancelTarget(null)}
+        onConfirm={handleConfirmCancel}
       />
     </div>
   )
