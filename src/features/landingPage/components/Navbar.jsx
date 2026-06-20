@@ -1,12 +1,50 @@
-import { Bell, ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { IMG } from "../../../assets/images/landingPage/images.js";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import useAuth from "@/contexts/useAuth";
 
+const PROFILE_PATHS = {
+  admin: "/admin",
+  guide: "/guide/profile",
+  tourist: "/tourist/profile",
+};
+
+const getProfilePath = (role) =>
+  PROFILE_PATHS[String(role ?? "").toLowerCase()] ?? "/";
+
+const getAssetUrl = (value) => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  return value.secureUrl ?? value.secure_url ?? value.url ?? value.src ?? "";
+};
+
+const getUserAvatar = (user) => {
+  const candidates = [
+    user?.profilePhoto,
+    user?.profilePicture,
+    user?.avatar,
+    user?.photo,
+    user?.profile?.profilePhoto,
+    user?.guideProfile?.profilePhoto,
+    user?.touristProfile?.profilePhoto,
+  ];
+
+  return candidates.map(getAssetUrl).find(Boolean) ?? "";
+};
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, userRole } = useAuth();
+  const hasAuthSession = Boolean(isAuthenticated && user);
+  const userAvatar = getUserAvatar(user);
+  const profilePath = getProfilePath(userRole);
 
   return (
     <nav
@@ -22,7 +60,7 @@ export default function Navbar() {
           <img
             src={IMG.WLLLogo}
             alt="Walk Like A Local"
-            className="h-7 w-7 [filter:brightness(0)_saturate(100%)_invert(9%)_sepia(68%)_saturate(4043%)_hue-rotate(239deg)_brightness(79%)_contrast(111%)]"
+            className="h-7 w-7 filter-[brightness(0)_saturate(100%)_invert(9%)_sepia(68%)_saturate(4043%)_hue-rotate(239deg)_brightness(79%)_contrast(111%)]"
           />
         </div>
 
@@ -32,8 +70,7 @@ export default function Navbar() {
             href="#tours"
             className="flex items-center gap-1 text-[12px] font-semibold text-[#010138] hover:text-[#010170] transition-colors"
           >
-            Explore
-            <ChevronDown size={13} color="#010138" />
+            Explore Trips
           </a>
           <a
             href="#destinations"
@@ -51,26 +88,10 @@ export default function Navbar() {
 
         {/* Right actions */}
         <div className="relative flex items-center gap-2.5">
-          {/* Bell */}
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative hidden sm:flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#f0effa]"
-            style={{ border: "1px solid rgba(204,204,226,0.55)" }}
-          >
-            <Bell size={15} color="#010138" />
-            <span
-              className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white"
-              style={{ background: "#010170" }}
-            >
-              3
-            </span>
-          </button>
-
-          {!isAuthenticated && (
+          {!hasAuthSession && (
             <Link
               to="/login"
-              className="hidden sm:inline-flex h-9 items-center justify-center rounded-full px-4 text-xs font-semibold text-[#010138] transition-colors hover:bg-[#f0effa]"
+              className="inline-flex h-9 items-center justify-center rounded-full px-4 text-xs font-semibold text-[#010138] transition-colors hover:bg-[#f0effa]"
               style={{
                 border: "1px solid rgba(204,204,226,0.7)",
                 background: "#fff",
@@ -81,18 +102,24 @@ export default function Navbar() {
           )}
 
           {/* Profile avatar */}
-          {isAuthenticated && (
+          {hasAuthSession && (
             <Link
-              to="/signup"
+              to={profilePath}
               aria-label="Profile"
               className="hidden sm:flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2"
               style={{ borderColor: "#CCCCE2", background: "#F4F4F8" }}
             >
-              <img
-                src={IMG.avatar}
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-[11px] font-bold uppercase text-[#010170]">
+                  {(user?.fullName ?? user?.name ?? "U").slice(0, 1)}
+                </span>
+              )}
             </Link>
           )}
 
@@ -145,11 +172,11 @@ export default function Navbar() {
                 Guides
               </a>
               <Link
-                to={isAuthenticated ? "/signup" : "/login"}
+                to={hasAuthSession ? profilePath : "/login"}
                 className="rounded-lg px-3 py-2 text-xs font-semibold text-[#010138] hover:bg-[#F4F4F8]"
                 onClick={() => setMenuOpen(false)}
               >
-                {isAuthenticated ? "Profile" : "Sign in / Log in"}
+                {hasAuthSession ? "Profile" : "Sign in / Log in"}
               </Link>
             </div>
           )}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Menu, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import AdminUsersView from "@/features/admin/components/AdminUsersView";
 import AdminVerificationView from "@/features/admin/components/AdminVerificationView";
 import { useAdminUsers } from "@/features/admin/hooks/useAdminUsers";
@@ -40,12 +40,6 @@ const AdminDashboardPage = () => {
               <Search className="h-4 w-4 text-[#77759a]" />
               <span className="text-sm text-[#757398]">Search dashboard..</span>
             </div>
-            <button
-              type="button"
-              className="grid h-12 w-12 place-items-center rounded-full border border-[#d8d7ea] bg-[#eff0f9]"
-            >
-              <Bell className="h-5 w-5 text-[#1c1a73]" />
-            </button>
           </div>
         </div>
       </header>

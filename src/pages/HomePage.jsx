@@ -11,18 +11,66 @@ import GuideCard from "@/components/home/GuideCard.jsx";
 import TestimonialCard from "@/components/home/TestimonialCard.jsx";
 import Footer from "@/components/home/Footer.jsx";
 
-import {
-  DESTINATIONS,
-  FEATURES,
-  REVIEWS,
-} from "@/data/homeData.js";
+import { FEATURES, REVIEWS } from "@/data/homeData.js";
 import { IMG } from "@/assets/images/landingPage/images.js";
 import { toursApi } from "@/features/tours/api/toursApi.js";
 import { guidesApi } from "@/features/guide/api/guidesApi.js";
 import {
   mapActiveTours,
   mapPublicGuides,
+  mapTourDestinations,
 } from "@/features/landingPage/utils/landingContentMappers.js";
+
+const DESTINATION_TOURS_PAGE_LIMIT = 100;
+
+const getListFromPayload = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.tours)) return payload.tours;
+  if (Array.isArray(payload.results)) return payload.results;
+  if (Array.isArray(payload.docs)) return payload.docs;
+
+  return [];
+};
+
+const getTotalPagesFromPayload = (payload) => {
+  const pages = Number(payload?.pagination?.totalPages);
+  return Number.isFinite(pages) && pages > 1 ? pages : 1;
+};
+
+const fetchAllActiveTours = async () => {
+  const firstPagePayload = await toursApi.browseActiveTours({
+    page: 1,
+    limit: DESTINATION_TOURS_PAGE_LIMIT,
+  });
+
+  const totalPages = getTotalPagesFromPayload(firstPagePayload);
+  const tours = [...getListFromPayload(firstPagePayload)];
+
+  if (totalPages > 1) {
+    const remainingPayloads = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) =>
+        toursApi.browseActiveTours({
+          page: index + 2,
+          limit: DESTINATION_TOURS_PAGE_LIMIT,
+        }),
+      ),
+    );
+
+    for (const payload of remainingPayloads) {
+      tours.push(...getListFromPayload(payload));
+    }
+  }
+
+  return tours;
+};
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -122,7 +170,7 @@ function ToursSection({ tours, isLoading, errorMessage }) {
 
 // ─── Section: Destinations ────────────────────────────────────────────────────
 
-function DestinationsSection() {
+function DestinationsSection({ destinations, isLoading, errorMessage }) {
   return (
     <section
       id="destinations"
@@ -134,14 +182,23 @@ function DestinationsSection() {
           title="Egypt, city by city."
           sub="Pick a place. Meet a local. Wander on purpose."
           actionLabel="View all places"
-          actionHref="#destinations"
+          actionHref="/places"
         />
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {DESTINATIONS.map((dest) => (
-            <DestinationCard key={dest.id} destination={dest} />
-          ))}
-        </div>
+        {isLoading ? <CardSkeletons /> : null}
+        {!isLoading && errorMessage && destinations.length === 0 ? (
+          <ContentMessage tone="error">{errorMessage}</ContentMessage>
+        ) : null}
+        {!isLoading && !errorMessage && destinations.length === 0 ? (
+          <ContentMessage>No destinations are available yet.</ContentMessage>
+        ) : null}
+        {!isLoading && destinations.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {destinations.map((dest) => (
+              <DestinationCard key={dest.id} destination={dest} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -193,7 +250,9 @@ function GuidesSection({ guides, isLoading, errorMessage }) {
           <ContentMessage tone="error">{errorMessage}</ContentMessage>
         ) : null}
         {!isLoading && !errorMessage && guides.length === 0 ? (
-          <ContentMessage>No public guide profiles are available yet.</ContentMessage>
+          <ContentMessage>
+            No public guide profiles are available yet.
+          </ContentMessage>
         ) : null}
         {!isLoading && guides.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -312,20 +371,25 @@ export default function HomePage() {
   const [content, setContent] = useState({
     tours: [],
     guides: [],
+    destinations: [],
     toursLoading: true,
     guidesLoading: true,
+    destinationsLoading: true,
     toursError: "",
     guidesError: "",
+    destinationsError: "",
   });
 
   useEffect(() => {
     let isMounted = true;
 
     const loadLandingContent = async () => {
-      const [toursResult, guidesResult] = await Promise.allSettled([
-        toursApi.browseActiveTours({ page: 1, limit: 3 }),
-        guidesApi.getPublicGuides({ page: 1, limit: 3 }),
-      ]);
+      const [toursResult, guidesResult, destinationsResult] =
+        await Promise.allSettled([
+          toursApi.browseActiveTours({ page: 1, limit: 3 }),
+          guidesApi.getPublicGuides({ page: 1, limit: 3 }),
+          fetchAllActiveTours(),
+        ]);
 
       if (!isMounted) return;
 
@@ -337,19 +401,33 @@ export default function HomePage() {
         toursResult.status === "fulfilled"
           ? mapActiveTours(toursResult.value, guides).slice(0, 3)
           : [];
+      const destinations =
+        destinationsResult.status === "fulfilled"
+          ? mapTourDestinations(
+              { items: destinationsResult.value },
+              { limit: 3 },
+            )
+          : [];
 
       setContent({
         tours,
         guides,
+        destinations,
         toursLoading: false,
         guidesLoading: false,
+        destinationsLoading: false,
         toursError:
           toursResult.status === "rejected"
-            ? toursResult.reason?.message ?? "Unable to load active tours."
+            ? (toursResult.reason?.message ?? "Unable to load active tours.")
             : "",
         guidesError:
           guidesResult.status === "rejected"
-            ? guidesResult.reason?.message ?? "Unable to load public guides."
+            ? (guidesResult.reason?.message ?? "Unable to load public guides.")
+            : "",
+        destinationsError:
+          destinationsResult.status === "rejected"
+            ? (destinationsResult.reason?.message ??
+              "Unable to load destinations.")
             : "",
       });
     };
@@ -370,7 +448,11 @@ export default function HomePage() {
         isLoading={content.toursLoading}
         errorMessage={content.toursError}
       />
-      <DestinationsSection />
+      <DestinationsSection
+        destinations={content.destinations}
+        isLoading={content.destinationsLoading}
+        errorMessage={content.destinationsError}
+      />
       <WhyChooseUsSection />
       <GuidesSection
         guides={content.guides}

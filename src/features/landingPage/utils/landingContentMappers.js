@@ -23,6 +23,35 @@ const getAssetUrl = (value) => {
   );
 };
 
+const getTourCoverUrl = (value) => {
+  const url = getAssetUrl(value).trim();
+
+  if (!url) return "";
+
+  // The API seed data can contain Cloudinary documentation/demo URLs that
+  // are not uploaded assets. Treat them as missing so cards render their
+  // placeholder without issuing a guaranteed 404 request.
+  if (/^https?:\/\/res\.cloudinary\.com\/demo(?:\/|$)/i.test(url)) {
+    return "";
+  }
+
+  return url;
+};
+
+const normalizeDestinationName = (value) => {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) return "";
+
+  const primary = raw.split(",")[0].trim();
+  if (!primary) return "";
+
+  return primary
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+};
+
 const toList = (payload, keys) => {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
@@ -68,13 +97,13 @@ const getGuideId = (record) => {
   const source = getGuideSource(record);
   return String(
     source?._id ??
-      source?.id ??
-      record?.guideId?._id ??
-      record?.guideId?.id ??
-      record?.guideId ??
-      record?._id ??
-      record?.id ??
-      "",
+    source?.id ??
+    record?.guideId?._id ??
+    record?.guideId?.id ??
+    record?.guideId ??
+    record?._id ??
+    record?.id ??
+    "",
   );
 };
 
@@ -85,16 +114,16 @@ const getReviewData = (record) => {
     rating:
       Number(
         record?.averageRating ??
-          record?.rating ??
-          reviews?.averageRating ??
-          reviews?.average,
+        record?.rating ??
+        reviews?.averageRating ??
+        reviews?.average,
       ) || 0,
     reviewCount:
       Number(
         record?.reviewCount ??
-          record?.reviewsCount ??
-          reviews?.count ??
-          reviews?.total,
+        record?.reviewsCount ??
+        reviews?.count ??
+        reviews?.total,
       ) || 0,
   };
 };
@@ -156,11 +185,11 @@ const getTourPrice = (pricing, priceGroupType = "") => {
 const getTourGuideId = (record) =>
   String(
     record?.guide?._id ??
-      record?.guide?.id ??
-      record?.guideId?._id ??
-      record?.guideId?.id ??
-      record?.guideId ??
-      "",
+    record?.guide?.id ??
+    record?.guideId?._id ??
+    record?.guideId?.id ??
+    record?.guideId ??
+    "",
   );
 
 export const mapActiveTour = (
@@ -194,7 +223,7 @@ export const mapActiveTour = (
       getAssetUrl(embeddedGuide?.profilePhoto) ||
       IMG.avatar,
     fallbackAvatar: IMG.avatar,
-    photo: getAssetUrl(record?.coverImage),
+    photo: getTourCoverUrl(record?.coverImage),
     rating,
     reviewCount,
     duration: record?.duration ?? "Duration to be confirmed",
@@ -222,4 +251,42 @@ export const mapActiveTours = (payload, guides = [], options = {}) => {
   return toList(payload, ["tours", "items", "results", "docs"]).map(
     (tour, index) => mapActiveTour(tour, guideById, index, options),
   );
+};
+
+export const mapTourDestinations = (
+  payload,
+  { limit = 3, placeholderImage = IMG.cairo } = {},
+) => {
+  const destinationMap = new Map();
+
+  for (const tour of toList(payload, ["tours", "items", "results", "docs"])) {
+    const destinationName = normalizeDestinationName(tour?.destination);
+    if (!destinationName) {
+      continue;
+    }
+
+    const key = destinationName.toLowerCase();
+    const existing = destinationMap.get(key);
+    const cover = getTourCoverUrl(tour?.coverImage);
+
+    if (!existing) {
+      destinationMap.set(key, {
+        id: key,
+        name: destinationName,
+        tourCount: 1,
+        img: cover || placeholderImage,
+        placeholderImage,
+      });
+      continue;
+    }
+
+    existing.tourCount += 1;
+    if (!existing.img && cover) {
+      existing.img = cover;
+    }
+  }
+
+  return Array.from(destinationMap.values())
+    .sort((left, right) => right.tourCount - left.tourCount)
+    .slice(0, Math.max(limit, 0));
 };
