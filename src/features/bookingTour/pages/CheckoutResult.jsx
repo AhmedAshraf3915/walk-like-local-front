@@ -1,146 +1,33 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+
 import Navbar from "@/components/home/Navbar.jsx";
-import PaymentDone from '../components/PaymentDone'
-import PaymentFail from '../components/PaymentFail'
-import { touristApi } from '../../touristVerification/api/touristApi.js'
-import { Loader2 } from 'lucide-react'
+import Footer from "@/components/home/Footer.jsx";
+import { paymentApi } from "@/features/payment/api/paymentApi";
 
-const Footer = () => null
+const PAID_STATES = new Set(["paid", "success", "completed"]);
+const FAILED_STATES = new Set(["failed", "declined", "cancelled"]);
 
-const POLL_INTERVAL_MS = 3000
-const MAX_POLLS = 20 // ~1 minute timeout
-
-export default function CheckoutResult() {
-  const navigate = useNavigate()
-  const { bookingId } = useParams() 
-  const [searchParams] = useSearchParams()
-
-  const resolvedBookingId = bookingId || searchParams.get('bookingId')
-
-  const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'fail'
-  const [booking, setBooking] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    if (!resolvedBookingId) {
-      setError('Missing booking reference.')
-      setStatus('fail')
-      return
-    }
-
-    let cancelled = false
-    let pollCount = 0
-    let timeoutId
-
-    const poll = async () => {
-      try {
-        const result = await touristApi.getPaymentStatus(resolvedBookingId)
-        const paymentStatus = (result?.status || result?.paymentStatus || '').toLowerCase()
-
-        if (cancelled) return
-
-        if (paymentStatus === 'paid' || paymentStatus === 'success' || paymentStatus === 'completed') {
-          setBooking(result?.booking ?? result)
-          setStatus('success')
-          return
-        }
-
-        if (paymentStatus === 'failed' || paymentStatus === 'declined' || paymentStatus === 'cancelled') {
-          setStatus('fail')
-          return
-        }
-
-        // still pending → keep polling until MAX_POLLS
-        pollCount += 1
-        if (pollCount >= MAX_POLLS) {
-          setError('We could not confirm your payment in time. Please check your bookings.')
-          setStatus('fail')
-          return
-        }
-        timeoutId = setTimeout(poll, POLL_INTERVAL_MS)
-      } catch (err) {
-        if (cancelled) return
-        console.error('Failed to fetch payment status:', err)
-        setError(err?.message ?? 'Unable to confirm payment status.')
-        setStatus('fail')
-      }
-    }
-
-    poll()
-
-    return () => {
-      cancelled = true
-      clearTimeout(timeoutId)
-    }
-  }, [resolvedBookingId])
-
-  const handleRetry = () => {
-    navigate(-1)
-  }
-
-  return (
-    payment?.reference ??
-    payment?.transactionId ??
-    payment?.paymentIntentId ??
-    bookingId
-  );
-};
-
-function StatusCard({ icon, title, description, tone = "pending", children }) {
-  const tones = {
-    success: {
-      icon: "bg-[#eaf7df] text-[#396504]",
-      title: "text-[#396504]",
-    },
-    error: {
-      icon: "bg-[#fff0f0] text-[#ae1818]",
-      title: "text-[#ae1818]",
-    },
-    pending: {
-      icon: "bg-[#efeff9] text-[#010170]",
-      title: "text-[#010138]",
-    },
-  };
-  const style = tones[tone];
-
-  return (
-    <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-6 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
-      <div className={`mx-auto grid h-20 w-20 place-items-center rounded-full ${style.icon}`}>
-        {icon}
-      </div>
-      <h1 className={`mt-6 text-3xl font-bold ${style.title}`}>{title}</h1>
-      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#65638a]">
-        {description}
-      </p>
-      {children ? <div className="mt-8">{children}</div> : null}
-    </section>
-  );
+function getPaymentState(payment) {
+  return String(payment?.status ?? payment?.paymentStatus ?? "pending").toLowerCase();
 }
 
 export default function CheckoutResult() {
   const { bookingId: routeBookingId } = useParams();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const storedBookingId =
-    typeof window === "undefined"
-      ? ""
-      : sessionStorage.getItem("pendingPaymentBookingId") ?? "";
+
   const bookingId =
     routeBookingId ??
     searchParams.get("bookingId") ??
     searchParams.get("booking_id") ??
-    storedBookingId;
-  const missingBookingMessage =
-    "The payment return did not include a booking reference.";
+    "";
 
   const [payment, setPayment] = useState(null);
   const [isLoading, setIsLoading] = useState(Boolean(bookingId));
   const [isRetrying, setIsRetrying] = useState(false);
   const [errorMessage, setErrorMessage] = useState(
-    bookingId ? "" : missingBookingMessage,
+    bookingId ? "" : "The payment return did not include a booking reference.",
   );
-  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -155,13 +42,8 @@ export default function CheckoutResult() {
       .getPaymentStatus(bookingId)
       .then((result) => {
         if (!isMounted) return;
-
         setPayment(result);
         setErrorMessage("");
-
-        if (PAID_STATES.has(getPaymentState(result))) {
-          sessionStorage.removeItem("pendingPaymentBookingId");
-        }
       })
       .catch((error) => {
         if (!isMounted) return;
@@ -174,13 +56,7 @@ export default function CheckoutResult() {
     return () => {
       isMounted = false;
     };
-  }, [bookingId, reloadKey]);
-
-  const checkAgain = () => {
-    setIsLoading(true);
-    setErrorMessage("");
-    setReloadKey((current) => current + 1);
-  };
+  }, [bookingId]);
 
   const retryCheckout = async () => {
     if (!bookingId) return;
@@ -198,35 +74,65 @@ export default function CheckoutResult() {
     }
   };
 
-  const paymentState = payment ? getPaymentState(payment) : "pending";
+  const paymentState = useMemo(() => (payment ? getPaymentState(payment) : "pending"), [payment]);
   const isPaid = PAID_STATES.has(paymentState);
   const isFailed = FAILED_STATES.has(paymentState);
-  const isRefunded = paymentState === "refunded";
+
+  const paymentReference =
+    payment?.reference ??
+    payment?.transactionId ??
+    payment?.paymentIntentId ??
+    bookingId;
 
   return (
     <div className="min-h-screen bg-[#f7f7fb] text-[#010138]">
       <Navbar />
       <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16">
-        {status === 'loading' && (
-          <div className="flex flex-col items-center justify-center gap-6 min-h-[40vh]">
-            <Loader2 className="size-10 animate-spin text-[var(--maincolor)]" />
-            <p className="text-xl text-[var(--mediumfont)]">Confirming your payment…</p>
-          </div>
+        {isLoading && (
+          <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
+            <h1 className="text-3xl font-bold text-[#010138]">Confirming payment</h1>
+            <p className="mt-3 text-sm leading-6 text-[#65638a]">Please wait while we verify your checkout.</p>
+          </section>
         )}
 
-        {status === 'success' && (
-          <PaymentDone booking={booking} onDone={() => navigate('/bookings')} />
+        {!isLoading && isPaid && (
+          <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
+            <h1 className="text-3xl font-bold text-[#396504]">Payment confirmed</h1>
+            <p className="mt-3 text-sm leading-6 text-[#65638a]">
+              Your booking is now confirmed. Reference: {paymentReference}
+            </p>
+          </section>
         )}
 
-        {status === 'fail' && (
-          <PaymentFail onBack={() => navigate(-1)} onRetry={handleRetry} />
+        {!isLoading && isFailed && (
+          <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
+            <h1 className="text-3xl font-bold text-[#ae1818]">Payment not completed</h1>
+            <p className="mt-3 text-sm leading-6 text-[#65638a]">
+              {errorMessage || "Your payment did not complete. You can retry securely via Stripe."}
+            </p>
+            <div className="mt-8">
+              <button
+                type="button"
+                onClick={retryCheckout}
+                disabled={isRetrying}
+                className="h-11 px-8 rounded-2xl text-white text-base font-medium bg-gradient-to-r from-[#010170] to-[#5656a0] disabled:opacity-60"
+              >
+                {isRetrying ? "Opening Stripe..." : "Try payment again"}
+              </button>
+            </div>
+          </section>
         )}
 
-        {error && status === 'fail' && (
-          <p className="text-center text-lg text-red-500 mt-6">{error}</p>
+        {!isLoading && !isPaid && !isFailed && (
+          <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
+            <h1 className="text-3xl font-bold text-[#010138]">Payment pending</h1>
+            <p className="mt-3 text-sm leading-6 text-[#65638a]">
+              We are still waiting for your payment provider to confirm this transaction.
+            </p>
+          </section>
         )}
       </main>
       <Footer />
     </div>
-  )
+  );
 }

@@ -1,17 +1,10 @@
-<<<<<<< HEAD
-import { CreditCard, LockKeyhole, ShieldCheck } from "lucide-react";
-
-=======
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
->>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
+
 import {
   OnboardingPage,
   OnboardingStepBar,
   OnboardingFooter,
-<<<<<<< HEAD
-} from "@/features/touristVerification/layouts/OnboardingLayout";
-=======
 } from "../layouts/OnboardingLayout";
 import { CreditCard } from "../components/CreditCard";
 import { getPaymentMethods } from "../../bookingTour/services/paymentMethods.js";
@@ -19,18 +12,11 @@ import { ICONS } from "../../../assets/images/touristVerification/images.js";
 
 const lockIcon = ICONS.lockIcon;
 const checkGoldIcon = ICONS.checkGoldIcon;
->>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
 
 /**
  * Step 3 intro screen — "do you already have a card on file?"
- * - Same navbar / step bar / footer as every other onboarding page.
- * - Waits for the backend before rendering anything (no flash of empty state).
- * - If the tourist already added a card before (e.g. they left onboarding and
- *   came back), we don't make them re-enter it — we just let them finish.
  */
 export default function PaymentMethodPage() {
-<<<<<<< HEAD
-=======
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [hasCard, setHasCard] = useState(false);
@@ -58,9 +44,11 @@ export default function PaymentMethodPage() {
         }
       } catch (err) {
         if (cancelled) return;
-        // Don't block the user from continuing just because the check failed
+        // Do not block progression when the card check fails.
         console.error("Failed to load payment methods:", err);
-        setLoadError("Couldn't check your saved cards, but you can still add one.");
+        setLoadError(
+          "Couldn't check your saved cards, but you can still add one.",
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -86,7 +74,6 @@ export default function PaymentMethodPage() {
     );
   }
 
->>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
   return (
     <OnboardingPage>
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8 sm:px-6 lg:py-10">
@@ -105,30 +92,10 @@ export default function PaymentMethodPage() {
           </p>
         </div>
 
-<<<<<<< HEAD
-        <section className="mx-auto grid w-full max-w-2xl gap-4 rounded-3xl border border-[#dfdeed] bg-white p-6 shadow-[0_16px_45px_rgba(1,1,56,0.10)] sm:grid-cols-3 sm:p-8">
-          {[
-            [CreditCard, "Choose a tour"],
-            [ShieldCheck, "Open Stripe"],
-            [LockKeyhole, "Pay securely"],
-          ].map(([Icon, label]) => (
-            <div key={label} className="text-center">
-              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#eeeeF8] text-[#010170]">
-                <Icon className="h-6 w-6" />
-              </span>
-              <p className="mt-3 text-sm font-semibold text-[#010138]">
-                {label}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        <p className="text-center text-xs text-[#65638a]">
-          Walk Like A Local never receives or stores your full card number or CVV.
-        </p>
-=======
         {loadError && (
-          <p className="text-center text-xs sm:text-sm text-red-500">{loadError}</p>
+          <p className="text-center text-xs sm:text-sm text-red-500">
+            {loadError}
+          </p>
         )}
 
         <div className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8">
@@ -138,9 +105,15 @@ export default function PaymentMethodPage() {
             <div className="flex flex-col items-center gap-3 sm:gap-4 text-center max-w-md">
               <div
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(to bottom, #edc84c, #87722b)" }}
+                style={{
+                  background: "linear-gradient(to bottom, #edc84c, #87722b)",
+                }}
               >
-                <img src={checkGoldIcon} alt="saved" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
+                <img
+                  src={checkGoldIcon}
+                  alt="saved"
+                  className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
+                />
               </div>
               <p className="text-sm sm:text-base lg:text-lg font-medium text-[#010138]">
                 You already have a card ending in {last4} on file.
@@ -156,7 +129,9 @@ export default function PaymentMethodPage() {
             <button
               onClick={handleAddCard}
               className="h-10 sm:h-11 px-8 sm:px-10 rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium w-full max-w-sm text-white transition-opacity hover:opacity-90"
-              style={{ background: "linear-gradient(to right, #010170, #5656a0)" }}
+              style={{
+                background: "linear-gradient(to right, #010170, #5656a0)",
+              }}
             >
               Add Card
             </button>
@@ -164,29 +139,25 @@ export default function PaymentMethodPage() {
         </div>
 
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#010138]">
-          <img src={lockIcon} alt="lock" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
+          <img
+            src={lockIcon}
+            alt="lock"
+            className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
+          />
           <span className="text-[11px] sm:text-sm font-light">
             Your payment details are encrypted end-to-end.
           </span>
         </div>
->>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
       </div>
 
       <OnboardingFooter
         backTo="/onboarding/verification-done"
-<<<<<<< HEAD
-        continueTo="/tourist/profile"
-        continueLabel="Finish & Explore"
-        continueEnabled
-        skipLabel=""
-=======
         onContinue={hasCard ? handleFinish : undefined}
-        continueTo={hasCard ? undefined : undefined}
+        continueTo={undefined}
         continueLabel={hasCard ? "Finish & Explore" : "Continue"}
         continueEnabled={hasCard}
         skipLabel="Skip for now"
         onSkip={handleSkip}
->>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
       />
     </OnboardingPage>
   );
