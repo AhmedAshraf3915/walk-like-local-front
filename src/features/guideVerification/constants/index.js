@@ -2,7 +2,6 @@ export const STEPS = [
 	{ id: 1, label: "Verification" },
 	{ id: 2, label: "AI Language test" },
 	{ id: 3, label: "Profile details" },
-	{ id: 4, label: "Payment method" },
 ];
 
 export const EXPERIENCE_OPTIONS = [

@@ -10,13 +10,11 @@ import {
 import { useVerificationAssets } from "@/features/guideVerification/hooks/useVerificationAssets";
 import { useAiAssessment } from "@/features/guideVerification/hooks/useAiAssessment";
 import { useGuideProfile } from "@/features/guideVerification/hooks/useGuideProfile";
-import { usePaymentMethod } from "@/features/payment/hooks/usePaymentMethod";
 import useAuth from "@/contexts/useAuth";
 import VerificationStep from "@/features/guideVerification/components/VerificationStep";
 import AiAssessmentStep from "@/features/guideVerification/components/AiAssessmentStep";
 import ProfileStep from "@/features/guideVerification/components/ProfileStep";
 import Stepper from "@/features/guideVerification/components/Stepper";
-import PaymentMethodPage from "@/features/payment/components/PaymentMethodPage";
 import GuideVerificationFooter from "@/features/guideVerification/components/GuideVerificationFooter";
 import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 
@@ -36,11 +34,6 @@ const STEP_HEADINGS = {
     title: "Complete Your Public Profile",
     subtitle: "This is what travelers see when they browse local guides.",
   },
-  4: {
-    title: "Add Payment Method",
-    subtitle:
-      "Add a card to receive your traveler earnings. You can do this later.",
-  },
 };
 
 // Returns the label for the primary action button in the footer.
@@ -48,13 +41,10 @@ const getContinueLabel = ({
   step,
   submittingVerification,
   submittingProfile,
-  isPaymentSaved,
-  isPaymentFormOpen,
 }) => {
   if (step === 1 && submittingVerification) return "Submitting...";
   if (step === 3 && submittingProfile) return "Saving...";
-  if (step === 4 && !isPaymentSaved && isPaymentFormOpen) return "Save card";
-  if (step === 4) return "Finish & Explore";
+  if (step === 3) return "Finish & Explore";
   return "Continue";
 };
 
@@ -67,7 +57,6 @@ const GuideVerificationPage = () => {
   const verification = useVerificationAssets({ setErrorMessage });
   const aiAssessment = useAiAssessment({ setErrorMessage });
   const guideProfile = useGuideProfile();
-  const paymentMethod = usePaymentMethod();
 
   // ─── Step navigation ────────────────────────────────────────────────────────
 
@@ -121,21 +110,6 @@ const GuideVerificationPage = () => {
         return;
       }
 
-      setStep(4);
-      setErrorMessage("");
-      return;
-    }
-
-    if (step === 4) {
-      if (!paymentMethod.isPaymentSaved && paymentMethod.isPaymentFormOpen) {
-        const saveError = await paymentMethod.savePayment();
-        if (saveError) {
-          setErrorMessage(saveError);
-          return;
-        }
-        setErrorMessage("");
-        return;
-      }
       navigate("/guide", { replace: true });
     }
   };
@@ -153,12 +127,6 @@ const GuideVerificationPage = () => {
     }
 
     if (step === 3) {
-      setStep(4);
-      setErrorMessage("");
-      return;
-    }
-
-    if (step === 4) {
       navigate("/guide", { replace: true });
       return;
     }
@@ -176,14 +144,11 @@ const GuideVerificationPage = () => {
     step,
     submittingVerification: verification.submittingVerification,
     submittingProfile: guideProfile.submittingProfile,
-    isPaymentSaved: paymentMethod.isPaymentSaved,
-    isPaymentFormOpen: paymentMethod.isPaymentFormOpen,
   });
 
   const canSkipFromFooter =
     step === 1 ||
     step === 3 ||
-    step === 4 ||
     (step === 2 && !aiAssessment.aiSkipUsed);
 
   const isContinueDisabled =
@@ -205,7 +170,7 @@ const GuideVerificationPage = () => {
       return (
         <div className="text-center ">
           <p className="text-xs font-semibold tracking-[0.28em] text-[#21204a]">
-            STEP 1 OF 4
+            STEP 1 OF {STEPS.length}
           </p>
           <h1 className="mt-3 text-[42px] font-bold leading-tight text-[#0d0c3f]">
             Waiting for Approval
@@ -223,7 +188,7 @@ const GuideVerificationPage = () => {
     return (
       <div className="text-center">
         <p className="text-xs font-semibold tracking-[0.28em] text-[#21204a]">
-          STEP {step} OF 4
+          STEP {step} OF {STEPS.length}
         </p>
         <h1 className="mt-3 text-[52px] font-bold leading-tight text-[#0d0c3f]">
           {heading.title}
@@ -297,20 +262,6 @@ const GuideVerificationPage = () => {
           />
         );
 
-      case 4:
-        return (
-          <PaymentMethodPage
-            payment={paymentMethod.payment}
-            isPaymentFormOpen={paymentMethod.isPaymentFormOpen}
-            isPaymentSaved={paymentMethod.isPaymentSaved}
-            isSavingPayment={paymentMethod.isSavingPayment}
-            paymentError={paymentMethod.paymentError}
-            onTogglePaymentForm={paymentMethod.togglePaymentForm}
-            onPaymentChange={paymentMethod.setPaymentField}
-            onSaveCard={handleContinue}
-          />
-        );
-
       default:
         return null;
     }
@@ -330,7 +281,7 @@ const GuideVerificationPage = () => {
           <Stepper steps={STEPS} currentStep={step} />
         </div>
 
-        {step !== 4 ? renderStepHeader() : null}
+        {renderStepHeader()}
 
         {errorMessage ? (
           <div className="mx-auto mt-7 max-w-300 rounded-xl border border-[#eab2b2] bg-[#fff3f3] px-5 py-3 text-[#9f2626]">

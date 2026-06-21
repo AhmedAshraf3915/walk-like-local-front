@@ -1,106 +1,93 @@
-import apiClient from "@/services/apiClient";
+import { apiClient } from "@/services/apiClient";
 
-/**
- * Payment API layer - handles all payment-related requests
- * Currently includes stubs for Stripe integration
- */
+const unwrapResponseData = (response) =>
+  response?.data?.data ?? response?.data ?? response;
 
-export const paymentApi = {
-	/**
-	 * Create a payment intent for processing payment
-	 * @param {number} amount - Amount in cents (e.g., 5000 for $50.00)
-	 * @param {string} currency - Currency code (default: USD)
-	 * @returns {Promise<{clientSecret: string, paymentIntentId: string}>}
-	 */
-	createPaymentIntent: async (amount, currency = "USD") => {
-		return withErrorMessage(() =>
-			apiClient.post("/payments/create-intent", { amount, currency })
-		);
-	},
+const getErrorMessage = (error, fallbackMessage) => {
+  const responseMessage =
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.message;
 
-	/**
-	 * Confirm a payment intent with a payment method
-	 * @param {string} paymentIntentId - Stripe payment intent ID
-	 * @param {string} paymentMethodId - Stripe payment method ID
-	 * @returns {Promise<{success: boolean, paymentIntent: object}>}
-	 */
-	confirmPayment: async (paymentIntentId, paymentMethodId) => {
-		return withErrorMessage(() =>
-			apiClient.post("/payments/confirm", {
-				paymentIntentId,
-				paymentMethodId,
-			})
-		);
-	},
-
-	/**
-	 * Save a payment method for future charges
-	 * @param {string} paymentMethodId - Stripe payment method ID
-	 * @param {boolean} isDefault - Set as default payment method
-	 * @returns {Promise<{success: boolean, customer: object}>}
-	 */
-	savePaymentMethod: async (paymentMethodId, isDefault = true) => {
-		return withErrorMessage(() =>
-			apiClient.post("/payments/save-method", {
-				paymentMethodId,
-				isDefault,
-			})
-		);
-	},
-
-	/**
-	 * Get list of saved payment methods for current user
-	 * @returns {Promise<{methods: Array}>}
-	 */
-	getSavedPaymentMethods: async () => {
-		return withErrorMessage(() => apiClient.get("/payments/saved-methods"));
-	},
-
-	/**
-	 * Delete a saved payment method
-	 * @param {string} paymentMethodId - Payment method ID to delete
-	 * @returns {Promise<{success: boolean}>}
-	 */
-	deletePaymentMethod: async (paymentMethodId) => {
-		return withErrorMessage(() =>
-			apiClient.delete(`/payments/${paymentMethodId}`)
-		);
-	},
-
-	/**
-	 * Get payment history for current user
-	 * @returns {Promise<{history: Array}>}
-	 */
-	getPaymentHistory: async () => {
-		return withErrorMessage(() => apiClient.get("/payments/history"));
-	},
-
-	/**
-	 * Validate payment details (optional backend validation)
-	 * @param {object} cardDetails - Card details to validate
-	 * @returns {Promise<{valid: boolean}>}
-	 */
-	validatePaymentDetails: async (cardDetails) => {
-		return withErrorMessage(() =>
-			apiClient.post("/payments/validate", cardDetails)
-		);
-	},
+  return typeof responseMessage === "string" && responseMessage.trim()
+    ? responseMessage
+    : fallbackMessage;
 };
 
-/**
- * Wraps API calls with error handling
- */
-const withErrorMessage = async (apiCall) => {
-	try {
-		const response = await apiCall();
-		return response.data;
-	} catch (error) {
-		const message =
-			error.response?.data?.message ||
-			error.message ||
-			"An error occurred. Please try again.";
-		throw new Error(message, { cause: error });
-	}
+const requireBookingId = (bookingId) => {
+  const normalized = String(bookingId ?? "").trim();
+
+  if (!normalized) {
+    throw new Error("A booking ID is required to process payment.");
+  }
+
+  return normalized;
+};
+
+export const extractCheckoutUrl = (payload) => {
+  if (typeof payload === "string") {
+    return payload.trim();
+  }
+
+  if (!payload || typeof payload !== "object") return "";
+
+  return String(
+    payload.checkoutUrl ??
+      payload.checkoutURL ??
+      payload.url ??
+      payload.sessionUrl ??
+      payload.checkoutSessionUrl ??
+      payload.session?.url ??
+      payload.checkout?.url ??
+      "",
+  ).trim();
+};
+
+export const paymentApi = {
+  /** POST /payments/checkout/:bookingId */
+  createCheckoutSession: async (bookingId) => {
+    const id = requireBookingId(bookingId);
+
+    try {
+      const response = await apiClient.post(
+        `/payments/checkout/${encodeURIComponent(id)}`,
+      );
+      const payload = unwrapResponseData(response);
+      const checkoutUrl = extractCheckoutUrl(payload);
+
+      if (!checkoutUrl) {
+        throw new Error("The payment provider did not return a checkout URL.");
+      }
+
+      return { payload, checkoutUrl };
+    } catch (error) {
+      throw new Error(
+        getErrorMessage(error, "Unable to start secure checkout."),
+        { cause: error },
+      );
+    }
+  },
+
+  /** GET /payments/status/:bookingId */
+  getPaymentStatus: async (bookingId) => {
+    const id = requireBookingId(bookingId);
+
+    try {
+      const response = await apiClient.get(
+        `/payments/status/${encodeURIComponent(id)}`,
+      );
+      return unwrapResponseData(response);
+    } catch (error) {
+      throw new Error(
+        getErrorMessage(error, "Unable to retrieve payment status."),
+        { cause: error },
+      );
+    }
+  },
+
+  redirectToCheckout: (checkoutUrl) => {
+    window.location.assign(checkoutUrl);
+  },
 };
 
 export default paymentApi;

@@ -1,7 +1,14 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, X } from 'lucide-react'
 import BackButton from './BackButton'
 
-export default function CheckoutReviewModal({ onClose, onBack, onContinue, summary }) {
+export default function CheckoutReviewModal({
+  onClose,
+  onBack,
+  onContinue,
+  continueLabel = "Continue to payment",
+  continueDisabled = false,
+  summary,
+}) {
   const s = summary || {
     package: 'Private',
     guestsNote: 'Strictly 1 guest',
@@ -19,6 +26,14 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
   return (
     <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[var(--mediabackground)] rounded-2xl p-8 m-24 md:p-16 w-full max-w-[1000px] flex flex-col gap-12">
+        <button
+          type="button"
+          aria-label="Close checkout review"
+          onClick={onClose}
+          className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--maincolor)] shadow-sm"
+        >
+          <X className="h-5 w-5" />
+        </button>
         <div className="flex flex-col gap-8 p-32">
           <p className="font-bold text-2xl text-[var(--mediumfont)] tracking-[4.8px] uppercase">Checkout</p>
           <p className="font-semibold text-3xl md:text-4xl text-[var(--maincolor)]">Review</p>
@@ -79,10 +94,12 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
             <div className="flex items-center justify-between w-full">
               <BackButton onClick={onBack} />
               <button
+                type="button"
                 onClick={onContinue}
-                className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl flex items-center gap-2"
+                disabled={continueDisabled}
+                className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl flex items-center gap-2 disabled:cursor-wait disabled:opacity-60"
               >
-                Continue <ArrowRight className="size-5" />
+                {continueLabel} <ArrowRight className="size-5" />
               </button>
             </div>
           </div>

@@ -18,6 +18,10 @@ import GuideVerificationPage from "../features/guideVerification/pages/GuideVeri
 import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
 import GuideHomePage from "../features/guide/pages/GuideHomePage";
 import GuideProfilePage from "../features/guide/pages/GuideProfilePage";
+import GuideSettingsPage from "../features/guide/pages/GuideSettingsPage";
+import GuideCompleteProfilePage from "../features/guide/pages/GuideCompleteProfilePage";
+import GuideBookingsPage from "../features/guide/pages/GuideBookingsPage";
+import GuideEarningsPage from "../features/guide/pages/GuideEarningsPage";
 import TourCreationPage from "../features/tours/pages/TourCreationPage";
 import AllToursPage from "../features/tours/pages/AllToursPage";
 import { useGuideVerificationStatus } from "../features/guideVerification/hooks/useGuideVerificationStatus";
@@ -119,7 +123,7 @@ function RequireVerifiedGuide({ children }) {
   }
 
   if (!isVerified) {
-    return <Navigate to="/guide-verification" replace />;
+    return <Navigate to="/guide/complete-profile" replace />;
   }
 
   return children;
@@ -163,6 +167,50 @@ function App() {
               <GuideProfilePage />
             </RequireRole>
           }
+        />
+        <Route
+          path="/guide/settings"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideSettingsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide/complete-profile"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideCompleteProfilePage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide/complete-profile/language-test"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideCompleteProfilePage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide/bookings"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideBookingsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide/earnings"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideEarningsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/guide/account"
+          element={<Navigate to="/guide/settings" replace />}
         />
         <Route
           path="/guide/tours/new"

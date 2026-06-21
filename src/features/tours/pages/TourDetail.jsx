@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { apiClient } from "@/services/apiClient";
 import { touristApi } from "@/features/touristVerification/api/touristApi";
+import { paymentApi } from "@/features/payment/api/paymentApi";
 import useAuth from "@/contexts/useAuth";
 import Navbar from "@/components/home/Navbar.jsx";
 import CheckoutReviewModal from "../../bookingTour/components/CheckoutReviewModal";
@@ -205,13 +206,12 @@ export default function TourDetail() {
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [showReview, setShowReview] = useState(false);
   const [booking, setBooking] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState("");
   const [msg, setMsg] = useState({ type: "", text: "" });
 
   const unwrap = (res) => res?.data?.data ?? res?.data ?? res;
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
     apiClient
       .get(`/tours/${id}`)
       .then((res) => {
@@ -276,31 +276,48 @@ export default function TourDetail() {
     setBooking(true);
     setMsg({ type: "", text: "" });
     try {
-      const result = await touristApi.createBooking({
-        tourId: id,
-        slotId: selectedSlotId,
-        groupSize: GROUP_META[selectedPackage]?.size || 1,
-        members: [],
-        deselectedActivityIds: tour.activities
-          .filter((a) => a.locked || enabledActivities[a.id])
-          .map((a) => a.id),
-      });
-      const bookingId = result?.booking?._id || result?.booking?.id || result?._id || result?.id;
-      setShowReview(false);
-      if (bookingId) {
-        navigate(`/tourist/bookings/${bookingId}/confirmation`);
-      } else {
-        setMsg({ type: "success", text: "Booking created! Redirecting..." });
-      }
-    } catch (err) {
-        console.log("BOOKING ERROR:", err.response?.data);
-        console.log("STATUS:", err.response?.status);
+      let bookingId = pendingBookingId;
 
-        setMsg({
-          type: "error",
-          text: err.response?.data?.message || err.message || "Booking failed."
+      if (!bookingId) {
+        const result = await touristApi.createBooking({
+          tourId: id,
+          slotId: selectedSlotId,
+          groupSize: GROUP_META[selectedPackage]?.size || 1,
+          members: [],
+          deselectedActivityIds: tour.activities
+            .filter((activity) =>
+              !activity.locked && !enabledActivities[activity.id],
+            )
+            .map((activity) => activity.id),
         });
-} finally {
+        const bookingRecord = result?.booking ?? result;
+        bookingId =
+          result?.bookingId ??
+          bookingRecord?._id ??
+          bookingRecord?.id ??
+          "";
+
+        if (!bookingId) {
+          throw new Error("The booking was created without a booking ID.");
+        }
+
+        setPendingBookingId(bookingId);
+      }
+
+      sessionStorage.setItem("pendingPaymentBookingId", bookingId);
+      const { checkoutUrl } = await paymentApi.createCheckoutSession(bookingId);
+
+      setShowReview(false);
+      paymentApi.redirectToCheckout(checkoutUrl);
+    } catch (err) {
+      setMsg({
+        type: "error",
+        text:
+          err.response?.data?.message ||
+          err.message ||
+          "Unable to start secure checkout.",
+      });
+    } finally {
       setBooking(false);
     }
   };
@@ -577,7 +594,7 @@ export default function TourDetail() {
           onClose={() => setShowReview(false)}
           onBack={() => setShowReview(false)}
           onContinue={handleBook}
-          continueLabel={booking ? "Processing..." : "Confirm booking"}
+          continueLabel={booking ? "Opening Stripe..." : "Continue to payment"}
           continueDisabled={booking}
           summary={{
             package: pkg?.label || "—",

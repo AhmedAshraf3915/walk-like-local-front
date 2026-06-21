@@ -52,6 +52,6 @@ describe("GuideNavbar", () => {
 
     expect(
       screen.getAllByRole("link", { name: "Complete profile" })[0].getAttribute("href"),
-    ).toBe("/guide-verification");
+    ).toBe("/guide/complete-profile");
   });
 });

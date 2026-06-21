@@ -46,7 +46,7 @@ export default function GuideNavbar({
     getAssetUrl(verification?.verificationDocuments?.profilePhoto);
   const action = verified
     ? { label: "Create tour", to: "/guide/tours/new" }
-    : { label: "Complete profile", to: "/guide-verification" };
+    : { label: "Complete profile", to: "/guide/complete-profile" };
 
   const isActive = (to) => pathname === to;
 

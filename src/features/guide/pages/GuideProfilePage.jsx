@@ -419,7 +419,7 @@ export default function GuideProfilePage() {
                   </p>
                 </div>
                 <Link
-                  to="/guide-verification"
+                  to="/guide/complete-profile"
                   className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#010138] px-5 py-2.5 text-sm font-semibold text-white"
                 >
                   Complete profile

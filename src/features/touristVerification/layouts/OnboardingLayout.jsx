@@ -112,7 +112,7 @@ const statuses =
       <StepConnector gold={step >= 2} />
       <StepNode number={2} label="Verification" status={statuses[1]} />
       <StepConnector gold={step >= 3} />
-      <StepNode number={3} label="Payment method" status={statuses[2]} />
+      <StepNode number={3} label="Secure checkout" status={statuses[2]} />
     </div>
   );
 }

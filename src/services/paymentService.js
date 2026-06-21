@@ -1,4 +1,4 @@
-import { apiClient } from "@/services/apiClient";
+import { paymentApi } from "@/features/payment/api/paymentApi";
 
 /**
  * Payment Service - Handles all payment processing operations
@@ -81,62 +81,7 @@ export const validateCardholderName = (name) => {
 	return trimmed.length >= 2 && /^[a-zA-Z\s]+$/.test(trimmed);
 };
 
-/**
- * Create a payment intent with the backend
- * The backend will use Stripe's Payment Intent API
- * Frontend sends: amount, currency
- * Backend returns: clientSecret for Stripe confirmation
- */
 export const paymentService = {
-	// Create payment intent - call backend which talks to Stripe
-	createPaymentIntent: (amount, currency = "USD") =>
-		apiClient.post("/payments/create-intent", { amount, currency }),
-
-	// Confirm payment with Stripe token from frontend
-	// In production with Stripe Elements, this happens on the backend
-	confirmPayment: (paymentIntentId, paymentMethodId) =>
-		apiClient.post("/payments/confirm", { paymentIntentId, paymentMethodId }),
-
-	// Save payment method for future use (tokenized, not stored directly)
-	savePaymentMethod: (paymentMethodId, isDefault = true) =>
-		apiClient.post("/payments/save-method", { paymentMethodId, isDefault }),
-
-	// Get saved payment methods for the authenticated user
-	getSavedPaymentMethods: () =>
-		apiClient.get("/payments/saved-methods"),
-
-	// Delete saved payment method
-	deletePaymentMethod: (paymentMethodId) =>
-		apiClient.delete(`/payments/saved-methods/${paymentMethodId}`),
-
-	// Get payment history
-	getPaymentHistory: () =>
-		apiClient.get("/payments/history"),
-
-	// Get payment status
-	getPaymentStatus: (paymentIntentId) =>
-		apiClient.get(`/payments/status/${paymentIntentId}`),
-
-	// For now: Simple backend validation endpoint (remove once Stripe Elements integrated)
-	validatePaymentDetails: (cardDetails) =>
-		apiClient.post("/payments/validate", cardDetails),
-};
-
-/**
- * Stripe initialization helper
- * Call this once in your app initialization
- */
-export const initializeStripe = async () => {
-	if (window.Stripe) {
-		return window.Stripe;
-	}
-
-	return new Promise((resolve) => {
-		const script = document.createElement("script");
-		script.src = "https://js.stripe.com/v3/";
-		script.onload = () => {
-			resolve(window.Stripe);
-		};
-		document.body.appendChild(script);
-	});
+	createCheckoutSession: paymentApi.createCheckoutSession,
+	getPaymentStatus: paymentApi.getPaymentStatus,
 };

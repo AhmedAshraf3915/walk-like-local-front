@@ -1,4 +1,12 @@
-import { Check, CheckCircle2, Upload, Video } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  Eye,
+  FileCheck2,
+  Pencil,
+  Upload,
+  Video,
+} from "lucide-react";
 
 const PRIMARY_ICON_CLASS = "h-9 w-9 text-[#1d1c4c] stroke-[1.8]";
 const BADGE_ICON_CLASS = "h-5 w-5 text-[#1917a8] stroke-[1.9]";
@@ -170,6 +178,53 @@ const UploadCard = ({
   onSkip,
   onClick,
 }) => {
+  if (uploadedAsset?.secureUrl) {
+    const isImage = !/\.pdf(?:$|\?)/i.test(uploadedAsset.secureUrl);
+
+    return (
+      <div className="overflow-hidden rounded-[14px] border border-[#d5d4e4] bg-[#f7f6fc] p-4">
+        <div className="grid h-44 place-items-center overflow-hidden rounded-xl border border-[#d1d0df] bg-white">
+          {isImage ? (
+            <img
+              src={uploadedAsset.secureUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <FileCheck2 className="h-16 w-16 text-[#161594]" />
+          )}
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-3 text-left">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-[#141342]">{title}</p>
+            <p className="mt-1 truncate text-xs text-[#777594]">
+              {uploadedAsset.name ?? uploadedAsset.publicId ?? "Uploaded"}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              aria-label={`Replace ${title}`}
+              onClick={onClick}
+              className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#161594] shadow-sm"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <a
+              href={uploadedAsset.secureUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`View ${title}`}
+              className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#161594] shadow-sm"
+            >
+              <Eye className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-56 w-full flex-col items-center justify-center rounded-[14px] border border-dashed border-[#afafc7] bg-[#fbfbff] p-5 text-center">
       <button
@@ -219,10 +274,20 @@ const UploadCircleCard = ({
         onClick={onClick}
         className="flex flex-col items-center"
       >
-        <div className="grid h-36 w-36 place-items-center rounded-full border border-dashed border-[#afafc7]">
-          <Upload className={PRIMARY_ICON_CLASS} />
+        <div className="grid h-36 w-36 place-items-center overflow-hidden rounded-full border border-dashed border-[#afafc7]">
+          {uploadedAsset?.secureUrl ? (
+            <img
+              src={uploadedAsset.secureUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <Upload className={PRIMARY_ICON_CLASS} />
+          )}
         </div>
-        <p className="mt-4 text-[25px] font-medium text-[#141342]">Upload</p>
+        <p className="mt-4 text-[25px] font-medium text-[#141342]">
+          {uploadedAsset ? "Replace" : "Upload"}
+        </p>
         <p className="mt-1 text-[22px] text-[#131241]">{title}</p>
       </button>
       <p className="mt-3 text-sm text-[#161594]">
