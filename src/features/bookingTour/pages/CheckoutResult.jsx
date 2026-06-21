@@ -9,7 +9,9 @@ const PAID_STATES = new Set(["paid", "success", "completed"]);
 const FAILED_STATES = new Set(["failed", "declined", "cancelled"]);
 
 function getPaymentState(payment) {
-  return String(payment?.status ?? payment?.paymentStatus ?? "pending").toLowerCase();
+  return String(
+    payment?.status ?? payment?.paymentStatus ?? "pending",
+  ).toLowerCase();
 }
 
 export default function CheckoutResult() {
@@ -74,7 +76,10 @@ export default function CheckoutResult() {
     }
   };
 
-  const paymentState = useMemo(() => (payment ? getPaymentState(payment) : "pending"), [payment]);
+  const paymentState = useMemo(
+    () => (payment ? getPaymentState(payment) : "pending"),
+    [payment],
+  );
   const isPaid = PAID_STATES.has(paymentState);
   const isFailed = FAILED_STATES.has(paymentState);
 
@@ -90,14 +95,20 @@ export default function CheckoutResult() {
       <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16">
         {isLoading && (
           <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
-            <h1 className="text-3xl font-bold text-[#010138]">Confirming payment</h1>
-            <p className="mt-3 text-sm leading-6 text-[#65638a]">Please wait while we verify your checkout.</p>
+            <h1 className="text-3xl font-bold text-[#010138]">
+              Confirming payment
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-[#65638a]">
+              Please wait while we verify your checkout.
+            </p>
           </section>
         )}
 
         {!isLoading && isPaid && (
           <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
-            <h1 className="text-3xl font-bold text-[#396504]">Payment confirmed</h1>
+            <h1 className="text-3xl font-bold text-[#396504]">
+              Payment confirmed
+            </h1>
             <p className="mt-3 text-sm leading-6 text-[#65638a]">
               Your booking is now confirmed. Reference: {paymentReference}
             </p>
@@ -106,9 +117,12 @@ export default function CheckoutResult() {
 
         {!isLoading && isFailed && (
           <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
-            <h1 className="text-3xl font-bold text-[#ae1818]">Payment not completed</h1>
+            <h1 className="text-3xl font-bold text-[#ae1818]">
+              Payment not completed
+            </h1>
             <p className="mt-3 text-sm leading-6 text-[#65638a]">
-              {errorMessage || "Your payment did not complete. You can retry securely via Stripe."}
+              {errorMessage ||
+                "Your payment did not complete. You can retry securely via Stripe."}
             </p>
             <div className="mt-8">
               <button
@@ -125,9 +139,12 @@ export default function CheckoutResult() {
 
         {!isLoading && !isPaid && !isFailed && (
           <section className="mx-auto w-full max-w-2xl rounded-3xl border border-[#dfdeed] bg-white p-8 text-center shadow-[0_18px_55px_rgba(1,1,56,0.12)] sm:p-10">
-            <h1 className="text-3xl font-bold text-[#010138]">Payment pending</h1>
+            <h1 className="text-3xl font-bold text-[#010138]">
+              Payment pending
+            </h1>
             <p className="mt-3 text-sm leading-6 text-[#65638a]">
-              We are still waiting for your payment provider to confirm this transaction.
+              We are still waiting for your payment provider to confirm this
+              transaction.
             </p>
           </section>
         )}
