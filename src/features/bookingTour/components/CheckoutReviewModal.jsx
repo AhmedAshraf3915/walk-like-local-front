@@ -1,14 +1,7 @@
-import { ArrowRight, X } from 'lucide-react'
+import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 import BackButton from './BackButton'
 
-export default function CheckoutReviewModal({
-  onClose,
-  onBack,
-  onContinue,
-  continueLabel = "Continue to payment",
-  continueDisabled = false,
-  summary,
-}) {
+export default function CheckoutReviewModal({ onClose, onBack, onContinue, summary, error, loading }) {
   const s = summary || {
     package: 'Private',
     guestsNote: 'Strictly 1 guest',
@@ -91,15 +84,31 @@ export default function CheckoutReviewModal({
 
             <hr className="border-[var(--lighttext)]" />
 
+            {/* ✅ error message inside the modal */}
+            {error && (
+              <div className="flex items-center gap-3 bg-[rgba(228,29,29,0.1)] border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] rounded-2xl px-6 py-4">
+                <AlertCircle className="size-6 shrink-0" />
+                <p className="text-lg">{error}</p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between w-full">
               <BackButton onClick={onBack} />
               <button
                 type="button"
                 onClick={onContinue}
-                disabled={continueDisabled}
-                className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl flex items-center gap-2 disabled:cursor-wait disabled:opacity-60"
+                disabled={loading}
+                className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl flex items-center gap-2 disabled:opacity-60"
               >
-                {continueLabel} <ArrowRight className="size-5" />
+                {loading ? (
+                  <>
+                    Processing… <Loader2 className="size-5 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    Continue <ArrowRight className="size-5" />
+                  </>
+                )}
               </button>
             </div>
           </div>

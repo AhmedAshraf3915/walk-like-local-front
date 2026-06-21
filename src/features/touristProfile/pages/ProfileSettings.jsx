@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import Navbar from "@/components/home/Navbar.jsx";
 import AccountTabs from '../components/AccountTabs'
-import { Pencil, Loader2 } from 'lucide-react'
-import { getTouristProfile, updateTouristProfile, uploadAndSaveProfilePhoto } from '../services/touristProfile'
+import { useNavigate } from 'react-router-dom'
+import { Pencil, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { getTouristProfile, updateTouristProfile, uploadAndSaveProfilePhoto, getVerificationStatus } from '../services/touristProfile.js';
 
 const interestsList = ['Swimming', 'Safari', 'Adventure', 'Riding', 'Climbing', 'Summer', 'Sun rise']
 const preferencesList = ['Solo traveler', 'Family', 'Adventure', 'Budget', 'Luxury']
@@ -51,10 +52,14 @@ function InfoField({ label, value, onChange, editing, onToggleEdit }) {
 }
 
 export default function ProfileSettings() {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  const [verificationStatus, setVerificationStatus] = useState(null) // 'pending' | 'approved' | 'rejected' | null
+  const [verificationLoading, setVerificationLoading] = useState(true)
 
   const [profile, setProfile] = useState(null)
   const [fullName, setFullName] = useState('')
@@ -77,15 +82,17 @@ export default function ProfileSettings() {
       const data = res?.data?.tourist || res?.data || res?.tourist || res
 
       setProfile(data)
-      setFullName(data?.fullName || '')
-      setEmail(data?.email || '')
-      setCountry(data?.nationality || data?.country || '')
-      setLanguages(Array.isArray(data?.languages) ? data.languages.join(' , ') : data?.languages || '')
+      setFullName(data?.fullName || data?.user?.fullName || data?.userId?.fullName || data?.account?.fullName || '')
+      setEmail(data?.email || data?.user?.email || data?.userId?.email || '')
+      setCountry(data?.nationality || '')
+
+      const langArr = Array.isArray(data?.preferredLanguages) ? data.preferredLanguages : []
+      setLanguages(langArr.join(' , '))
 
       const interestsArr = Array.isArray(data?.interests) ? data.interests : []
       setInterests(Object.fromEntries(interestsArr.map((i) => [i, true])))
 
-      const preferencesArr = Array.isArray(data?.preferences) ? data.preferences : []
+      const preferencesArr = Array.isArray(data?.travelPreferences) ? data.travelPreferences : []
       setPreferences(Object.fromEntries(preferencesArr.map((p) => [p, true])))
     } catch (err) {
       setError(extractErrorMessage(err))
@@ -96,7 +103,21 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     loadProfile()
+    loadVerificationStatus()
   }, [])
+
+  const loadVerificationStatus = async () => {
+    setVerificationLoading(true)
+    try {
+      const res = await getVerificationStatus()
+      const status = res?.data?.status || res?.status || res?.data?.verificationStatus || null
+      setVerificationStatus(status)
+    } catch {
+      setVerificationStatus(null)
+    } finally {
+      setVerificationLoading(false)
+    }
+  }
 
   const toggle = (setFn) => (key) => setFn((prev) => ({ ...prev, [key]: !prev[key] }))
 
@@ -110,11 +131,10 @@ export default function ProfileSettings() {
     setError(null)
     try {
       await updateTouristProfile({
-        fullName,
         nationality: country,
-        languages: languages.split(',').map((l) => l.trim()).filter(Boolean),
+        preferredLanguages: languages.split(',').map((l) => l.trim()).filter(Boolean),
         interests: Object.keys(interests).filter((k) => interests[k]),
-        preferences: Object.keys(preferences).filter((k) => preferences[k]),
+        travelPreferences: Object.keys(preferences).filter((k) => preferences[k]),
       })
       setEditingField(null)
     } catch (err) {
@@ -170,9 +190,28 @@ export default function ProfileSettings() {
         )}
 
         <section className="flex flex-col gap-12">
-          <div className="flex flex-col gap-6">
-            <h1 className="text-3xl font-semibold text-[var(--maintaxt)]">Account settings</h1>
-            <p className="text-2xl text-[var(--maincolor)]">Personal information used across bookings</p>
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div className="flex flex-col gap-6">
+              <h1 className="text-3xl font-semibold text-[var(--maintaxt)]">Account settings</h1>
+              <p className="text-2xl text-[var(--maincolor)]">Personal information used across bookings</p>
+            </div>
+
+            {!verificationLoading && (
+              verificationStatus === 'approved' ? (
+                <span className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(46,204,113,0.12)] text-[#1e8449] font-semibold text-lg whitespace-nowrap">
+                  <ShieldCheck className="size-5" />
+                  Verified
+                </span>
+              ) : (
+                <button
+                  onClick={() => navigate('/onboarding/verification')}
+                  className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(237,200,76,0.12)] text-[var(--darkgold)] font-semibold text-lg whitespace-nowrap border border-[var(--lightgold)]"
+                >
+                  <ShieldAlert className="size-5" />
+                  {verificationStatus === 'rejected' ? 'Verification rejected · Retry' : 'Complete verification'}
+                </button>
+              )
+            )}
           </div>
 
           <div className="flex flex-col items-center gap-10">
@@ -194,13 +233,7 @@ export default function ProfileSettings() {
 
             <div className="flex flex-col gap-10 w-full">
               <div className="flex flex-col md:flex-row gap-6">
-                <InfoField
-                  label="Full name"
-                  value={fullName}
-                  onChange={setFullName}
-                  editing={editingField === 'fullName'}
-                  onToggleEdit={() => setEditingField((f) => (f === 'fullName' ? null : 'fullName'))}
-                />
+                <InfoField label="Full name" value={fullName} editing={false} onToggleEdit={() => {}} />
                 <InfoField label="Email" value={email} editing={false} onToggleEdit={() => {}} />
               </div>
               <div className="flex flex-col md:flex-row gap-6">

@@ -29,3 +29,9 @@ export async function uploadAndSaveProfilePhoto(file) {
 	const { secureUrl, publicId } = await uploadProfilePhotoToCloudinary(file);
 	return updateTouristProfilePhoto({ secureUrl, publicId });
 }
+
+// GET /tourists/verification-status -> { status: "pending" | "approved" | "rejected" }
+export async function getVerificationStatus() {
+	const res = await apiClient.get("/tourists/verification-status");
+	return res.data;
+}

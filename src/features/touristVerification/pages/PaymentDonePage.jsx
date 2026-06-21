@@ -1,16 +1,29 @@
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   OnboardingPage,
   OnboardingStepBar,
   OnboardingFooter,
 } from "../layouts/OnboardingLayout";
 import { CreditCard } from "../components/CreditCard";
-
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
-
 
 const checkGoldIcon = ICONS.checkGoldIcon;
 
 export default function PaymentDonePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const last4 = location.state?.last4 ?? "••••";
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate("/tourist/profile");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
   return (
     <OnboardingPage>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex flex-col gap-6 sm:gap-8 lg:gap-10">
@@ -28,13 +41,10 @@ export default function PaymentDonePage() {
           </p>
         </div>
 
-        {/* Card + success */}
         <div className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8">
           <CreditCard />
 
-          {/* Success message */}
           <div className="flex flex-col items-center gap-3 sm:gap-4 text-center max-w-md">
-            {/* Gold check */}
             <div
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
               style={{ background: "linear-gradient(to bottom, #edc84c, #87722b)" }}
@@ -46,7 +56,10 @@ export default function PaymentDonePage() {
                 Payout Method Added Successfully!
               </p>
               <p className="text-sm sm:text-base lg:text-lg font-light text-[#353572]">
-                Card ending in 2222 is now connected to your Locale wallet.
+                Card ending in {last4} is now connected to your Locale wallet.
+              </p>
+              <p className="text-xs sm:text-sm text-[#aaaacf] mt-2">
+                Redirecting to your profile...
               </p>
             </div>
           </div>

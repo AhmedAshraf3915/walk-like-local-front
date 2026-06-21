@@ -6,18 +6,12 @@ import {
   OnboardingFooter,
 } from "../layouts/OnboardingLayout";
 import { CreditCard } from "../components/CreditCard";
+import { apiClient } from "@/services/apiClient";
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
-
 
 const lockIcon = ICONS.lockIcon;
 
-function FormField({
-  label,
-  placeholder,
-  value,
-  onChange,
-  className = "",
-}) {
+function FormField({ label, placeholder, value, onChange, className = "" }) {
   return (
     <div className={`flex flex-col gap-1.5 sm:gap-2 ${className}`}>
       <label className="text-xs sm:text-sm text-[#010138]">{label}</label>
@@ -40,8 +34,42 @@ export default function PaymentFormPage() {
   const [cardNum, setCardNum] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const isValid = name && cardNum && expiry && cvv;
+
+  const handleSaveCard = async () => {
+    if (!isValid) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await apiClient.post("/tourists/payment-methods", {
+        cardholderName: name,
+        cardNumber: cardNum.replace(/\s/g, ""),
+        expiry: expiry,
+        cvv: cvv,
+      });
+
+      // ✅ FIX: pass the real saved card back through navigation state
+      // instead of PaymentDonePage hardcoding "2222"
+      const savedCard = response?.data?.data ?? response?.data ?? {};
+      navigate("/onboarding/payment-done", {
+        state: {
+          last4: savedCard.last4 ?? cardNum.replace(/\s/g, "").slice(-4),
+        },
+      });
+    } catch (err) {
+      setError("Failed to save card. Please check your details and try again.");
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSkip = () => {
+    navigate("/tourist/profile");
+  };
 
   return (
     <OnboardingPage>
@@ -60,12 +88,9 @@ export default function PaymentFormPage() {
           </p>
         </div>
 
-        {/* Card + form */}
         <div className="flex flex-col items-center gap-4 sm:gap-6 lg:gap-8">
-          {/* Card preview */}
           <div className="flex flex-col items-center gap-2 sm:gap-3">
             <CreditCard />
-            {/* Placeholder add card link */}
             <button
               className="flex items-center gap-2 h-10 sm:h-11 px-6 sm:px-10 rounded-xl sm:rounded-2xl border border-[#010170] text-xs sm:text-sm font-medium text-[#010138] hover:bg-[#f4f4f8] transition-colors w-full max-w-sm justify-center"
               onClick={() => navigate("/onboarding/payment")}
@@ -74,57 +99,35 @@ export default function PaymentFormPage() {
             </button>
           </div>
 
-          {/* Form */}
           <div className="w-full max-w-lg flex flex-col gap-4 sm:gap-5 lg:gap-6">
-            <FormField
-              label="Name on card"
-              placeholder="Sarah Abdo"
-              value={name}
-              onChange={setName}
-            />
-            <FormField
-              label="Card number"
-              placeholder="123 456 789 321"
-              value={cardNum}
-              onChange={setCardNum}
-            />
+            <FormField label="Name on card" placeholder="Sarah Abdo" value={name} onChange={setName} />
+            <FormField label="Card number" placeholder="123 456 789 321" value={cardNum} onChange={setCardNum} />
             <div className="flex gap-3 sm:gap-4">
-              <FormField
-                label="Expiry date"
-                placeholder="MM/YY"
-                value={expiry}
-                onChange={setExpiry}
-                className="flex-1"
-              />
-              <FormField
-                label="CVV"
-                placeholder="999"
-                value={cvv}
-                onChange={setCvv}
-                className="w-28 sm:w-32"
-              />
+              <FormField label="Expiry date" placeholder="MM/YY" value={expiry} onChange={setExpiry} className="flex-1" />
+              <FormField label="CVV" placeholder="999" value={cvv} onChange={setCvv} className="w-28 sm:w-32" />
             </div>
 
-            {/* Save card button */}
+            {error && (
+              <p className="text-xs sm:text-sm text-red-500 text-center">{error}</p>
+            )}
+
             <button
-              onClick={() => {
-                if (isValid) navigate("/onboarding/payment-done");
-              }}
+              onClick={handleSaveCard}
+              disabled={!isValid || saving}
               className="h-10 sm:h-11 px-8 sm:px-10 rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium w-full transition-colors"
               style={{
-                background: isValid
+                background: isValid && !saving
                   ? "linear-gradient(to right, #010170, #5656a0)"
                   : "linear-gradient(to right, #878796, #b7b7c4)",
-                color: isValid ? "#fff" : "#ccc",
-                cursor: isValid ? "pointer" : "not-allowed",
+                color: isValid && !saving ? "#fff" : "#ccc",
+                cursor: isValid && !saving ? "pointer" : "not-allowed",
               }}
             >
-              Save Card
+              {saving ? "Saving…" : "Save Card"}
             </button>
           </div>
         </div>
 
-        {/* Security note */}
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-black">
           <img src={lockIcon} alt="lock" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
           <span className="text-[11px] sm:text-sm font-light">Your payment details are encrypted end-to-end.</span>
@@ -133,10 +136,10 @@ export default function PaymentFormPage() {
 
       <OnboardingFooter
         backTo="/onboarding/payment"
-        continueLabel="Finish & Explore"
+        continueLabel="Save Card"
         continueEnabled={false}
         skipLabel="Skip for now"
-        onSkip={() => navigate("/onboarding/payment-done")}
+        onSkip={handleSkip}
       />
     </OnboardingPage>
   );

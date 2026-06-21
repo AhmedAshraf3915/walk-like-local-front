@@ -9,37 +9,24 @@ import { touristApi } from "../api/touristApi";
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
 
 // asset refs 
-const cameraIcon   = ICONS.cameraIcon;
-const plusIcon     = ICONS.plusIcon;
-const closeIcon    = ICONS.closeIcon;
-const searchIcon   = ICONS.searchIcon;
+const cameraIcon = ICONS.cameraIcon;
+const plusIcon = ICONS.plusIcon;
+const closeIcon = ICONS.closeIcon;
+const searchIcon = ICONS.searchIcon;
 
 // data 
 const INTERESTS = [
-  "Swimming","Safari","Adventure","Riding","Climbing","Summer","Sun rise",
-  "Snorkeling","Hiking","Yoga","Photography","Food tours",
+  "Swimming", "Safari", "Adventure", "Riding", "Climbing", "Summer", "Sun rise",
+  "Snorkeling", "Hiking", "Yoga", "Photography", "Food tours",
 ];
-const LANGUAGES = ["Arabic","English","German","Italian","Spanish","French","Japanese"];
-const TRAVEL_PREFS = ["Solo traveler","Family","Adventure","Budget","Luxury","Cultural"];
+const LANGUAGES = ["Arabic", "English", "German", "Italian", "Spanish", "French", "Japanese"];
+const TRAVEL_PREFS = ["Solo traveler", "Family", "Adventure", "Budget", "Luxury", "Cultural"];
 
 const COUNTRIES = [
-  "Egypt",
-  "United States",
-  "United Kingdom",
-  "Germany",
-  "France",
-  "Italy",
-  "Spain",
-  "Saudi Arabia",
-  "UAE",
-  "Japan",
-  "China",
-  "India",
-  "Brazil",
-  "Canada",
-  "Australia",
+  "Egypt", "United States", "United Kingdom", "Germany", "France",
+  "Italy", "Spain", "Saudi Arabia", "UAE", "Japan", "China",
+  "India", "Brazil", "Canada", "Australia",
 ];
-
 // tiny chip components 
 function InterestChip({ label, selected, onToggle }) {
   return (
@@ -245,19 +232,50 @@ export default function ProfileDetailsPage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState(null);
 
-  const [selectedInterests, setSelectedInterests] = useState(
-    new Set(["Swimming", "Safari", "Adventure"])
-  );
+  const [selectedInterests, setSelectedInterests] = useState(new Set(["Swimming", "Safari", "Adventure"]));
   const [selectedLangs, setSelectedLangs] = useState(["Arabic", "English"]);
-  const [selectedPrefs, setSelectedPrefs] = useState(
-    new Set(["Solo traveler", "Family", "Adventure"])
-  );
+  const [selectedPrefs, setSelectedPrefs] = useState(new Set(["Solo traveler", "Family", "Adventure"]));
   const [countrySearch, setCountrySearch] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  const availableLangs = LANGUAGES.filter((l) => !selectedLangs.includes(l));
+  // ── Load existing profile data on mount ──
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await touristApi.getProfile();
+        if (profile) {
+          // Set country
+          if (profile.nationality) setCountrySearch(profile.nationality);
+          
+          // Set languages
+          if (profile.preferredLanguages?.length) {
+            setSelectedLangs(profile.preferredLanguages);
+          }
+          
+          // Set interests
+          if (profile.interests?.length) {
+            setSelectedInterests(new Set(profile.interests));
+          }
+          
+          // Set travel preferences
+          if (profile.travelPreferences?.length) {
+            setSelectedPrefs(new Set(profile.travelPreferences));
+          }
+          
+          // Set profile photo
+          if (profile.profilePhoto?.secureUrl) {
+            setPreviewUrl(profile.profilePhoto.secureUrl);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+        // Don't block the user from filling out the form
+      }
+    };
+    loadProfile();
+  }, []);
 
   const toggleInterest = (i) =>
     setSelectedInterests((prev) => {
@@ -377,7 +395,7 @@ export default function ProfileDetailsPage() {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {availableLangs.map((l) => (
+                  {LANGUAGES.map((l) => (
                     <LangOption
                       key={l}
                       label={l}

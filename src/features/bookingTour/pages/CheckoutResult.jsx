@@ -1,34 +1,83 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  AlertCircle,
-  ArrowRight,
-  CheckCircle2,
-  Clock3,
-  RefreshCw,
-  ShieldCheck,
-} from "lucide-react";
-
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Navbar from "@/components/home/Navbar.jsx";
-import Footer from "@/components/home/Footer.jsx";
-import { paymentApi } from "@/features/payment/api/paymentApi";
+import PaymentDone from '../components/PaymentDone'
+import PaymentFail from '../components/PaymentFail'
+import { touristApi } from '../../touristVerification/api/touristApi.js'
+import { Loader2 } from 'lucide-react'
 
-const PAID_STATES = new Set(["paid", "succeeded", "success", "completed"]);
-const FAILED_STATES = new Set(["failed", "cancelled", "canceled", "expired"]);
+const Footer = () => null
 
-const getPaymentState = (payload) => {
-  const payment = payload?.payment ?? payload?.data?.payment ?? payload ?? {};
+const POLL_INTERVAL_MS = 3000
+const MAX_POLLS = 20 // ~1 minute timeout
 
-  return String(
-    payment?.status ??
-      payload?.paymentStatus ??
-      payload?.booking?.paymentStatus ??
-      "pending",
-  ).toLowerCase();
-};
+export default function CheckoutResult() {
+  const navigate = useNavigate()
+  const { bookingId } = useParams() 
+  const [searchParams] = useSearchParams()
 
-const getPaymentReference = (payload, bookingId) => {
-  const payment = payload?.payment ?? payload ?? {};
+  const resolvedBookingId = bookingId || searchParams.get('bookingId')
+
+  const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'fail'
+  const [booking, setBooking] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!resolvedBookingId) {
+      setError('Missing booking reference.')
+      setStatus('fail')
+      return
+    }
+
+    let cancelled = false
+    let pollCount = 0
+    let timeoutId
+
+    const poll = async () => {
+      try {
+        const result = await touristApi.getPaymentStatus(resolvedBookingId)
+        const paymentStatus = (result?.status || result?.paymentStatus || '').toLowerCase()
+
+        if (cancelled) return
+
+        if (paymentStatus === 'paid' || paymentStatus === 'success' || paymentStatus === 'completed') {
+          setBooking(result?.booking ?? result)
+          setStatus('success')
+          return
+        }
+
+        if (paymentStatus === 'failed' || paymentStatus === 'declined' || paymentStatus === 'cancelled') {
+          setStatus('fail')
+          return
+        }
+
+        // still pending → keep polling until MAX_POLLS
+        pollCount += 1
+        if (pollCount >= MAX_POLLS) {
+          setError('We could not confirm your payment in time. Please check your bookings.')
+          setStatus('fail')
+          return
+        }
+        timeoutId = setTimeout(poll, POLL_INTERVAL_MS)
+      } catch (err) {
+        if (cancelled) return
+        console.error('Failed to fetch payment status:', err)
+        setError(err?.message ?? 'Unable to confirm payment status.')
+        setStatus('fail')
+      }
+    }
+
+    poll()
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeoutId)
+    }
+  }, [resolvedBookingId])
+
+  const handleRetry = () => {
+    navigate(-1)
+  }
 
   return (
     payment?.reference ??
@@ -157,100 +206,27 @@ export default function CheckoutResult() {
   return (
     <div className="min-h-screen bg-[#f7f7fb] text-[#010138]">
       <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-        <div className="mb-8 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#65638a]">
-          <ShieldCheck className="h-4 w-4 text-[#EDC84C]" />
-          Secure Stripe checkout
-        </div>
+      <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16">
+        {status === 'loading' && (
+          <div className="flex flex-col items-center justify-center gap-6 min-h-[40vh]">
+            <Loader2 className="size-10 animate-spin text-[var(--maincolor)]" />
+            <p className="text-xl text-[var(--mediumfont)]">Confirming your payment…</p>
+          </div>
+        )}
 
-        {isLoading ? (
-          <StatusCard
-            icon={<RefreshCw className="h-9 w-9 animate-spin" />}
-            title="Checking your payment"
-            description="We are confirming the latest payment state with the server."
-          />
-        ) : null}
+        {status === 'success' && (
+          <PaymentDone booking={booking} onDone={() => navigate('/bookings')} />
+        )}
 
-        {!isLoading && isPaid ? (
-          <StatusCard
-            tone="success"
-            icon={<CheckCircle2 className="h-10 w-10" />}
-            title="Payment confirmed"
-            description={`Your booking is confirmed. Reference: ${getPaymentReference(payment, bookingId)}`}
-          >
-            <button
-              type="button"
-              onClick={() => navigate("/tourist/bookings")}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-[#010170] to-[#5656A0] px-6 text-sm font-semibold text-white"
-            >
-              View my bookings <ArrowRight className="h-4 w-4" />
-            </button>
-          </StatusCard>
-        ) : null}
+        {status === 'fail' && (
+          <PaymentFail onBack={() => navigate(-1)} onRetry={handleRetry} />
+        )}
 
-        {!isLoading && !isPaid && !isFailed && !isRefunded && !errorMessage ? (
-          <StatusCard
-            icon={<Clock3 className="h-10 w-10" />}
-            title="Payment is still pending"
-            description="Stripe has not confirmed the payment yet. This can take a few seconds after checkout."
-          >
-            <button
-              type="button"
-              onClick={checkAgain}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#010170] px-6 text-sm font-semibold text-white"
-            >
-              <RefreshCw className="h-4 w-4" /> Check again
-            </button>
-          </StatusCard>
-        ) : null}
-
-        {!isLoading && (isFailed || errorMessage) ? (
-          <StatusCard
-            tone="error"
-            icon={<AlertCircle className="h-10 w-10" />}
-            title="Payment was not completed"
-            description={
-              errorMessage ||
-              "Stripe could not complete this payment. Your pending booking can be used to try again."
-            }
-          >
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link
-                to="/tours"
-                className="inline-flex h-11 items-center rounded-xl border border-[#d5d4ea] px-5 text-sm font-semibold text-[#353572]"
-              >
-                Back to tours
-              </Link>
-              {bookingId ? (
-                <button
-                  type="button"
-                  onClick={retryCheckout}
-                  disabled={isRetrying}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#010170] px-6 text-sm font-semibold text-white disabled:opacity-60"
-                >
-                  {isRetrying ? "Opening Stripe..." : "Try payment again"}
-                </button>
-              ) : null}
-            </div>
-          </StatusCard>
-        ) : null}
-
-        {!isLoading && isRefunded ? (
-          <StatusCard
-            icon={<RefreshCw className="h-10 w-10" />}
-            title="Payment refunded"
-            description="This payment has been refunded to its original payment method."
-          >
-            <Link
-              to="/tourist/bookings"
-              className="inline-flex h-11 items-center rounded-xl bg-[#010170] px-6 text-sm font-semibold text-white"
-            >
-              View booking history
-            </Link>
-          </StatusCard>
-        ) : null}
+        {error && status === 'fail' && (
+          <p className="text-center text-lg text-red-500 mt-6">{error}</p>
+        )}
       </main>
       <Footer />
     </div>
-  );
+  )
 }

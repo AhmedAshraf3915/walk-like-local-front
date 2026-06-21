@@ -8,6 +8,7 @@ import Navbar from "@/components/home/Navbar.jsx";
 import CheckoutReviewModal from "../../bookingTour/components/CheckoutReviewModal";
 import { MapPin, Clock as ClockIcon, Languages, Star, Lock, Check, ArrowLeft } from "lucide-react";
 import Footer from "@/components/home/Footer.jsx"; 
+import { createCheckoutSession } from "../../touristProfile/services/Payments.js";
 
 
 const GROUP_META = {
@@ -179,6 +180,7 @@ function mapTour(data) {
     languages: Array.isArray(data.languages) ? data.languages.join(", ") : data.language || "",
     gallery,
     guide: {
+      id: data.guide?._id || data.guide?.id || "", //  
       name: data.guide?.fullName || data.guide?.name || "Local Guide",
       photo: data.guide?.profilePhoto?.secureUrl || "",
       rating: data.guide?.rating || 0,
@@ -256,6 +258,7 @@ export default function TourDetail() {
     );
   }, [tour, selectedSlotId]);
 
+<<<<<<< HEAD
   const handleBook = async () => {
     if (!isAuthenticated) {
       navigate("/login?redirect=" + encodeURIComponent(`/tours/${id}`));
@@ -318,9 +321,122 @@ export default function TourDetail() {
           "Unable to start secure checkout.",
       });
     } finally {
+=======
+//   const handleBook = async () => {
+//     if (!isAuthenticated) {
+//       navigate("/login?redirect=" + encodeURIComponent(`/tours/${id}`));
+//       return;
+//     }
+//     if (String(userRole).toLowerCase() !== "tourist") {
+//       setMsg({ type: "error", text: "Only tourists can book tours." });
+//       return;
+//     }
+//     if (!selectedSlotId) {
+//       setMsg({ type: "error", text: "Please select an available slot." });
+//       return;
+//     }
+//     if (!selectedPackage) {
+//       setMsg({ type: "error", text: "Please select a package." });
+//       return;
+//     }
+//     setBooking(true);
+//     setMsg({ type: "", text: "" });
+//     try {
+//       const result = await touristApi.createBooking({
+//         tourId: id,
+//         slotId: selectedSlotId,
+//         groupSize: GROUP_META[selectedPackage]?.size || 1,
+//         members: [],
+//         deselectedActivityIds: tour.activities
+//           .filter((a) => a.locked || enabledActivities[a.id])
+//           .map((a) => a.id),
+//       });
+//       const bookingId = result?.booking?._id || result?.booking?.id || result?._id || result?.id;
+//       setShowReview(false);
+//       if (bookingId) {
+//         navigate(`/tourist/bookings/${bookingId}/confirmation`);
+//       } else {
+//         setMsg({ type: "success", text: "Booking created! Redirecting..." });
+//       }
+//     } catch (err) {
+//         console.log("BOOKING ERROR:", err.response?.data);
+//         console.log("STATUS:", err.response?.status);
+
+//         setMsg({
+//           type: "error",
+//           text: err.response?.data?.message || err.message || "Booking failed."
+//         });
+// } finally {
+//       setBooking(false);
+//     }
+//   };
+
+  const handleBook = async () => {
+  if (!isAuthenticated) {
+    navigate("/login?redirect=" + encodeURIComponent(`/tours/${id}`));
+    return;
+  }
+  if (String(userRole).toLowerCase() !== "tourist") {
+    setMsg({ type: "error", text: "Only tourists can book tours." });
+    return;
+  }
+  if (!selectedSlotId) {
+    setMsg({ type: "error", text: "Please select an available slot." });
+    return;
+  }
+  if (!selectedPackage) {
+    setMsg({ type: "error", text: "Please select a package." });
+    return;
+  }
+  setBooking(true);
+  setMsg({ type: "", text: "" });
+  try {
+    // 1) Create the booking
+    const result = await touristApi.createBooking({
+      tourId: id,
+      slotId: selectedSlotId,
+      groupSize: GROUP_META[selectedPackage]?.size || 1,
+      members: [],
+      deselectedActivityIds: tour.activities
+        .filter((a) => !a.locked && !enabledActivities[a.id])
+        .map((a) => a.id),
+    });
+
+    const bookingId = result?.booking?._id || result?.booking?.id || result?._id || result?.id;
+
+    if (!bookingId) {
+      setMsg({ type: "error", text: "Booking was created but no booking ID was returned." });
+>>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
       setBooking(false);
+      return;
     }
-  };
+
+    //  actually start the Stripe checkout session instead of
+    // navigating straight to a local confirmation page
+    const checkoutRes = await createCheckoutSession(bookingId);
+    const checkoutUrl = checkoutRes?.url || checkoutRes?.data?.url || checkoutRes?.checkoutUrl;
+
+    if (!checkoutUrl) {
+      setMsg({ type: "error", text: "Could not start the payment session. Please try again." });
+      setBooking(false);
+      return;
+    }
+
+    // Redirect the browser to Stripe's hosted checkout page.
+    // Stripe will redirect back to your success/cancel URL after payment,
+    // which should land on CheckoutResult with this bookingId.
+    window.location.href = checkoutUrl;
+  } catch (err) {
+    console.log("BOOKING ERROR:", err.response?.data);
+    console.log("STATUS:", err.response?.status);
+
+    setMsg({
+      type: "error",
+      text: err.response?.data?.message || err.message || "Booking failed."
+    });
+    setBooking(false);
+  }
+};
 
   if (loading) {
     return (
@@ -424,9 +540,9 @@ export default function TourDetail() {
                     </div>
                   </div>
                   {tour.guide.bio && <p className="text-lg text-[var(--maintaxt)]">{tour.guide.bio}</p>}
-                  <button className="self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg">
+                  {/* <button className="self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg">
                     view guide profile
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
@@ -588,6 +704,7 @@ export default function TourDetail() {
 
       <Footer />
 
+<<<<<<< HEAD
       {showReview && (
         <CheckoutReviewModal 
           className="max-w-[200px] h-[220px]"
@@ -609,6 +726,28 @@ export default function TourDetail() {
           }}
         />
       )}
+=======
+    {showReview && (
+      <CheckoutReviewModal 
+        onClose={() => setShowReview(false)}
+        onBack={() => setShowReview(false)}
+        onContinue={handleBook}
+        loading={booking}                                    
+        error={msg.type === "error" ? msg.text : null}        
+        summary={{
+          package: pkg?.label || "—",
+          guestsNote: pkg?.guests || "—",
+          price: `$${tourBase}`,
+          activities: tour.activities
+            .filter((a) => a.locked || enabledActivities[a.id])
+            .map((a) => ({ name: a.title, price: a.included ? "Included" : `$${a.price}` })),
+          date: selectedSlot ? `${selectedSlot.day} . ${selectedSlot.date}` : "—",
+          time: selectedSlot?.time || "—",
+          total: `$${total}`,
+        }}
+      />
+    )}
+>>>>>>> d57a5a11e18e8157fdfe8483580dd8c3298bbdfe
     </div>
   );
 }
