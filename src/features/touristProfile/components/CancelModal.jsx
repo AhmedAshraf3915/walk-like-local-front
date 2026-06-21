@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, AlertTriangle, Ban } from 'lucide-react'
+import { X, AlertTriangle, Ban, AlertCircle, Loader2 } from 'lucide-react'
 
 const reasons = [
   "It's too expensive",
@@ -8,7 +8,7 @@ const reasons = [
   'Other',
 ]
 
-export default function CancelModal({ booking, onClose, onConfirm }) {
+export default function CancelModal({ booking, onClose, onConfirm, error, confirming }) {
   const [selected, setSelected] = useState("I don't need it anymore")
 
   if (!booking) return null
@@ -60,17 +60,28 @@ export default function CancelModal({ booking, onClose, onConfirm }) {
             </div>
           </div>
 
+          {/* ✅ error message inside the modal */}
+          {error && (
+            <div className="flex items-center gap-3 bg-[rgba(228,29,29,0.1)] border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] rounded-2xl px-6 py-4">
+              <AlertCircle className="size-6 shrink-0" />
+              <p className="text-lg">{error}</p>
+            </div>
+          )}
+
           <div className="flex gap-6 w-full">
             <button
               onClick={onClose}
-              className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl"
+              disabled={confirming}
+              className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl disabled:opacity-60"
             >
               Keep my plan
             </button>
             <button
               onClick={() => onConfirm(booking, selected)}
-              className="h-14 px-10 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-xl"
+              disabled={confirming}
+              className="h-14 px-10 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-xl disabled:opacity-60 flex items-center gap-2"
             >
+              {confirming && <Loader2 className="size-5 animate-spin" />}
               Confirm cancellation
             </button>
           </div>

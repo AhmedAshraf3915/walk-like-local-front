@@ -29,14 +29,14 @@ export default function VerificationPage() {
       try {
         const status = await touristApi.getVerificationStatus();
         setVerificationStatus(status);
-        
+
         // If already verified or pending, redirect to appropriate page
         if (status === "approved") {
           navigate("/onboarding/payment");
         } else if (status === "pending") {
-          // Show pending state or redirect to verification-done
           navigate("/onboarding/verification-done");
         }
+        // status === "rejected" or null/none → stay here so the user can (re)submit
       } catch (error) {
         console.error("Failed to get verification status:", error);
       } finally {
@@ -58,7 +58,12 @@ export default function VerificationPage() {
     setUploading(true);
     setUploadError(null);
     try {
-      await touristApi.submitPassport(selectedFile);
+    // use resubmitPassport when a previous submission was rejected
+      if (verificationStatus === "rejected") {
+        await touristApi.resubmitPassport(selectedFile);
+      } else {
+        await touristApi.submitPassport(selectedFile);
+      }
       navigate("/onboarding/verification-done");
     } catch (err) {
       setUploadError(
@@ -98,7 +103,6 @@ export default function VerificationPage() {
           </p>
         </div>
 
-        {/* عرض حالة التحقق الحالية إذا كانت مرفوضة */}
         {verificationStatus === "rejected" && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
             <p className="text-red-600 font-medium">
@@ -110,7 +114,6 @@ export default function VerificationPage() {
         {/* Upload card */}
         <div className="bg-white border border-[#353572] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
-            {/* Upload zone */}
             <div
               className={`flex-1 w-full min-w-[240px] bg-[#f4f4f8] rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-3 sm:gap-4 py-8 sm:py-10 lg:py-12 cursor-pointer transition-colors ${
                 selectedFile
@@ -163,7 +166,6 @@ export default function VerificationPage() {
               />
             </div>
 
-            {/* Badge preview */}
             <div className="flex flex-row lg:flex-col items-center gap-3 sm:gap-4 lg:gap-5 text-center shrink-0">
               <div
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center"
@@ -174,8 +176,8 @@ export default function VerificationPage() {
               <div>
                 <p className="text-sm sm:text-base lg:text-lg font-medium text-[#010138]">Verified Tourist Badge</p>
                 <p className="text-xs sm:text-sm text-[#353572] mt-1">
-                  {verificationStatus === "pending" 
-                    ? "Your document is being reviewed." 
+                  {verificationStatus === "pending"
+                    ? "Your document is being reviewed."
                     : verificationStatus === "rejected"
                     ? "Please resubmit your document."
                     : "Unlocked once your document is reviewed."}
@@ -204,7 +206,6 @@ export default function VerificationPage() {
           )}
         </div>
 
-        {/* Security note */}
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#010138]">
           <img src={lockIcon} alt="lock" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
           <span className="text-[11px] sm:text-sm font-light">

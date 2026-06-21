@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   OnboardingPage,
@@ -12,32 +12,50 @@ const checkGoldIcon = ICONS.checkGoldIcon;
 const verifiedIcon = ICONS.verifiedIcon;
 const lockIcon = ICONS.lockIcon;
 
+const POLL_INTERVAL_MS = 8000; // ✅ FIX: poll every 8s instead of checking once
+
 export default function VerificationDonePage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState("pending");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const pollRef = useRef(null);
+
+  const checkStatus = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const verificationStatus = await touristApi.getVerificationStatus();
+      setStatus(verificationStatus);
+
+      if (verificationStatus === "rejected") {
+        navigate("/onboarding/verification");
+      }
+    } catch (error) {
+      console.error("Failed to get verification status:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const verificationStatus = await touristApi.getVerificationStatus();
-        setStatus(verificationStatus);
-        
-        // If approved, allow continue to payment
-        // If rejected, redirect back to verification page
-        if (verificationStatus === "approved") {
-          // Navigate to payment after a short delay or automatically
-        } else if (verificationStatus === "rejected") {
-          navigate("/onboarding/verification");
-        }
-      } catch (error) {
-        console.error("Failed to get verification status:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     checkStatus();
-  }, [navigate]);
+
+    pollRef.current = setInterval(() => {
+      checkStatus({ silent: true });
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(pollRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Stop polling once we leave "pending"
+  useEffect(() => {
+    if (status !== "pending" && pollRef.current) {
+      clearInterval(pollRef.current);
+    }
+  }, [status]);
 
   if (loading) {
     return (
@@ -80,8 +98,8 @@ export default function VerificationDonePage() {
                   {status === "pending" ? "Document submitted for review" : "Document verified"}
                 </p>
                 <p className="text-xs text-[#aaaacf] mt-1">
-                  {status === "pending" 
-                    ? "Your passport is being reviewed. This usually takes 24-48 hours." 
+                  {status === "pending"
+                    ? "Your passport is being reviewed. This usually takes 24-48 hours."
                     : "Your identity has been verified successfully!"}
                 </p>
               </div>
@@ -97,13 +115,26 @@ export default function VerificationDonePage() {
               <div>
                 <p className="text-sm sm:text-base lg:text-lg font-medium text-[#010138]">Verified Tourist Badge</p>
                 <p className="text-xs sm:text-sm text-[#353572] mt-1">
-                  {status === "pending" 
-                    ? "Your badge will be unlocked once approved." 
+                  {status === "pending"
+                    ? "Your badge will be unlocked once approved."
                     : "Your badge is active!"}
                 </p>
               </div>
             </div>
           </div>
+
+          {/* ✅ FIX: manual refresh option in addition to auto-polling */}
+          {status === "pending" && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => checkStatus()}
+                disabled={refreshing}
+                className="text-xs sm:text-sm font-medium text-[#010170] hover:underline disabled:opacity-50"
+              >
+                {refreshing ? "Checking…" : "Check status now"}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#010138]">

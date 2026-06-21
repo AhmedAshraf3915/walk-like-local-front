@@ -356,6 +356,8 @@ export default function BookingHistory() {
         booking={cancelTarget}
         onClose={() => !cancelling && setCancelTarget(null)}
         onConfirm={handleConfirmCancel}
+        error={error}        
+        confirming={cancelling}  
       />
     </div>
   )

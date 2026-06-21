@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   OnboardingPage,
   OnboardingStepBar,
@@ -12,8 +12,10 @@ const checkGoldIcon = ICONS.checkGoldIcon;
 
 export default function PaymentDonePage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Auto-redirect to profile after 3 seconds
+  const last4 = location.state?.last4 ?? "••••";
+
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate("/tourist/profile");
@@ -54,7 +56,7 @@ export default function PaymentDonePage() {
                 Payout Method Added Successfully!
               </p>
               <p className="text-sm sm:text-base lg:text-lg font-light text-[#353572]">
-                Card ending in 2222 is now connected to your Locale wallet.
+                Card ending in {last4} is now connected to your Locale wallet.
               </p>
               <p className="text-xs sm:text-sm text-[#aaaacf] mt-2">
                 Redirecting to your profile...

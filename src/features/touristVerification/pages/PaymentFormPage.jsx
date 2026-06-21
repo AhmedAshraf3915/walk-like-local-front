@@ -44,14 +44,21 @@ export default function PaymentFormPage() {
     setSaving(true);
     setError(null);
     try {
-      // Send card details to backend
-      await apiClient.post("/tourists/payment-methods", {
+      const response = await apiClient.post("/tourists/payment-methods", {
         cardholderName: name,
         cardNumber: cardNum.replace(/\s/g, ""),
         expiry: expiry,
         cvv: cvv,
       });
-      navigate("/onboarding/payment-done");
+
+      // ✅ FIX: pass the real saved card back through navigation state
+      // instead of PaymentDonePage hardcoding "2222"
+      const savedCard = response?.data?.data ?? response?.data ?? {};
+      navigate("/onboarding/payment-done", {
+        state: {
+          last4: savedCard.last4 ?? cardNum.replace(/\s/g, "").slice(-4),
+        },
+      });
     } catch (err) {
       setError("Failed to save card. Please check your details and try again.");
       console.error(err);
@@ -60,7 +67,6 @@ export default function PaymentFormPage() {
     }
   };
 
-  // Handle skip - go directly to profile
   const handleSkip = () => {
     navigate("/tourist/profile");
   };
@@ -94,33 +100,11 @@ export default function PaymentFormPage() {
           </div>
 
           <div className="w-full max-w-lg flex flex-col gap-4 sm:gap-5 lg:gap-6">
-            <FormField
-              label="Name on card"
-              placeholder="Sarah Abdo"
-              value={name}
-              onChange={setName}
-            />
-            <FormField
-              label="Card number"
-              placeholder="123 456 789 321"
-              value={cardNum}
-              onChange={setCardNum}
-            />
+            <FormField label="Name on card" placeholder="Sarah Abdo" value={name} onChange={setName} />
+            <FormField label="Card number" placeholder="123 456 789 321" value={cardNum} onChange={setCardNum} />
             <div className="flex gap-3 sm:gap-4">
-              <FormField
-                label="Expiry date"
-                placeholder="MM/YY"
-                value={expiry}
-                onChange={setExpiry}
-                className="flex-1"
-              />
-              <FormField
-                label="CVV"
-                placeholder="999"
-                value={cvv}
-                onChange={setCvv}
-                className="w-28 sm:w-32"
-              />
+              <FormField label="Expiry date" placeholder="MM/YY" value={expiry} onChange={setExpiry} className="flex-1" />
+              <FormField label="CVV" placeholder="999" value={cvv} onChange={setCvv} className="w-28 sm:w-32" />
             </div>
 
             {error && (
@@ -153,9 +137,9 @@ export default function PaymentFormPage() {
       <OnboardingFooter
         backTo="/onboarding/payment"
         continueLabel="Save Card"
-        continueEnabled={false}  // Disable the default continue button
+        continueEnabled={false}
         skipLabel="Skip for now"
-        onSkip={handleSkip}  // Skip goes directly to profile
+        onSkip={handleSkip}
       />
     </OnboardingPage>
   );
