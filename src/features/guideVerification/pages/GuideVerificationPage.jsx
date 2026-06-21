@@ -5,7 +5,6 @@ import {
   EXPERIENCE_OPTIONS,
   INTEREST_OPTIONS,
   LANGUAGE_OPTIONS,
-  AI_TEST_QUESTIONS,
 } from "@/features/guideVerification/constants";
 import { useVerificationAssets } from "@/features/guideVerification/hooks/useVerificationAssets";
 import { useAiAssessment } from "@/features/guideVerification/hooks/useAiAssessment";
@@ -224,7 +223,7 @@ const GuideVerificationPage = () => {
         return (
           <AiAssessmentStep
             languageOptions={LANGUAGE_OPTIONS}
-            questions={AI_TEST_QUESTIONS}
+            questions={aiAssessment.questions}
             aiQuestionIndex={aiAssessment.aiQuestionIndex}
             aiAnswers={aiAssessment.aiAnswers}
             aiVoiceClips={aiAssessment.aiVoiceClips}
@@ -232,6 +231,7 @@ const GuideVerificationPage = () => {
             isAiSessionStarted={aiAssessment.isAiSessionStarted}
             isRecording={aiAssessment.isRecording}
             recordingSeconds={aiAssessment.recordingSeconds}
+            remainingSeconds={aiAssessment.remainingSeconds}
             startingAiSession={aiAssessment.startingAiSession}
             aiUploadingAudio={aiAssessment.aiUploadingAudio}
             submittingAiTest={aiAssessment.submittingAiTest}
@@ -245,6 +245,7 @@ const GuideVerificationPage = () => {
             onNext={() => {
               void aiAssessment.handleNextQuestion();
             }}
+            onRestartSession={aiAssessment.resetSession}
           />
         );
 

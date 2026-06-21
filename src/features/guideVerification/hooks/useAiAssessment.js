@@ -1,263 +1,537 @@
 import { useEffect, useRef, useState } from "react";
+
 import { guideVerificationApi } from "@/features/guideVerification/api/guideVerificationApi";
 import { AI_TEST_QUESTIONS } from "@/features/guideVerification/constants";
 import { useVoiceRecorder } from "@/features/guideVerification/hooks/useVoiceRecorder";
 
+const DEFAULT_TEST_DURATION_SECONDS = 180;
+
 const LANGUAGE_TO_CODE = {
-	Arabic: "ar",
-	English: "en",
-	German: "de",
-	Italian: "it",
-	Spanish: "es",
-	French: "fr",
+  Arabic: "ar",
+  English: "en",
+  German: "de",
+  Italian: "it",
+  Spanish: "es",
+  French: "fr",
 };
 
 const SUPPORTED_LANGUAGE_CODES = new Set(Object.values(LANGUAGE_TO_CODE));
 
 const toLanguageCode = (language) => {
-	if (typeof language !== "string") {
-		return "";
-	}
+  if (typeof language !== "string") return "";
 
-	const trimmedLanguage = language.trim();
-	const lowerLanguage = trimmedLanguage.toLowerCase();
+  const trimmedLanguage = language.trim();
+  const lowerLanguage = trimmedLanguage.toLowerCase();
 
-	if (SUPPORTED_LANGUAGE_CODES.has(lowerLanguage)) {
-		return lowerLanguage;
-	}
-
-	return LANGUAGE_TO_CODE[trimmedLanguage] ?? "";
+  return SUPPORTED_LANGUAGE_CODES.has(lowerLanguage)
+    ? lowerLanguage
+    : LANGUAGE_TO_CODE[trimmedLanguage] ?? "";
 };
 
 const extractSessionId = (payload) =>
-	payload?.sessionId ??
-	payload?.session?.id ??
-	payload?.session?._id ??
-	payload?.id ??
-	"";
+  payload?.sessionId ??
+  payload?.session?._id ??
+  payload?.session?.id ??
+  payload?.languageTestSession?._id ??
+  payload?.languageTestSession?.id ??
+  payload?._id ??
+  payload?.id ??
+  "";
 
-/**
- * Manages the full AI language-test flow:
- * language selection, question navigation, text answers, voice recordings,
- * audio upload, test submission, and skip tracking.
- *
- * Voice recording is delegated to useVoiceRecorder internally.
- */
+const extractActiveSessionId = (payload) => {
+  const direct =
+    payload?.activeSessionId ??
+    payload?.activeSession?._id ??
+    payload?.activeSession?.id;
+  if (direct) return direct;
+
+  if (
+    /active|progress|started/i.test(
+      String(payload?.status ?? payload?.state ?? ""),
+    )
+  ) {
+    return extractSessionId(payload);
+  }
+
+  const records =
+    payload?.languages ??
+    payload?.statuses ??
+    payload?.items ??
+    payload?.results ??
+    Object.values(payload ?? {}).filter(
+      (value) => value && typeof value === "object",
+    );
+  if (!Array.isArray(records)) return "";
+
+  const activeRecord = records.find((record) =>
+    /active|progress|started/i.test(
+      String(record?.status ?? record?.state ?? ""),
+    ),
+  );
+
+  return extractSessionId(activeRecord);
+};
+
+const normalizeQuestion = (question, index) => {
+  const rawType = String(
+    question?.type ??
+      question?.kind ??
+      question?.answerType ??
+      question?.responseType ??
+      "text",
+  ).toLowerCase();
+  const type = /voice|audio|speak|record/.test(rawType) ? "voice" : "text";
+
+  return {
+    id: String(
+      question?.questionId ?? question?._id ?? question?.id ?? `q${index + 1}`,
+    ),
+    type,
+    prompt:
+      question?.prompt ??
+      question?.question ??
+      question?.questionText ??
+      question?.instruction ??
+      (type === "voice" ? "Record your spoken answer." : "Write your answer."),
+    quote:
+      question?.quote ??
+      question?.sentence ??
+      question?.content ??
+      question?.text ??
+      "",
+    audioUrl:
+      question?.audioUrl ??
+      question?.audio?.secureUrl ??
+      question?.audio?.url ??
+      "",
+  };
+};
+
+const extractQuestions = (...payloads) => {
+  for (const payload of payloads) {
+    const questions =
+      payload?.questions ??
+      payload?.session?.questions ??
+      payload?.test?.questions ??
+      payload?.languageTest?.questions ??
+      payload?.languageTestSession?.questions;
+
+    if (Array.isArray(questions) && questions.length > 0) {
+      return questions.map(normalizeQuestion);
+    }
+  }
+
+  return [];
+};
+
+const getDurationSeconds = (...payloads) => {
+  for (const payload of payloads) {
+    const session = payload?.session ?? payload ?? {};
+    const expiresAt = session?.expiresAt ? new Date(session.expiresAt) : null;
+
+    if (expiresAt && !Number.isNaN(expiresAt.getTime())) {
+      const seconds = Math.ceil((expiresAt.getTime() - Date.now()) / 1000);
+      if (seconds > 0) return seconds;
+    }
+
+    const duration = Number(
+      session?.remainingSeconds ??
+        session?.timeRemainingSeconds ??
+        session?.expiresIn ??
+        session?.durationSeconds ??
+        session?.timeLimitSeconds ??
+        session?.duration ??
+        session?.timeLimit,
+    );
+    if (Number.isFinite(duration) && duration > 0) return duration;
+  }
+
+  return DEFAULT_TEST_DURATION_SECONDS;
+};
+
+const getSessionState = (payload) =>
+  payload?.session ?? payload?.languageTestSession ?? payload ?? {};
+
+const getInitialSessionProgress = (payload, questions) => {
+  const session = getSessionState(payload);
+  const progress = session?.progress ?? payload?.progress ?? {};
+  const answerRecords =
+    session?.answers ??
+    session?.responses ??
+    progress?.answers ??
+    progress?.responses ??
+    [];
+  const textAnswers = {};
+  const voiceClips = {};
+
+  if (Array.isArray(answerRecords)) {
+    answerRecords.forEach((record) => {
+      const questionId = String(
+        record?.questionId ?? record?.question?._id ?? record?.question?.id ?? "",
+      );
+      const questionIndex = questions.findIndex(
+        (question) => question.id === questionId,
+      );
+      if (questionIndex < 0) return;
+
+      const questionNumber = questionIndex + 1;
+      const audioUrl = record?.audioUrl ?? record?.audio?.secureUrl ?? "";
+      if (audioUrl) {
+        voiceClips[questionNumber] = {
+          asset: { secureUrl: audioUrl },
+          localUrl: "",
+          duration: Number(record?.duration ?? 0),
+        };
+      } else if (record?.answer != null) {
+        textAnswers[questionNumber] = String(record.answer);
+      }
+    });
+  }
+
+  const currentQuestionId = String(
+    progress?.currentQuestionId ?? session?.currentQuestionId ?? "",
+  );
+  const indexFromId = questions.findIndex(
+    (question) => question.id === currentQuestionId,
+  );
+  const rawIndex = Number(
+    progress?.currentQuestionIndex ??
+      session?.currentQuestionIndex ??
+      progress?.answeredCount ??
+      0,
+  );
+  const questionIndex = Math.min(
+    Math.max(indexFromId >= 0 ? indexFromId : rawIndex || 0, 0),
+    Math.max(questions.length - 1, 0),
+  );
+
+  return { questionIndex, textAnswers, voiceClips };
+};
+
+const DEFAULT_QUESTIONS = AI_TEST_QUESTIONS.map(normalizeQuestion);
+
 export const useAiAssessment = ({ setErrorMessage }) => {
-	const [selectedLanguages, setSelectedLanguages] = useState(["Arabic", "English"]);
-	const [isAiSessionStarted, setIsAiSessionStarted] = useState(false);
-	const [activeSessionId, setActiveSessionId] = useState("");
-	const [aiQuestionIndex, setAiQuestionIndex] = useState(0);
-	const [aiAnswers, setAiAnswers] = useState({});
-	const [aiVoiceClips, setAiVoiceClips] = useState({});
-	const [startingAiSession, setStartingAiSession] = useState(false);
-	const [aiUploadingAudio, setAiUploadingAudio] = useState(false);
-	const [submittingAiTest, setSubmittingAiTest] = useState(false);
-	const [aiTestCompleted, setAiTestCompleted] = useState(false);
-	const [aiSkipUsed, setAiSkipUsed] = useState(false);
+  const [selectedLanguages, setSelectedLanguages] = useState([
+    "Arabic",
+    "English",
+  ]);
+  const [questions, setQuestions] = useState(DEFAULT_QUESTIONS);
+  const [isAiSessionStarted, setIsAiSessionStarted] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState("");
+  const [sessionLanguage, setSessionLanguage] = useState("");
+  const [remainingSeconds, setRemainingSeconds] = useState(
+    DEFAULT_TEST_DURATION_SECONDS,
+  );
+  const [aiQuestionIndex, setAiQuestionIndex] = useState(0);
+  const [aiAnswers, setAiAnswers] = useState({});
+  const [aiVoiceClips, setAiVoiceClips] = useState({});
+  const [startingAiSession, setStartingAiSession] = useState(false);
+  const [aiUploadingAudio, setAiUploadingAudio] = useState(false);
+  const [submittingAiTest, setSubmittingAiTest] = useState(false);
+  const [aiTestCompleted, setAiTestCompleted] = useState(false);
+  const [aiSkipUsed, setAiSkipUsed] = useState(false);
 
-	// Ref keeps latest clips accessible in the unmount cleanup without needing deps.
-	const aiVoiceClipsRef = useRef(aiVoiceClips);
+  const aiVoiceClipsRef = useRef(aiVoiceClips);
 
-	useEffect(() => {
-		aiVoiceClipsRef.current = aiVoiceClips;
-	}, [aiVoiceClips]);
+  useEffect(() => {
+    aiVoiceClipsRef.current = aiVoiceClips;
+  }, [aiVoiceClips]);
 
-	useEffect(() => {
-		return () => {
-			Object.values(aiVoiceClipsRef.current).forEach((clip) => {
-				if (clip?.localUrl) {
-					URL.revokeObjectURL(clip.localUrl);
-				}
-			});
-		};
-	}, []);
+  useEffect(() => {
+    return () => {
+      Object.values(aiVoiceClipsRef.current).forEach((clip) => {
+        if (clip?.localUrl) URL.revokeObjectURL(clip.localUrl);
+      });
+    };
+  }, []);
 
-	// Called by useVoiceRecorder when a recording blob is ready.
-	const handleRecordingReady = async ({ questionNumber, file, duration, localUrl }) => {
-		setAiUploadingAudio(true);
-		try {
-			const uploadedAsset = await guideVerificationApi.uploadAudio(file);
-			setAiVoiceClips((current) => ({
-				...current,
-				[questionNumber]: { asset: uploadedAsset, localUrl, duration },
-			}));
-		} catch (error) {
-			URL.revokeObjectURL(localUrl);
-			setErrorMessage(error.message ?? "Unable to upload recording.");
-		} finally {
-			setAiUploadingAudio(false);
-		}
-	};
+  useEffect(() => {
+    if (!isAiSessionStarted || aiTestCompleted || remainingSeconds <= 0) {
+      return undefined;
+    }
 
-	const recorder = useVoiceRecorder({
-		onRecordingReady: handleRecordingReady,
-		onError: (msg) => setErrorMessage(msg),
-	});
+    const timer = window.setInterval(() => {
+      setRemainingSeconds((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          setErrorMessage("The language test time has expired. Start a new session.");
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
 
-	const handleLanguageToggle = (language) => {
-		setSelectedLanguages((currentLanguages) => {
-			if (language === "Arabic" && currentLanguages.includes("Arabic")) {
-				return currentLanguages;
-			}
-			if (currentLanguages.includes(language)) {
-				return currentLanguages.filter((item) => item !== language);
-			}
-			return [...currentLanguages, language];
-		});
-	};
+    return () => window.clearInterval(timer);
+  }, [aiTestCompleted, isAiSessionStarted, remainingSeconds, setErrorMessage]);
 
-	const startSession = async () => {
-		const languageCodes = [
-			...new Set(
-				selectedLanguages
-					.map(toLanguageCode)
-					.filter((value) => Boolean(value)),
-			),
-		];
+  useEffect(() => {
+    if (!isAiSessionStarted || !activeSessionId || aiTestCompleted) {
+      return undefined;
+    }
 
-		if (languageCodes.length === 0) {
-			setErrorMessage("Select at least one supported language to start the test.");
-			return;
-		}
+    const reportEvent = (type) => {
+      void guideVerificationApi
+        .reportLanguageTestIntegrityEvents(activeSessionId, {
+          events: [{ type, occurredAt: new Date().toISOString() }],
+        })
+        .catch(() => {
+          // Integrity reporting must never erase the guide's assessment answers.
+        });
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") reportEvent("TAB_SWITCH");
+    };
+    const handleBlur = () => reportEvent("FOCUS_LOSS");
 
-		const preferredLanguage = languageCodes.find((code) => code !== "ar") || languageCodes[0] || "en";
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleBlur);
 
-		setStartingAiSession(true);
-		setErrorMessage("");
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [activeSessionId, aiTestCompleted, isAiSessionStarted]);
 
-		try {
-			// The language-test API only accepts languages already stored on the
-			// guide profile, so persist the selection before checking/starting it.
-			await guideVerificationApi.updateGuideLanguages({ languages: languageCodes });
-			await guideVerificationApi.getLanguageTestStatus(languageCodes);
-			const startResponse = await guideVerificationApi.startLanguageTest({
-				language: preferredLanguage,
-			});
-			const nextSessionId = extractSessionId(startResponse);
+  const handleRecordingReady = async ({
+    questionNumber,
+    file,
+    duration,
+    localUrl,
+  }) => {
+    setAiUploadingAudio(true);
+    try {
+      const uploadedAsset = await guideVerificationApi.uploadAudio(file);
+      setAiVoiceClips((current) => ({
+        ...current,
+        [questionNumber]: { asset: uploadedAsset, localUrl, duration },
+      }));
+    } catch (error) {
+      URL.revokeObjectURL(localUrl);
+      setErrorMessage(error.message ?? "Unable to upload recording.");
+    } finally {
+      setAiUploadingAudio(false);
+    }
+  };
 
-			if (!nextSessionId) {
-				throw new Error("Language test session did not return a session ID.");
-			}
+  const recorder = useVoiceRecorder({
+    onRecordingReady: handleRecordingReady,
+    onError: (message) => setErrorMessage(message),
+  });
 
-			setActiveSessionId(nextSessionId);
-			setIsAiSessionStarted(true);
-		} catch (error) {
-			setErrorMessage(error.message ?? "Unable to start language test.");
-		} finally {
-			setStartingAiSession(false);
-		}
-	};
+  const handleLanguageToggle = (language) => {
+    setSelectedLanguages((currentLanguages) => {
+      if (language === "Arabic" && currentLanguages.includes("Arabic")) {
+        return currentLanguages;
+      }
+      return currentLanguages.includes(language)
+        ? currentLanguages.filter((item) => item !== language)
+        : [...currentLanguages, language];
+    });
+  };
 
-	const handleTextAnswerChange = (questionNumber, value) => {
-		setAiAnswers((current) => ({ ...current, [questionNumber]: value }));
-	};
+  const startSession = async () => {
+    const languageCodes = [
+      ...new Set(selectedLanguages.map(toLanguageCode).filter(Boolean)),
+    ];
 
-	const handleStartRecording = () => {
-		const questionNumber = aiQuestionIndex + 1;
-		void recorder.startRecording({
-			questionNumber,
-			previousClipLocalUrl: aiVoiceClips[questionNumber]?.localUrl,
-		});
-	};
+    if (languageCodes.length === 0) {
+      setErrorMessage("Select at least one supported language to start the test.");
+      return;
+    }
 
-	const handlePreviousQuestion = () => {
-		setAiQuestionIndex((current) => Math.max(0, current - 1));
-	};
+    const preferredLanguage =
+      languageCodes.find((code) => code !== "ar") ?? languageCodes[0];
 
-	const submitAiAssessment = async () => {
-		if (!activeSessionId) {
-			setErrorMessage("Language test session is missing. Please restart the test.");
-			return;
-		}
+    setStartingAiSession(true);
+    setErrorMessage("");
 
-		const responses = AI_TEST_QUESTIONS.map((question, index) => {
-			const questionNumber = index + 1;
-			const questionId = `q${questionNumber}`;
+    try {
+      await guideVerificationApi.updateGuideLanguages({
+        languages: languageCodes,
+      });
+      const statusResponse = await guideVerificationApi.getLanguageTestStatus([
+        preferredLanguage,
+      ]);
+      let nextSessionId = extractActiveSessionId(statusResponse);
+      let startResponse = null;
 
-			if (question.type === "voice") {
-				const clip = aiVoiceClips[questionNumber];
-				return {
-					questionId,
-					audioUrl: clip?.asset?.secureUrl ?? "",
-				};
-			}
+      if (!nextSessionId) {
+        startResponse = await guideVerificationApi.startLanguageTest({
+          language: preferredLanguage,
+        });
+        nextSessionId = extractSessionId(startResponse);
+      }
 
-			return {
-				questionId,
-				answer: aiAnswers[questionNumber] ?? "",
-			};
-		});
+      if (!nextSessionId) {
+        throw new Error("Language test session did not return a session ID.");
+      }
 
-		setSubmittingAiTest(true);
-		setErrorMessage("");
+      const sessionResponse =
+        await guideVerificationApi.getLanguageTestSession(nextSessionId);
+      const sessionQuestions = extractQuestions(sessionResponse, startResponse);
 
-		try {
-			await guideVerificationApi.submitLanguageTest(activeSessionId, {
-				answers: responses,
-			});
-			setAiTestCompleted(true);
-		} catch (error) {
-			setErrorMessage(error.message ?? "Unable to submit AI language test.");
-		} finally {
-			setSubmittingAiTest(false);
-		}
-	};
+      if (sessionQuestions.length === 0) {
+        throw new Error("Language test session did not return any questions.");
+      }
 
-	const handleNextQuestion = async () => {
-		const currentQuestion = AI_TEST_QUESTIONS[aiQuestionIndex];
-		const currentProgress = aiQuestionIndex + 1;
-		const isLastQuestion = currentProgress === AI_TEST_QUESTIONS.length;
+      const sessionProgress = getInitialSessionProgress(
+        sessionResponse,
+        sessionQuestions,
+      );
+      const sessionState = getSessionState(sessionResponse);
 
-		if (currentQuestion.type === "text") {
-			if (!String(aiAnswers[currentProgress] ?? "").trim()) {
-				setErrorMessage("Please answer the current question before continuing.");
-				return;
-			}
-		} else if (!aiVoiceClips[currentProgress]?.asset) {
-			setErrorMessage("Please record and upload your voice answer before continuing.");
-			return;
-		}
+      Object.values(aiVoiceClipsRef.current).forEach((clip) => {
+        if (clip?.localUrl) URL.revokeObjectURL(clip.localUrl);
+      });
+      setQuestions(sessionQuestions);
+      setActiveSessionId(String(nextSessionId));
+      setSessionLanguage(sessionState?.language ?? preferredLanguage);
+      setRemainingSeconds(getDurationSeconds(sessionResponse, startResponse));
+      setAiQuestionIndex(sessionProgress.questionIndex);
+      setAiAnswers(sessionProgress.textAnswers);
+      setAiVoiceClips(sessionProgress.voiceClips);
+      setAiTestCompleted(false);
+      setIsAiSessionStarted(true);
+    } catch (error) {
+      setErrorMessage(error.message ?? "Unable to start language test.");
+    } finally {
+      setStartingAiSession(false);
+    }
+  };
 
-		setErrorMessage("");
+  const handleTextAnswerChange = (questionNumber, value) => {
+    setAiAnswers((current) => ({ ...current, [questionNumber]: value }));
+  };
 
-		if (isLastQuestion) {
-			await submitAiAssessment();
-			return;
-		}
+  const handleStartRecording = () => {
+    const questionNumber = aiQuestionIndex + 1;
+    void recorder.startRecording({
+      questionNumber,
+      previousClipLocalUrl: aiVoiceClips[questionNumber]?.localUrl,
+    });
+  };
 
-		setAiQuestionIndex((current) => current + 1);
-	};
+  const handlePreviousQuestion = () => {
+    setAiQuestionIndex((current) => Math.max(0, current - 1));
+  };
 
-	const markSkipUsed = () => {
-		setAiSkipUsed(true);
-		setAiTestCompleted(true);
-	};
+  const resetSession = () => {
+    recorder.stopRecording();
+    Object.values(aiVoiceClipsRef.current).forEach((clip) => {
+      if (clip?.localUrl) URL.revokeObjectURL(clip.localUrl);
+    });
+    setIsAiSessionStarted(false);
+    setActiveSessionId("");
+    setSessionLanguage("");
+    setRemainingSeconds(DEFAULT_TEST_DURATION_SECONDS);
+    setAiQuestionIndex(0);
+    setAiAnswers({});
+    setAiVoiceClips({});
+    setErrorMessage("");
+  };
 
-	return {
-		selectedLanguages,
-		isAiSessionStarted,
-		activeSessionId,
-		aiQuestionIndex,
-		aiAnswers,
-		aiVoiceClips,
-		startingAiSession,
-		aiUploadingAudio,
-		submittingAiTest,
-		aiTestCompleted,
-		aiSkipUsed,
-		// Recording state forwarded from useVoiceRecorder
-		isRecording: recorder.isRecording,
-		recordingSeconds: recorder.recordingSeconds,
-		formatDuration: recorder.formatDuration,
-		// Handlers
-		handleLanguageToggle,
-		startSession,
-		handleTextAnswerChange,
-		handleStartRecording,
-		stopRecording: recorder.stopRecording,
-		handlePreviousQuestion,
-		handleNextQuestion,
-		markSkipUsed,
-	};
+  const submitAiAssessment = async () => {
+    if (!activeSessionId) {
+      setErrorMessage("Language test session is missing. Please restart the test.");
+      return;
+    }
+
+    const answers = questions.map((question, index) => {
+      const questionNumber = index + 1;
+
+      return question.type === "voice"
+        ? {
+            questionId: question.id,
+            audioUrl: aiVoiceClips[questionNumber]?.asset?.secureUrl ?? "",
+          }
+        : {
+            questionId: question.id,
+            answer: String(aiAnswers[questionNumber] ?? "").trim(),
+          };
+    });
+
+    setSubmittingAiTest(true);
+    setErrorMessage("");
+
+    try {
+      await guideVerificationApi.submitLanguageTest(activeSessionId, {
+        answers,
+      });
+      setAiTestCompleted(true);
+    } catch (error) {
+      setErrorMessage(error.message ?? "Unable to submit AI language test.");
+    } finally {
+      setSubmittingAiTest(false);
+    }
+  };
+
+  const handleNextQuestion = async () => {
+    const currentQuestion = questions[aiQuestionIndex];
+    const currentProgress = aiQuestionIndex + 1;
+
+    if (!currentQuestion) {
+      setErrorMessage("The current language-test question is unavailable.");
+      return;
+    }
+    if (remainingSeconds <= 0) {
+      setErrorMessage("The language test time has expired. Start a new session.");
+      return;
+    }
+    if (
+      currentQuestion.type === "text" &&
+      !String(aiAnswers[currentProgress] ?? "").trim()
+    ) {
+      setErrorMessage("Please answer the current question before continuing.");
+      return;
+    }
+    if (
+      currentQuestion.type === "voice" &&
+      !aiVoiceClips[currentProgress]?.asset
+    ) {
+      setErrorMessage("Please record and upload your voice answer before continuing.");
+      return;
+    }
+
+    setErrorMessage("");
+
+    if (currentProgress === questions.length) {
+      await submitAiAssessment();
+    } else {
+      setAiQuestionIndex((current) => current + 1);
+    }
+  };
+
+  const markSkipUsed = () => {
+    setAiSkipUsed(true);
+    setAiTestCompleted(true);
+  };
+
+  return {
+    selectedLanguages,
+    questions,
+    isAiSessionStarted,
+    activeSessionId,
+    sessionLanguage,
+    remainingSeconds,
+    aiQuestionIndex,
+    aiAnswers,
+    aiVoiceClips,
+    startingAiSession,
+    aiUploadingAudio,
+    submittingAiTest,
+    aiTestCompleted,
+    aiSkipUsed,
+    isRecording: recorder.isRecording,
+    recordingSeconds: recorder.recordingSeconds,
+    formatDuration: recorder.formatDuration,
+    handleLanguageToggle,
+    startSession,
+    handleTextAnswerChange,
+    handleStartRecording,
+    stopRecording: recorder.stopRecording,
+    handlePreviousQuestion,
+    handleNextQuestion,
+    resetSession,
+    markSkipUsed,
+  };
 };

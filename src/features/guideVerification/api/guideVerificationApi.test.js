@@ -41,6 +41,35 @@ describe("guideVerificationApi timeouts", () => {
     );
   });
 
+  it("sends the language status filter in the documented GET body", async () => {
+    apiClientMocks.get.mockResolvedValue({ data: { statuses: [] } });
+
+    await guideVerificationApi.getLanguageTestStatus(["en"]);
+
+    expect(apiClientMocks.get).toHaveBeenCalledWith(
+      "/guides/language-test/status",
+      {
+        data: { languages: ["en"] },
+        timeout: 60000,
+      },
+    );
+  });
+
+  it("submits the documented answer payload to the active session", async () => {
+    apiClientMocks.post.mockResolvedValue({ data: { status: "SUBMITTED" } });
+    const payload = {
+      answers: [{ questionId: "q1", answer: "My answer" }],
+    };
+
+    await guideVerificationApi.submitLanguageTest("session/one", payload);
+
+    expect(apiClientMocks.post).toHaveBeenCalledWith(
+      "/guides/language-test/session%2Fone/submit",
+      payload,
+      { timeout: 120000 },
+    );
+  });
+
   it("converts raw Axios timeout errors into a useful message", async () => {
     apiClientMocks.get.mockRejectedValue({
       code: "ECONNABORTED",

@@ -1,5 +1,13 @@
 import { ArrowLeft, ArrowRight, Mic } from "lucide-react";
 
+const formatCountdown = (seconds = 0) => {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remaining = safeSeconds % 60;
+
+  return `${minutes}:${String(remaining).padStart(2, "0")}`;
+};
+
 const AiAssessmentStep = ({
   languageOptions,
   questions,
@@ -10,6 +18,7 @@ const AiAssessmentStep = ({
   isAiSessionStarted,
   isRecording,
   recordingSeconds,
+  remainingSeconds,
   startingAiSession,
   aiUploadingAudio,
   submittingAiTest,
@@ -21,6 +30,7 @@ const AiAssessmentStep = ({
   onStopRecording,
   onPrevious,
   onNext,
+  onRestartSession,
 }) => {
   const currentQuestion = questions[aiQuestionIndex];
   const currentProgress = aiQuestionIndex + 1;
@@ -90,9 +100,29 @@ const AiAssessmentStep = ({
     );
   }
 
+  if (!currentQuestion) {
+    return (
+      <section className="rounded-[18px] border border-[#eab2b2] bg-white p-8 text-center">
+        <h2 className="text-2xl font-semibold text-[#111041]">
+          The assessment questions could not be loaded
+        </h2>
+        <p className="mt-2 text-[#6f6ea1]">
+          Please refresh the page and start a new language-test session.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-[18px] border border-[#b9b8dc] bg-white p-8">
-      <p className="text-center text-[48px] font-medium text-[#15147c]">2:59</p>
+      <p
+        aria-label={`${remainingSeconds} seconds remaining`}
+        className={`text-center text-[48px] font-medium ${
+          remainingSeconds <= 30 ? "text-[#b42318]" : "text-[#15147c]"
+        }`}
+      >
+        {formatCountdown(remainingSeconds)}
+      </p>
 
       <div className="mt-4 flex items-center gap-4">
         <div className="h-4 flex-1 rounded-full bg-[#ececf2]">
@@ -112,6 +142,14 @@ const AiAssessmentStep = ({
           <p className="mt-3 text-center text-[30px]">
             &ldquo;{currentQuestion.quote}&rdquo;
           </p>
+        ) : null}
+        {currentQuestion.audioUrl ? (
+          <audio
+            controls
+            preload="metadata"
+            src={currentQuestion.audioUrl}
+            className="mt-5 w-full"
+          />
         ) : null}
       </div>
 
@@ -171,10 +209,12 @@ const AiAssessmentStep = ({
         <button
           type="button"
           disabled={submittingAiTest || aiUploadingAudio}
-          onClick={onNext}
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white"
+          onClick={remainingSeconds <= 0 ? onRestartSession : onNext}
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLastQuestion
+          {remainingSeconds <= 0
+            ? "Start a new session"
+            : isLastQuestion
             ? submittingAiTest
               ? "Submitting..."
               : "Submit"

@@ -93,7 +93,7 @@ export const guideVerificationApi = {
 		withErrorMessage(
 			() =>
 				apiClient.get("/guides/language-test/status", {
-					params: languages.length > 0 ? { languages: languages.join(",") } : {},
+					...(languages.length > 0 ? { data: { languages } } : {}),
 					timeout: GUIDE_REQUEST_TIMEOUT_MS,
 				}),
 			"Unable to get language test status.",
@@ -111,7 +111,7 @@ export const guideVerificationApi = {
 	getLanguageTestSession: (sessionId) =>
 		withErrorMessage(
 			() =>
-				apiClient.get(`/guides/language-test/${sessionId}`, {
+				apiClient.get(`/guides/language-test/${encodeURIComponent(sessionId)}`, {
 					timeout: GUIDE_REQUEST_TIMEOUT_MS,
 				}),
 			"Unable to get language test session.",
@@ -120,7 +120,7 @@ export const guideVerificationApi = {
 	submitLanguageTest: (sessionId, payload) =>
 		withErrorMessage(
 			() =>
-				apiClient.post(`/guides/language-test/${sessionId}/submit`, payload, {
+				apiClient.post(`/guides/language-test/${encodeURIComponent(sessionId)}/submit`, payload, {
 					timeout: AI_REQUEST_TIMEOUT_MS,
 				}),
 			"Unable to submit language test.",
@@ -130,7 +130,7 @@ export const guideVerificationApi = {
 		withErrorMessage(
 			() =>
 				apiClient.post(
-					`/guides/language-test/${sessionId}/integrity-events`,
+					`/guides/language-test/${encodeURIComponent(sessionId)}/integrity-events`,
 					payload,
 					{ timeout: GUIDE_REQUEST_TIMEOUT_MS },
 				),
@@ -180,15 +180,6 @@ export const guideVerificationApi = {
 					timeout: GUIDE_REQUEST_TIMEOUT_MS,
 				}),
 			"Unable to complete guide profile.",
-		),
-
-	submitAiLanguageTest: (payload) =>
-		withErrorMessage(
-			() =>
-				apiClient.post("/guides/ai-language-test", payload, {
-					timeout: AI_REQUEST_TIMEOUT_MS,
-				}),
-			"Unable to submit AI language test.",
 		),
 
 	uploadImage: (file) =>

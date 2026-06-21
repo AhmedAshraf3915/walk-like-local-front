@@ -7,10 +7,7 @@ import VerificationStep from "@/features/guideVerification/components/Verificati
 import AiAssessmentStep from "@/features/guideVerification/components/AiAssessmentStep";
 import { useVerificationAssets } from "@/features/guideVerification/hooks/useVerificationAssets";
 import { useAiAssessment } from "@/features/guideVerification/hooks/useAiAssessment";
-import {
-  AI_TEST_QUESTIONS,
-  LANGUAGE_OPTIONS,
-} from "@/features/guideVerification/constants";
+import { LANGUAGE_OPTIONS } from "@/features/guideVerification/constants";
 
 const SUB_TABS = [
   {
@@ -79,7 +76,7 @@ export default function GuideCompleteProfilePage() {
           ) : (
             <AiAssessmentStep
               languageOptions={LANGUAGE_OPTIONS}
-              questions={AI_TEST_QUESTIONS}
+              questions={assessment.questions}
               aiQuestionIndex={assessment.aiQuestionIndex}
               aiAnswers={assessment.aiAnswers}
               aiVoiceClips={assessment.aiVoiceClips}
@@ -87,6 +84,7 @@ export default function GuideCompleteProfilePage() {
               isAiSessionStarted={assessment.isAiSessionStarted}
               isRecording={assessment.isRecording}
               recordingSeconds={assessment.recordingSeconds}
+              remainingSeconds={assessment.remainingSeconds}
               startingAiSession={assessment.startingAiSession}
               aiUploadingAudio={assessment.aiUploadingAudio}
               submittingAiTest={assessment.submittingAiTest}
@@ -100,6 +98,7 @@ export default function GuideCompleteProfilePage() {
               onNext={() => {
                 void assessment.handleNextQuestion();
               }}
+              onRestartSession={assessment.resetSession}
             />
           )
         ) : (

@@ -8,6 +8,10 @@ const apiMocks = vi.hoisted(() => ({
   updateGuideLanguages: vi.fn(),
   getLanguageTestStatus: vi.fn(),
   startLanguageTest: vi.fn(),
+  getLanguageTestSession: vi.fn(),
+  submitLanguageTest: vi.fn(),
+  reportLanguageTestIntegrityEvents: vi.fn(),
+  uploadAudio: vi.fn(),
 }));
 
 vi.mock("@/features/guideVerification/api/guideVerificationApi", () => ({
@@ -34,6 +38,24 @@ describe("useAiAssessment", () => {
     apiMocks.updateGuideLanguages.mockResolvedValue({});
     apiMocks.getLanguageTestStatus.mockResolvedValue({});
     apiMocks.startLanguageTest.mockResolvedValue({ sessionId: "session-1" });
+    apiMocks.getLanguageTestSession.mockResolvedValue({
+      session: {
+        _id: "session-1",
+        durationSeconds: 180,
+        questions: [
+          {
+            questionId: "server-q1",
+            type: "text",
+            prompt: "Answer the question returned by the API.",
+          },
+        ],
+      },
+    });
+    apiMocks.submitLanguageTest.mockResolvedValue({ status: "SUBMITTED" });
+    apiMocks.reportLanguageTestIntegrityEvents.mockResolvedValue({});
+    apiMocks.uploadAudio.mockResolvedValue({
+      secureUrl: "https://example.com/answer.mp3",
+    });
   });
 
   it("saves selected languages before checking and starting the test", async () => {
@@ -49,15 +71,23 @@ describe("useAiAssessment", () => {
     expect(apiMocks.updateGuideLanguages).toHaveBeenCalledWith({
       languages: ["ar", "en"],
     });
-    expect(apiMocks.getLanguageTestStatus).toHaveBeenCalledWith(["ar", "en"]);
+    expect(apiMocks.getLanguageTestStatus).toHaveBeenCalledWith(["en"]);
     expect(apiMocks.startLanguageTest).toHaveBeenCalledWith({ language: "en" });
+    expect(apiMocks.getLanguageTestSession).toHaveBeenCalledWith("session-1");
     expect(
       apiMocks.updateGuideLanguages.mock.invocationCallOrder[0],
     ).toBeLessThan(apiMocks.getLanguageTestStatus.mock.invocationCallOrder[0]);
     expect(
       apiMocks.getLanguageTestStatus.mock.invocationCallOrder[0],
     ).toBeLessThan(apiMocks.startLanguageTest.mock.invocationCallOrder[0]);
+    expect(
+      apiMocks.startLanguageTest.mock.invocationCallOrder[0],
+    ).toBeLessThan(apiMocks.getLanguageTestSession.mock.invocationCallOrder[0]);
     expect(result.current.isAiSessionStarted).toBe(true);
+    expect(result.current.questions[0]).toMatchObject({
+      id: "server-q1",
+      prompt: "Answer the question returned by the API.",
+    });
   });
 
   it("maps every offered language, including French, to its API code", async () => {
@@ -96,5 +126,58 @@ describe("useAiAssessment", () => {
       "Unable to save guide languages.",
     );
     expect(result.current.isAiSessionStarted).toBe(false);
+  });
+
+  it("resumes an active session instead of creating a duplicate test", async () => {
+    apiMocks.getLanguageTestStatus.mockResolvedValue({
+      items: [{ status: "IN_PROGRESS", sessionId: "existing-session" }],
+    });
+    apiMocks.getLanguageTestSession.mockResolvedValue({
+      session: {
+        _id: "existing-session",
+        questions: [
+          { questionId: "existing-q1", type: "text", prompt: "Continue" },
+        ],
+      },
+    });
+    const { result } = renderHook(() =>
+      useAiAssessment({ setErrorMessage: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.startSession();
+    });
+
+    expect(apiMocks.startLanguageTest).not.toHaveBeenCalled();
+    expect(apiMocks.getLanguageTestSession).toHaveBeenCalledWith(
+      "existing-session",
+    );
+    expect(result.current.activeSessionId).toBe("existing-session");
+  });
+
+  it("submits answers with the question IDs returned by the session", async () => {
+    const { result } = renderHook(() =>
+      useAiAssessment({ setErrorMessage: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.startSession();
+    });
+    act(() => {
+      result.current.handleTextAnswerChange(1, "My API-backed answer");
+    });
+    await act(async () => {
+      await result.current.handleNextQuestion();
+    });
+
+    expect(apiMocks.submitLanguageTest).toHaveBeenCalledWith("session-1", {
+      answers: [
+        {
+          questionId: "server-q1",
+          answer: "My API-backed answer",
+        },
+      ],
+    });
+    expect(result.current.aiTestCompleted).toBe(true);
   });
 });
