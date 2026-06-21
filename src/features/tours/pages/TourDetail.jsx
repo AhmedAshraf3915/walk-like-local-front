@@ -334,7 +334,7 @@ export default function TourDetail() {
       groupSize: GROUP_META[selectedPackage]?.size || 1,
       members: [],
       deselectedActivityIds: tour.activities
-        .filter((a) => a.locked || enabledActivities[a.id])
+        .filter((a) => !a.locked && !enabledActivities[a.id])
         .map((a) => a.id),
     });
 

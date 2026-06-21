@@ -1,8 +1,7 @@
-import { useState } from 'react'
-import { Pencil, Trash2, Plus, Lock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Pencil, Trash2, Plus, Lock, Loader2 } from 'lucide-react'
 import CreditCardVisual from './CreditCardVisual'
-
-const initialCards = [{ id: 1, last4: '5429', expires: '10/30', name: 'Jeffrey Richardson' }]
+import { getPaymentMethods, addPaymentMethod, updatePaymentMethod, deletePaymentMethod } from '../../bookingTour/services/paymentMethods.js'
 
 function SavedCardRow({ card, onEdit, onDelete }) {
   return (
@@ -39,7 +38,7 @@ function EncryptedNote() {
   )
 }
 
-function AddCardForm({ onSave, onCancel }) {
+function AddCardForm({ onSave, onCancel, saving }) {
   const [name, setName] = useState('')
   const [number, setNumber] = useState('')
   const [expiry, setExpiry] = useState('')
@@ -95,15 +94,15 @@ function AddCardForm({ onSave, onCancel }) {
       </div>
 
       <button
-        disabled={!valid}
+        disabled={!valid || saving}
         onClick={() => onSave({ name, last4: number.slice(-4) || '0000', expires: expiry })}
         className={`h-14 px-10 rounded-2xl shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] font-medium text-xl w-full max-w-[560px] ${
-          valid
+          valid && !saving
             ? 'bg-gradient-to-r from-[#010170] to-[#5656a0] text-white'
             : 'bg-gradient-to-r from-[#878796] to-[#b7b7c4] text-[#ccc] cursor-not-allowed'
         }`}
       >
-        Save Card
+        {saving ? 'Saving…' : 'Save Card'}
       </button>
       <button onClick={onCancel} className="text-[var(--maincolor)] underline text-lg">
         Cancel
@@ -139,58 +138,130 @@ function EmptyAddCardPrompt({ onAddClick }) {
   )
 }
 
-export default function PaymentMethods() {
-  const [cards, setCards] = useState(initialCards)
-  const [mode, setMode] = useState('list') // list | add | edit
-  const [editingCard, setEditingCard] = useState(null)
+const extractData = (res) => res?.data?.data ?? res?.data ?? res
 
-  const handleDelete = (id) => setCards((prev) => prev.filter((c) => c.id !== id))
+function normalizeCard(c) {
+  return {
+    id: c._id || c.id,
+    last4: c.last4 || c.lastFourDigits || (c.cardNumber ? c.cardNumber.slice(-4) : '0000'),
+    expires: c.expiryDate || c.expires || c.expiry || '',
+    name: c.cardholderName || c.name || c.cardholder || '',
+    brand: c.brand || c.cardBrand || '',
+  }
+}
+
+export default function PaymentMethods() {
+  const [cards, setCards] = useState([])
+  const [mode, setMode] = useState('list')
+  const [editingCard, setEditingCard] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const loadCards = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await getPaymentMethods()
+      const list = extractData(res)
+      setCards(Array.isArray(list) ? list.map(normalizeCard) : [])
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to load payment methods')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadCards()
+  }, [])
+
+  const handleDelete = async (id) => {
+    setError(null)
+    try {
+      await deletePaymentMethod(id)
+      setCards((prev) => prev.filter((c) => c.id !== id))
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to delete card')
+    }
+  }
 
   const handleEdit = (card) => {
     setEditingCard(card)
     setMode('edit')
   }
 
-  const handleSave = (data) => {
-    if (mode === 'edit' && editingCard) {
-      setCards((prev) => prev.map((c) => (c.id === editingCard.id ? { ...c, ...data } : c)))
-    } else {
-      setCards((prev) => [...prev, { id: Date.now(), ...data }])
+  const handleSave = async (data) => {
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = {
+        cardholderName: data.name,
+        last4: data.last4,
+        expiryDate: data.expires,
+        brand: data.brand || 'Visa',
+      }
+      if (mode === 'edit' && editingCard) {
+        const res = await updatePaymentMethod(editingCard.id, payload)
+        const updated = normalizeCard(extractData(res))
+        setCards((prev) => prev.map((c) => (c.id === editingCard.id ? updated : c)))
+      } else {
+        const res = await addPaymentMethod(payload)
+        const added = normalizeCard(extractData(res))
+        setCards((prev) => [...prev, added])
+      }
+      setMode('list')
+      setEditingCard(null)
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to save card')
+    } finally {
+      setSaving(false)
     }
-    setMode('list')
-    setEditingCard(null)
   }
 
-  if (mode === 'add' || mode === 'edit') {
+  if (loading) {
     return (
-      <AddCardForm
-        onSave={handleSave}
-        onCancel={() => {
-          setMode('list')
-          setEditingCard(null)
-        }}
-      />
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="size-8 animate-spin text-[var(--maincolor)]" />
+      </div>
     )
   }
 
-  if (cards.length === 0) {
-    return <EmptyAddCardPrompt onAddClick={() => setMode('add')} />
-  }
-
   return (
-    <div className="flex flex-col gap-12 items-center w-full">
-      {cards.map((card) => (
-        <SavedCardRow key={card.id} card={card} onEdit={handleEdit} onDelete={handleDelete} />
-      ))}
-      <div className="w-full max-w-[560px]">
-        <button
-          onClick={() => setMode('add')}
-          className="h-14 px-10 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-base flex items-center gap-2 w-full justify-center"
-        >
-          Add card <Plus className="size-5" />
-        </button>
-      </div>
-      <EncryptedNote />
+    <div className="flex flex-col gap-6 items-center w-full">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl px-6 py-4 w-full text-center text-lg">
+          {error}
+        </div>
+      )}
+
+      {mode === 'add' || mode === 'edit' ? (
+        <AddCardForm
+          onSave={handleSave}
+          onCancel={() => {
+            setMode('list')
+            setEditingCard(null)
+          }}
+          saving={saving}
+        />
+      ) : cards.length === 0 ? (
+        <EmptyAddCardPrompt onAddClick={() => setMode('add')} />
+      ) : (
+        <>
+          {cards.map((card) => (
+            <SavedCardRow key={card.id} card={card} onEdit={handleEdit} onDelete={handleDelete} />
+          ))}
+          <div className="w-full max-w-[560px]">
+            <button
+              onClick={() => setMode('add')}
+              className="h-14 px-10 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-base flex items-center gap-2 w-full justify-center"
+            >
+              Add card <Plus className="size-5" />
+            </button>
+          </div>
+          <EncryptedNote />
+        </>
+      )}
     </div>
   )
 }
