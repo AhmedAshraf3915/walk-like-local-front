@@ -752,6 +752,7 @@ export default function TourDetail() {
           onContinue={handleBook}
           continueLabel={booking ? "Opening Stripe..." : "Continue to payment"}
           continueDisabled={booking}
+          error={msg.type === "error" ? msg.text : null} 
           summary={{
             package: pkg?.label || "—",
             guestsNote: pkg?.guests || "—",

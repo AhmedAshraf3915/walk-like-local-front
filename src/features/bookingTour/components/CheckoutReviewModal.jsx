@@ -25,7 +25,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
           onClick={onClose}
           className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--maincolor)] shadow-sm"
         >
-          <X className="h-5 w-5" />
+          <a className="h-5 w-5" />
         </button>
         <div className="flex flex-col gap-8 p-32">
           <p className="font-bold text-2xl text-[var(--mediumfont)] tracking-[4.8px] uppercase">Checkout</p>
@@ -84,7 +84,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
             <hr className="border-[var(--lighttext)]" />
 
-            {/* ✅ error message inside the modal */}
+            {/*  error message inside the modal */}
             {error && (
               <div className="flex items-center gap-3 bg-[rgba(228,29,29,0.1)] border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] rounded-2xl px-6 py-4">
                 <AlertCircle className="size-6 shrink-0" />
