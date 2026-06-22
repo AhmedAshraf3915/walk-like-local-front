@@ -15,10 +15,8 @@ const VerificationStep = ({
   loadingStatus,
   verificationStatus,
   assets,
-  verificationSkips,
   uploadingField,
   openFilePicker,
-  toggleVerificationSkip,
   nationalIdInputRef,
   licenseInputRef,
   profilePhotoInputRef,
@@ -50,6 +48,23 @@ const VerificationStep = ({
     );
   }
 
+  if (verificationStatus === "approved") {
+    return (
+      <section className="rounded-[18px] border border-[#b9dca0] bg-white px-8 py-14 text-center">
+        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-[22px] bg-[#eefbdc] text-[#41651f]">
+          <CheckCircle2 className="h-11 w-11" />
+        </div>
+        <h2 className="text-[50px] font-semibold text-[#0e0d3f]">
+          Documents approved
+        </h2>
+        <p className="mx-auto mt-4 max-w-4xl text-[18px] text-[#37365e]">
+          Your verification documents are saved and approved. You can continue
+          with the language assessment and profile details.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <section className="rounded-[18px] border border-[#c7c6dc] bg-white p-8">
@@ -73,10 +88,7 @@ const VerificationStep = ({
             title="Upload National ID"
             subtitle="MyID.JPG, PNG or PDF. max 10MB"
             uploadedAsset={assets.nationalId}
-            skipped={verificationSkips.nationalId}
             busy={uploadingField === "nationalId"}
-            canSkip={!assets.nationalId}
-            onSkip={() => toggleVerificationSkip("nationalId")}
             onClick={() => openFilePicker("nationalId")}
           />
 
@@ -84,10 +96,7 @@ const VerificationStep = ({
             title="Tourism / Guide License ID"
             subtitle="Official Ministry of Tourism license"
             uploadedAsset={assets.tourismLicense}
-            skipped={verificationSkips.tourismLicense}
             busy={uploadingField === "tourismLicense"}
-            canSkip={!assets.tourismLicense}
-            onSkip={() => toggleVerificationSkip("tourismLicense")}
             onClick={() => openFilePicker("tourismLicense")}
           />
         </div>
@@ -106,10 +115,7 @@ const VerificationStep = ({
           <UploadCircleCard
             title="Profile image"
             uploadedAsset={assets.profilePhoto}
-            skipped={verificationSkips.profilePhoto}
             busy={uploadingField === "profilePhoto"}
-            canSkip={!assets.profilePhoto}
-            onSkip={() => toggleVerificationSkip("profilePhoto")}
             onClick={() => openFilePicker("profilePhoto")}
           />
 
@@ -118,10 +124,7 @@ const VerificationStep = ({
             title="Introduction video"
             subtitle="30 - 60 sec self-intro . mp4/mov"
             uploadedAsset={assets.introductionVideo}
-            skipped={verificationSkips.introductionVideo}
             busy={uploadingField === "introductionVideo"}
-            canSkip={!assets.introductionVideo}
-            onSkip={() => toggleVerificationSkip("introductionVideo")}
             onClick={() => openFilePicker("introductionVideo")}
           />
         </div>
@@ -172,10 +175,7 @@ const UploadCard = ({
   title,
   subtitle,
   uploadedAsset,
-  skipped,
   busy,
-  canSkip,
-  onSkip,
   onClick,
 }) => {
   if (uploadedAsset?.secureUrl) {
@@ -241,19 +241,8 @@ const UploadCard = ({
           ? "Uploading..."
           : uploadedAsset?.name
               ? `Uploaded: ${uploadedAsset.name}`
-              : skipped
-                ? "Skipped for now"
               : "Tap to upload"}
       </p>
-      {canSkip ? (
-        <button
-          type="button"
-          onClick={onSkip}
-          className="mt-3 rounded-full border border-[#bdbcd4] px-4 py-1 text-xs text-[#2f2e55]"
-        >
-          {skipped ? "Unskip" : "Skip"}
-        </button>
-      ) : null}
     </div>
   );
 };
@@ -261,10 +250,7 @@ const UploadCard = ({
 const UploadCircleCard = ({
   title,
   uploadedAsset,
-  skipped,
   busy,
-  canSkip,
-  onSkip,
   onClick,
 }) => {
   return (
@@ -295,19 +281,8 @@ const UploadCircleCard = ({
           ? "Uploading..."
           : uploadedAsset?.name
               ? `Uploaded: ${uploadedAsset.name}`
-              : skipped
-                ? "Skipped for now"
               : "Tap to upload"}
       </p>
-      {canSkip ? (
-        <button
-          type="button"
-          onClick={onSkip}
-          className="mt-3 rounded-full border border-[#bdbcd4] px-4 py-1 text-xs text-[#2f2e55]"
-        >
-          {skipped ? "Unskip" : "Skip"}
-        </button>
-      ) : null}
     </div>
   );
 };

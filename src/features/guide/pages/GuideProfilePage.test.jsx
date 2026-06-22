@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideProfilePage from "@/features/guide/pages/GuideProfilePage";
 
 const apiMocks = vi.hoisted(() => ({
-  getPublicGuides: vi.fn(),
+  getPublicGuide: vi.fn(),
   getReceivedReviews: vi.fn(),
   browseActiveTours: vi.fn(),
 }));
@@ -19,7 +19,7 @@ vi.mock("@/contexts/useAuth", () => ({
 
 vi.mock("@/features/guide/api/guidesApi", () => ({
   guidesApi: {
-    getPublicGuides: apiMocks.getPublicGuides,
+    getPublicGuide: apiMocks.getPublicGuide,
     getReceivedReviews: apiMocks.getReceivedReviews,
   },
 }));
@@ -55,22 +55,20 @@ describe("GuideProfilePage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    apiMocks.getPublicGuides.mockResolvedValue([
-      {
-        _id: "guide-1",
-        fullName: "Database Guide",
-        bio: "A biography returned by the profile endpoint.",
-        interests: ["History", "Food"],
-        experience: { year: "5 years" },
-        languages: ["ar", "en"],
-        verifiedLanguages: ["en"],
-        profilePhoto: { secureUrl: "https://images.example/guide.jpg" },
-        introductionVideo: { secureUrl: "https://videos.example/intro.mp4" },
-        rating: 4.7,
-        reviewCount: 1,
-        nationality: "Egypt",
-      },
-    ]);
+    apiMocks.getPublicGuide.mockResolvedValue({
+      _id: "guide-1",
+      fullName: "Database Guide",
+      bio: "A biography returned by the profile endpoint.",
+      interests: ["History", "Food"],
+      experience: { year: "5 years" },
+      languages: ["ar", "en"],
+      verifiedLanguages: ["en"],
+      profilePhoto: { secureUrl: "https://images.example/guide.jpg" },
+      introductionVideo: { secureUrl: "https://videos.example/intro.mp4" },
+      rating: 4.7,
+      reviewCount: 1,
+      nationality: "Egypt",
+    });
     apiMocks.browseActiveTours.mockResolvedValue({
       items: [
         {
@@ -113,10 +111,7 @@ describe("GuideProfilePage", () => {
     expect(screen.queryByText("Karim Abdelrahman")).toBeNull();
 
     await waitFor(() =>
-      expect(apiMocks.getPublicGuides).toHaveBeenCalledWith({
-        page: 1,
-        limit: 100,
-      }),
+      expect(apiMocks.getPublicGuide).toHaveBeenCalledWith("guide-1"),
     );
     expect(apiMocks.browseActiveTours).toHaveBeenCalledWith({
       page: 1,

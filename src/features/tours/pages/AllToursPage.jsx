@@ -6,7 +6,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import Navbar from "@/components/home/Navbar.jsx";
 import HeroSection from "@/components/home/HeroSection.jsx";
@@ -21,6 +21,7 @@ const PAGE_SIZE = 9;
 const EMPTY_FILTERS = {
   search: "",
   destination: "",
+  date: "",
   minPrice: "",
   maxPrice: "",
 };
@@ -29,7 +30,34 @@ const getFiltersFromSearchParams = (searchParams) => ({
   ...EMPTY_FILTERS,
   search: searchParams.get("search") ?? "",
   destination: searchParams.get("destination") ?? "",
+  date: searchParams.get("date") ?? "",
+  minPrice: searchParams.get("minPrice") ?? "",
+  maxPrice: searchParams.get("maxPrice") ?? "",
 });
+
+const normalizeWholeNumberInput = (value) => {
+  const integerPart = String(value ?? "").split(".")[0];
+  const digitsOnly = integerPart.replace(/\D/g, "");
+
+  return digitsOnly.replace(/^0+(?=\d)/, "");
+};
+
+const filterToursByDate = (items, selectedDate) => {
+  if (!selectedDate) return items;
+
+  return items.filter((tour) =>
+    (Array.isArray(tour?.slots) ? tour.slots : []).some((slot) => {
+      const rawDate = String(slot?.date ?? "");
+      if (!rawDate) return false;
+
+      const normalizedDate = Number.isNaN(new Date(rawDate).getTime())
+        ? rawDate.slice(0, 10)
+        : new Date(rawDate).toISOString().slice(0, 10);
+
+      return normalizedDate === selectedDate;
+    }),
+  );
+};
 
 function TourGridSkeleton() {
   return (
@@ -153,6 +181,7 @@ function DestinationSelect({ value, onChange, options, placeholder }) {
 
 export default function AllToursPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const initialFilters = getFiltersFromSearchParams(searchParams);
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
@@ -163,6 +192,22 @@ export default function AllToursPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [filterError, setFilterError] = useState("");
+  const hasMountedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    const nextFilters = getFiltersFromSearchParams(
+      new URLSearchParams(location.search),
+    );
+    setDraftFilters(nextFilters);
+    setFilters(nextFilters);
+    setPage(1);
+    setFilterError("");
+  }, [location.key, location.search]);
 
   useEffect(() => {
     let isMounted = true;
@@ -173,16 +218,47 @@ export default function AllToursPage() {
 
       try {
         const response = await toursApi.browseActiveTours({
-          ...filters,
+          search: filters.search,
+          destination: filters.destination,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
           groupType: filters.minPrice || filters.maxPrice ? "PRIVATE" : "",
-          page,
-          limit: PAGE_SIZE,
+          page: filters.date ? 1 : page,
+          limit: filters.date ? 100 : PAGE_SIZE,
         });
 
         if (!isMounted) return;
 
-        setTours(mapActiveTours(response, [], { priceGroupType: "PRIVATE" }));
-        setPagination(response?.pagination ?? {});
+        const dateFilteredItems = filterToursByDate(
+          Array.isArray(response?.items) ? response.items : [],
+          filters.date,
+        );
+        const pageItems = filters.date
+          ? dateFilteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+          : dateFilteredItems;
+        const dateTotalPages = Math.max(
+          Math.ceil(dateFilteredItems.length / PAGE_SIZE),
+          1,
+        );
+
+        setTours(
+          mapActiveTours(
+            { items: pageItems },
+            [],
+            { priceGroupType: "PRIVATE" },
+          ),
+        );
+        setPagination(
+          filters.date
+            ? {
+                page,
+                totalItems: dateFilteredItems.length,
+                totalPages: dateTotalPages,
+                hasPreviousPage: page > 1,
+                hasNextPage: page < dateTotalPages,
+              }
+            : (response?.pagination ?? {}),
+        );
       } catch (error) {
         if (!isMounted) return;
 
@@ -253,7 +329,7 @@ export default function AllToursPage() {
           onSubmit={applyFilters}
           className="rounded-2xl border border-[#e4e3f0] bg-white p-4 shadow-[0_6px_24px_rgba(1,1,112,0.08)] sm:p-5"
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.25fr_1fr_0.9fr_0.9fr_0.9fr]">
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
               Search
               <span className="mt-2 flex h-11 items-center gap-2 rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 focus-within:border-[#010170]">
@@ -282,14 +358,31 @@ export default function AllToursPage() {
             </label>
 
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
+              Available date
+              <input
+                type="date"
+                aria-label="Available date"
+                value={draftFilters.date}
+                onChange={(event) =>
+                  setFilterField("date", event.target.value)
+                }
+                className="mt-2 h-11 w-full rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 text-sm font-medium normal-case tracking-normal text-[#010138] outline-none focus:border-[#010170]"
+              />
+            </label>
+
+            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
               Minimum private price
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
+                inputMode="numeric"
                 value={draftFilters.minPrice}
                 onChange={(event) =>
-                  setFilterField("minPrice", event.target.value)
+                  setFilterField(
+                    "minPrice",
+                    normalizeWholeNumberInput(event.target.value),
+                  )
                 }
                 placeholder="0"
                 className="mt-2 h-11 w-full rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#010170]"
@@ -301,10 +394,14 @@ export default function AllToursPage() {
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
+                inputMode="numeric"
                 value={draftFilters.maxPrice}
                 onChange={(event) =>
-                  setFilterField("maxPrice", event.target.value)
+                  setFilterField(
+                    "maxPrice",
+                    normalizeWholeNumberInput(event.target.value),
+                  )
                 }
                 placeholder="Any"
                 className="mt-2 h-11 w-full rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#010170]"

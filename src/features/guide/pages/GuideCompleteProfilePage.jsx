@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { BadgeCheck, FileCheck2, Languages } from "lucide-react";
+import { BadgeCheck, FileCheck2, Languages, UserRound } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
+import useAuth from "@/contexts/useAuth";
 import GuideAccountShell from "@/features/guide/components/GuideAccountShell";
 import VerificationStep from "@/features/guideVerification/components/VerificationStep";
 import AiAssessmentStep from "@/features/guideVerification/components/AiAssessmentStep";
+import ProfileStep from "@/features/guideVerification/components/ProfileStep";
 import { useVerificationAssets } from "@/features/guideVerification/hooks/useVerificationAssets";
 import { useAiAssessment } from "@/features/guideVerification/hooks/useAiAssessment";
-import { LANGUAGE_OPTIONS } from "@/features/guideVerification/constants";
+import { useGuideProfile } from "@/features/guideVerification/hooks/useGuideProfile";
+import {
+  EXPERIENCE_OPTIONS,
+  INTEREST_OPTIONS,
+  LANGUAGE_OPTIONS,
+} from "@/features/guideVerification/constants";
+import { EGYPT_GOVERNORATES } from "@/features/tours/constants/tourOptions";
 
 const SUB_TABS = [
   {
@@ -21,20 +29,48 @@ const SUB_TABS = [
     to: "/guide/complete-profile/language-test",
     icon: Languages,
   },
+  {
+    label: "Profile details",
+    to: "/guide/complete-profile/details",
+    icon: UserRound,
+  },
 ];
 
 export default function GuideCompleteProfilePage() {
   const { pathname } = useLocation();
   const isLanguageTab = pathname.endsWith("/language-test");
+  const isProfileTab = pathname.endsWith("/details");
+  const { user, updateUser } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const verification = useVerificationAssets({ setErrorMessage });
   const assessment = useAiAssessment({ setErrorMessage });
+  const guideProfile = useGuideProfile({ initialProfile: user });
+
+  const saveProfile = async () => {
+    setSuccessMessage("");
+
+    if (!guideProfile.isProfileReady) {
+      setErrorMessage("Complete or skip each profile section before saving.");
+      return;
+    }
+
+    setErrorMessage("");
+
+    try {
+      const savedProfile = await guideProfile.submitProfile();
+      if (savedProfile) updateUser(savedProfile);
+      setSuccessMessage("Your public profile details were saved.");
+    } catch (error) {
+      setErrorMessage(error?.message ?? "Unable to save profile details.");
+    }
+  };
 
   return (
     <GuideAccountShell>
       <nav
         aria-label="Complete guide profile"
-        className="mx-auto grid max-w-2xl grid-cols-2 gap-2 rounded-2xl border border-[#d8d7e8] bg-white p-2 shadow-[0_10px_28px_rgba(1,1,56,0.10)]"
+        className="mx-auto grid max-w-3xl grid-cols-1 gap-2 rounded-2xl border border-[#d8d7e8] bg-white p-2 shadow-[0_10px_28px_rgba(1,1,56,0.10)] sm:grid-cols-3"
       >
         {SUB_TABS.map(({ label, to, icon: Icon, end }) => (
           <NavLink
@@ -55,13 +91,54 @@ export default function GuideCompleteProfilePage() {
       </nav>
 
       {errorMessage ? (
-        <p className="mx-auto mt-6 max-w-4xl rounded-xl border border-[#efc2c2] bg-[#fff3f3] px-4 py-3 text-sm text-[#9f2626]">
+        <p
+          role="alert"
+          className="mx-auto mt-6 max-w-4xl rounded-xl border border-[#efc2c2] bg-[#fff3f3] px-4 py-3 text-sm text-[#9f2626]"
+        >
           {errorMessage}
         </p>
       ) : null}
 
+      {successMessage ? (
+        <p
+          role="status"
+          className="mx-auto mt-6 max-w-4xl rounded-xl border border-[#b9dca0] bg-[#f3fbe9] px-4 py-3 text-sm text-[#41651f]"
+        >
+          {successMessage}
+        </p>
+      ) : null}
+
       <div className="mt-8">
-        {isLanguageTab ? (
+        {isProfileTab ? (
+          <div>
+            <ProfileStep
+              profile={guideProfile.profile}
+              profileSkips={guideProfile.profileSkips}
+              experienceOptions={EXPERIENCE_OPTIONS}
+              interestOptions={INTEREST_OPTIONS}
+              locationOptions={EGYPT_GOVERNORATES}
+              onBioChange={guideProfile.setBio}
+              onLocationChange={guideProfile.setCity}
+              onExperienceChange={guideProfile.setExperience}
+              onToggleProfileSkip={guideProfile.toggleProfileSkip}
+              onToggleInterest={guideProfile.toggleInterest}
+            />
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                disabled={guideProfile.submittingProfile}
+                onClick={() => {
+                  void saveProfile();
+                }}
+                className="h-12 rounded-xl bg-gradient-to-r from-[#010170] to-[#5656A0] px-7 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {guideProfile.submittingProfile
+                  ? "Saving..."
+                  : "Save profile details"}
+              </button>
+            </div>
+          </div>
+        ) : isLanguageTab ? (
           assessment.aiTestCompleted ? (
             <section className="mx-auto max-w-3xl rounded-3xl border border-[#cce6b8] bg-white px-6 py-14 text-center shadow-[0_12px_38px_rgba(1,1,56,0.09)]">
               <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#eefbdc] text-[#41651f]">
@@ -107,10 +184,8 @@ export default function GuideCompleteProfilePage() {
               loadingStatus={verification.loadingStatus}
               verificationStatus={verification.verificationStatus}
               assets={verification.assets}
-              verificationSkips={verification.verificationSkips}
               uploadingField={verification.uploadingField}
               openFilePicker={verification.openFilePicker}
-              toggleVerificationSkip={verification.toggleVerificationSkip}
               nationalIdInputRef={verification.nationalIdInputRef}
               licenseInputRef={verification.licenseInputRef}
               profilePhotoInputRef={verification.profilePhotoInputRef}
@@ -125,7 +200,7 @@ export default function GuideCompleteProfilePage() {
                 <button
                   type="button"
                   disabled={
-                    !verification.hasAllUploadedAssets ||
+                    verification.loadingStatus ||
                     verification.submittingVerification
                   }
                   onClick={() => {

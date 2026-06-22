@@ -156,21 +156,20 @@ export const AuthProvider = ({ children }) => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [pendingVerificationEmail, setPendingVerificationEmail] =
     useState(null);
+  const [verificationResendCooldownSeconds, setVerificationResendCooldownSeconds] =
+    useState(0);
 
   useEffect(() => {
-    if (!import.meta.env.DEV) {
-      return;
-    }
+    if (verificationResendCooldownSeconds <= 0) return undefined;
 
-    clearAuthStorage();
-    setAuthState({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      userRole: null,
-    });
-  }, []);
+    const timer = window.setTimeout(() => {
+      setVerificationResendCooldownSeconds((current) =>
+        Math.max(0, current - 1),
+      );
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [verificationResendCooldownSeconds]);
 
   useEffect(() => {
     if (!authState.isAuthenticated) {
@@ -292,10 +291,19 @@ export const AuthProvider = ({ children }) => {
       await authApi.resendVerificationEmail(targetEmail);
 
       setPendingVerificationEmail(targetEmail);
+      setVerificationResendCooldownSeconds(0);
       setSuccessMessage("Verification email sent. Please check your inbox.");
 
       return targetEmail;
     } catch (resendError) {
+      const cooldownSeconds = Number(resendError?.cooldownSeconds ?? 0);
+
+      if (Number.isFinite(cooldownSeconds) && cooldownSeconds > 0) {
+        setError(null);
+        setVerificationResendCooldownSeconds(Math.ceil(cooldownSeconds));
+        return null;
+      }
+
       const message =
         resendError instanceof Error
           ? resendError.message
@@ -355,6 +363,7 @@ export const AuthProvider = ({ children }) => {
         error,
         successMessage,
         pendingVerificationEmail,
+        verificationResendCooldownSeconds,
         login,
         signup,
         resendVerificationEmail,

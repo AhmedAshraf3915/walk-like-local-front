@@ -16,6 +16,7 @@ import ProfileStep from "@/features/guideVerification/components/ProfileStep";
 import Stepper from "@/features/guideVerification/components/Stepper";
 import GuideVerificationFooter from "@/features/guideVerification/components/GuideVerificationFooter";
 import GuideNavbar from "@/components/home/GuideNavbar.jsx";
+import { EGYPT_GOVERNORATES } from "@/features/tours/constants/tourOptions";
 
 // Heading text shown above the step content area.
 const STEP_HEADINGS = {
@@ -65,12 +66,6 @@ const GuideVerificationPage = () => {
         verification.verificationStatus === "none" ||
         verification.verificationStatus === "rejected"
       ) {
-        if (verification.hasSkippedRequiredAssets) {
-          setStep(2);
-          setErrorMessage("");
-          return;
-        }
-
         await verification.submitVerification();
         return;
       }
@@ -151,16 +146,11 @@ const GuideVerificationPage = () => {
     (step === 2 && !aiAssessment.aiSkipUsed);
 
   const isContinueDisabled =
+    verification.loadingStatus ||
     verification.submittingVerification ||
     aiAssessment.startingAiSession ||
     aiAssessment.submittingAiTest ||
-    guideProfile.submittingProfile ||
-    (step === 1 &&
-      (verification.verificationStatus === "none" ||
-        verification.verificationStatus === "rejected") &&
-      !verification.hasAllRequiredAssets) ||
-    (step === 2 && !aiAssessment.aiTestCompleted) ||
-    (step === 3 && !guideProfile.isProfileReady);
+    guideProfile.submittingProfile;
 
   // ─── Step content ────────────────────────────────────────────────────────────
 
@@ -207,10 +197,8 @@ const GuideVerificationPage = () => {
             loadingStatus={verification.loadingStatus}
             verificationStatus={verification.verificationStatus}
             assets={verification.assets}
-            verificationSkips={verification.verificationSkips}
             uploadingField={verification.uploadingField}
             openFilePicker={verification.openFilePicker}
-            toggleVerificationSkip={verification.toggleVerificationSkip}
             nationalIdInputRef={verification.nationalIdInputRef}
             licenseInputRef={verification.licenseInputRef}
             profilePhotoInputRef={verification.profilePhotoInputRef}
@@ -256,7 +244,9 @@ const GuideVerificationPage = () => {
             profileSkips={guideProfile.profileSkips}
             experienceOptions={EXPERIENCE_OPTIONS}
             interestOptions={INTEREST_OPTIONS}
+            locationOptions={EGYPT_GOVERNORATES}
             onBioChange={guideProfile.setBio}
+            onLocationChange={guideProfile.setCity}
             onExperienceChange={guideProfile.setExperience}
             onToggleProfileSkip={guideProfile.toggleProfileSkip}
             onToggleInterest={guideProfile.toggleInterest}
@@ -285,7 +275,10 @@ const GuideVerificationPage = () => {
         {renderStepHeader()}
 
         {errorMessage ? (
-          <div className="mx-auto mt-7 max-w-300 rounded-xl border border-[#eab2b2] bg-[#fff3f3] px-5 py-3 text-[#9f2626]">
+          <div
+            role="alert"
+            className="mx-auto mt-7 max-w-300 rounded-xl border border-[#eab2b2] bg-[#fff3f3] px-5 py-3 text-[#9f2626]"
+          >
             {errorMessage}
           </div>
         ) : null}

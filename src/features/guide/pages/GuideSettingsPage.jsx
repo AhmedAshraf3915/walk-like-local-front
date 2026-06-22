@@ -1,5 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Languages, Save, UserRound } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  BadgeCheck,
+  Check,
+  ChevronDown,
+  Languages,
+  MapPin,
+  Save,
+  UserRound,
+} from "lucide-react";
 
 import GuideAccountShell from "@/features/guide/components/GuideAccountShell";
 import useAuth from "@/contexts/useAuth";
@@ -11,6 +19,7 @@ import {
   INTEREST_OPTIONS,
   LANGUAGE_OPTIONS,
 } from "@/features/guideVerification/constants";
+import { EGYPT_GOVERNORATES } from "@/features/tours/constants/tourOptions";
 
 const LANGUAGE_CODES = {
   Arabic: "ar",
@@ -31,22 +40,6 @@ const getAssetUrl = (value) => {
   return value.secureUrl ?? value.secure_url ?? value.url ?? value.src ?? "";
 };
 
-const getGuideList = (payload) => {
-  if (Array.isArray(payload)) return payload;
-  return payload?.guides ?? payload?.items ?? payload?.results ?? [];
-};
-
-const getRecordId = (record) =>
-  String(
-    record?.guide?._id ??
-      record?.guide?.id ??
-      record?.user?._id ??
-      record?.user?.id ??
-      record?._id ??
-      record?.id ??
-      "",
-  );
-
 const getSource = (record) =>
   record?.guide ?? record?.user ?? record?.profile ?? record ?? {};
 
@@ -64,19 +57,37 @@ const toLanguageLabels = (value) => {
     .filter(Boolean);
 };
 
+const toGovernorate = (...values) => {
+  for (const value of values) {
+    const candidate =
+      typeof value === "string"
+        ? value
+        : value?.city ?? value?.governorate ?? value?.name ?? "";
+    const normalizedCandidate = String(candidate).trim().toLowerCase();
+    const match = EGYPT_GOVERNORATES.find(
+      (governorate) => governorate.toLowerCase() === normalizedCandidate,
+    );
+
+    if (match) return match;
+  }
+
+  return "";
+};
+
 const buildForm = (record, user, verification) => {
   const source = getSource(record);
 
   return {
     fullName: source?.fullName ?? source?.name ?? user?.fullName ?? "",
     email: source?.email ?? user?.email ?? "",
-    city:
-      source?.city ??
-      source?.location ??
-      source?.nationality ??
-      user?.city ??
-      verification?.nationality ??
-      "",
+    city: toGovernorate(
+      source?.city,
+      source?.governorate,
+      source?.location,
+      user?.city,
+      user?.governorate,
+      user?.address,
+    ),
     bio: source?.bio ?? user?.bio ?? "",
     experience: source?.experience?.year ?? user?.experience?.year ?? "",
     interests: Array.isArray(source?.interests) ? source.interests : [],
@@ -95,6 +106,112 @@ const buildForm = (record, user, verification) => {
 
 const EMPTY_FORM = buildForm(null, null, null);
 
+function GovernorateSelect({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const fieldRef = useRef(null);
+  const listboxId = useId();
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!fieldRef.current?.contains(event.target)) setIsOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const selectGovernorate = (governorate) => {
+    onChange(governorate);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={fieldRef} className="relative mt-2">
+      <button
+        type="button"
+        role="combobox"
+        aria-label="City"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        onClick={() => setIsOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+        className={`flex h-12 w-full items-center gap-3 rounded-xl border px-4 text-left text-sm outline-none transition duration-200 focus:ring-3 focus:ring-[#EDC84C]/25 ${
+          isOpen
+            ? "border-[#010170]/60 bg-white shadow-[0_8px_24px_rgba(1,1,56,0.12)]"
+            : "border-[#d8d7e8] bg-[#fdfdff] hover:border-[#aaa8cd] hover:bg-white"
+        }`}
+      >
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#efeff9] text-[#010170]">
+          <MapPin className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            value ? "font-medium text-[#010138]" : "text-[#77759a]"
+          }`}
+        >
+          {value || "Select a governorate"}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-[#010170] transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          aria-hidden="true"
+        />
+      </button>
+
+      {isOpen ? (
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Egyptian governorates"
+          className="absolute left-0 top-[calc(100%+0.55rem)] z-50 max-h-72 w-full overflow-y-auto rounded-2xl border border-[#d7d6e8] bg-white p-2 shadow-[0_20px_55px_rgba(1,1,56,0.2)] ring-1 ring-[#010170]/8 [scrollbar-color:#aaa8cd_transparent] [scrollbar-width:thin]"
+        >
+          <div className="grid gap-1 sm:grid-cols-2">
+            {EGYPT_GOVERNORATES.map((governorate) => {
+              const isSelected = governorate === value;
+
+              return (
+                <button
+                  key={governorate}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => selectGovernorate(governorate)}
+                  className={`flex min-h-10 items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
+                    isSelected
+                      ? "bg-gradient-to-r from-[#010170] to-[#45459b] font-semibold text-white shadow-sm"
+                      : "font-medium text-[#353572] hover:bg-[#f0eff8] hover:text-[#010138]"
+                  }`}
+                >
+                  <span>{governorate}</span>
+                  {isSelected ? (
+                    <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function GuideSettingsPage() {
   const { user, updateUser } = useAuth();
   const guideId = String(user?._id ?? user?.id ?? user?.userId ?? "");
@@ -112,13 +229,13 @@ export default function GuideSettingsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    guidesApi
-      .getPublicGuides({ page: 1, limit: 100 })
-      .then((payload) => {
+    const profileRequest = guideId
+      ? guidesApi.getPublicGuide(guideId)
+      : Promise.resolve(null);
+
+    profileRequest
+      .then((record) => {
         if (!isMounted) return;
-        const record = getGuideList(payload).find(
-          (candidate) => getRecordId(candidate) === guideId,
-        );
         const nextForm = buildForm(record, user, verification);
         setForm(nextForm);
         setSavedForm(nextForm);
@@ -167,6 +284,7 @@ export default function GuideSettingsPage() {
       });
       const savedProfile = await guideVerificationApi.completeGuideProfile({
         bio: form.bio.trim(),
+        city: form.city,
         interests: form.interests,
         experience: { year: form.experience },
       });
@@ -238,7 +356,6 @@ export default function GuideSettingsPage() {
               {[
                 ["Full name", form.fullName],
                 ["Email", form.email],
-                ["City", form.city],
               ].map(([label, value]) => (
                 <label key={label} className="text-xs font-semibold text-[#353572]">
                   {label}
@@ -249,6 +366,17 @@ export default function GuideSettingsPage() {
                   />
                 </label>
               ))}
+
+              <label className="text-xs font-semibold text-[#353572]">
+                City
+                <GovernorateSelect
+                  value={form.city}
+                  onChange={(city) => {
+                    setForm((current) => ({ ...current, city }));
+                    setSuccessMessage("");
+                  }}
+                />
+              </label>
 
               <label className="text-xs font-semibold text-[#353572]">
                 Experience

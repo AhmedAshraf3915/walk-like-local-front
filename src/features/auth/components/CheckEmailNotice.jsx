@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Mail, Send } from "lucide-react";
+import { ArrowRight, Clock3, Mail, Send } from "lucide-react";
 import FormError from "../../../components/shared/FormError";
 
 const CheckEmailNotice = ({
@@ -7,16 +7,31 @@ const CheckEmailNotice = ({
   loading,
   apiError,
   successMessage,
+  resendCooldownSeconds = 0,
   onResend,
 }) => {
   const [email, setEmail] = useState(initialEmail ?? "");
   const displayEmail = email || "your email address";
+  const hasResendCooldown = resendCooldownSeconds > 0;
+
+  const formatCountdown = (totalSeconds) => {
+    const seconds = Math.max(0, Number(totalSeconds) || 0);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    return hours > 0
+      ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`
+      : `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+  };
 
   const handleResend = async () => {
-    const sentEmail = await onResend(email);
+    try {
+      const sentEmail = await onResend(email);
 
-    if (sentEmail) {
-      setEmail(sentEmail);
+      if (sentEmail) setEmail(sentEmail);
+    } catch {
+      // The auth context presents unexpected API failures below the button.
     }
   };
 
@@ -51,13 +66,31 @@ const CheckEmailNotice = ({
         <button
           type="button"
           onClick={handleResend}
-          disabled={loading}
-          className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[#010170]/55 bg-transparent px-4 text-sm font-bold text-[#010170] transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#010170]/40 disabled:opacity-60"
+          disabled={loading || hasResendCooldown}
+          className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-[#010170]/55 bg-transparent px-4 text-sm font-bold text-[#010170] transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#010170]/40 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Sending..." : "Resend verification email"}
+          {loading
+            ? "Sending..."
+            : hasResendCooldown
+              ? `Try again in ${formatCountdown(resendCooldownSeconds)}`
+              : "Resend verification email"}
           <Send className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
+
+      {hasResendCooldown ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-5 flex w-full items-start gap-3 rounded-xl border border-amber-300/80 bg-amber-50/95 px-4 py-3 text-left text-sm leading-5 text-amber-900"
+        >
+          <Clock3 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <p>
+            A verification email is already on its way. Please check your inbox
+            and spam folder. You can request another when the timer ends.
+          </p>
+        </div>
+      ) : null}
 
       {apiError ? (
         <div className="mt-5 w-full text-left">

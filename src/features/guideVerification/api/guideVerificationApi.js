@@ -30,10 +30,14 @@ const getErrorMessage = (error, fallbackMessage) => {
 	return fallbackMessage;
 };
 
-const withErrorMessage = async (request, fallbackMessage) => {
+const withErrorMessage = async (
+	request,
+	fallbackMessage,
+	transform = unwrapResponseData,
+) => {
 	try {
 		const response = await request();
-		return unwrapResponseData(response);
+		return transform(response);
 	} catch (error) {
 		throw new Error(getErrorMessage(error, fallbackMessage), { cause: error });
 	}
@@ -63,7 +67,7 @@ const uploadToCloudinary = async ({ file, resourceType, folder }) => {
 
 	return withErrorMessage(
 		async () => {
-			const response = await cloudinaryClient.post(endpoint, formData, {
+			return cloudinaryClient.post(endpoint, formData, {
 				timeout:
 					resourceType === "image"
 						? IMAGE_UPLOAD_TIMEOUT_MS
@@ -72,10 +76,9 @@ const uploadToCloudinary = async ({ file, resourceType, folder }) => {
 					"Content-Type": "multipart/form-data",
 				},
 			});
-
-			return toCloudinaryAsset(response?.data ?? {});
 		},
 		"Upload failed. Please try again.",
+		(response) => toCloudinaryAsset(response?.data ?? {}),
 	);
 };
 
@@ -115,6 +118,20 @@ export const guideVerificationApi = {
 					timeout: GUIDE_REQUEST_TIMEOUT_MS,
 				}),
 			"Unable to get language test session.",
+		),
+
+	getLanguageTestQuestionAudio: (sessionId, questionId, language = "") =>
+		withErrorMessage(
+			() =>
+				apiClient.get(
+					`/guides/language-test/${encodeURIComponent(sessionId)}/questions/${encodeURIComponent(questionId)}/audio`,
+					{
+						...(language ? { data: { language } } : {}),
+						responseType: "blob",
+						timeout: GUIDE_REQUEST_TIMEOUT_MS,
+					},
+				),
+			"Unable to get language test question audio.",
 		),
 
 	submitLanguageTest: (sessionId, payload) =>

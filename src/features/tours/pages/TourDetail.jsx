@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { apiClient } from "@/services/apiClient";
+import { toursApi } from "@/features/tours/api/toursApi";
 import { touristApi } from "@/features/touristVerification/api/touristApi";
 import { paymentApi } from "@/features/payment/api/paymentApi";
+import { guidesApi } from "@/features/guide/api/guidesApi";
 import useAuth from "@/contexts/useAuth";
 import Navbar from "@/components/home/Navbar.jsx";
 import CheckoutReviewModal from "../../bookingTour/components/CheckoutReviewModal";
@@ -40,11 +41,13 @@ function StatItem({ icon: Icon, label, value }) {
   );
 }
 
-function PackageCard({ pkg, active, onSelect }) {
+function PackageCard({ pkg, active, onSelect, disabled = false }) {
   return (
     <button
+      type="button"
+      disabled={disabled}
       onClick={() => onSelect(pkg.id)}
-      className={`flex-1 min-w-[220px] text-left rounded-2xl border p-5 transition-colors ${
+      className={`flex-1 min-w-[220px] text-left rounded-2xl border p-5 transition-colors disabled:cursor-default ${
         active
           ? "bg-[var(--maincolor)] border-[var(--lighttext)] shadow-[-8px_8px_24px_0px_rgba(1,1,56,0.25)]"
           : "bg-white border-[var(--lighttext)]"
@@ -87,7 +90,14 @@ function PackageCard({ pkg, active, onSelect }) {
   );
 }
 
-function ActivityRow({ activity, enabled, onToggle, isFirst, isLast }) {
+function ActivityRow({
+  activity,
+  enabled,
+  onToggle,
+  isFirst,
+  isLast,
+  disabled = false,
+}) {
   return (
     <div
       className={`bg-white p-6 w-full flex items-center justify-between gap-2 ${
@@ -96,7 +106,9 @@ function ActivityRow({ activity, enabled, onToggle, isFirst, isLast }) {
     >
       <div className="flex gap-6 items-center flex-1">
         <button
-          disabled={activity.locked}
+          type="button"
+          aria-label={`${enabled ? "Included" : "Not included"}: ${activity.title}`}
+          disabled={disabled || activity.locked}
           onClick={() => onToggle(activity.id)}
           className={`shrink-0 size-[30px] rounded-2xl flex items-center justify-center ${
             activity.locked
@@ -139,14 +151,16 @@ function ActivityRow({ activity, enabled, onToggle, isFirst, isLast }) {
   );
 }
 
-function SlotCard({ slot, onSelect }) {
+function SlotCard({ slot, onSelect, disabled = false }) {
   const base =
-    "flex-1 min-w-[150px] rounded-2xl border px-5 py-5 flex flex-col gap-2 text-center cursor-pointer";
+    "flex-1 min-w-[150px] rounded-2xl border px-5 py-5 flex flex-col gap-2 text-center";
   if (slot.status === "selected") {
     return (
-      <div
+      <button
+        type="button"
+        disabled={disabled}
         onClick={() => onSelect(slot.id)}
-        className={`${base} bg-[var(--maincolor)] border-[var(--lighttext)] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)]`}
+        className={`${base} cursor-pointer bg-[var(--maincolor)] border-[var(--lighttext)] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] disabled:cursor-default`}
       >
         <p className="text-base text-[var(--lightblue)] tracking-[2.7px] uppercase">
           {slot.day}
@@ -155,12 +169,14 @@ function SlotCard({ slot, onSelect }) {
         <p className="text-base font-medium text-[var(--lightblue)]">
           {slot.time}
         </p>
-      </div>
+      </button>
     );
   }
   if (slot.status === "unavailable") {
     return (
-      <div
+      <button
+        type="button"
+        disabled
         className={`${base} bg-[#eeeef0] border-[var(--lighttext)] cursor-not-allowed`}
       >
         <p className="text-base text-[var(--mediumfont)] tracking-[2.7px] uppercase">
@@ -172,13 +188,15 @@ function SlotCard({ slot, onSelect }) {
         <p className="text-base font-medium text-[var(--mediumfont)] line-through">
           {slot.time}
         </p>
-      </div>
+      </button>
     );
   }
   return (
-    <div
+    <button
+      type="button"
+      disabled={disabled}
       onClick={() => onSelect(slot.id)}
-      className={`${base} bg-white border-[var(--lighttext)] hover:border-[var(--maincolor)]`}
+      className={`${base} cursor-pointer bg-white border-[var(--lighttext)] hover:border-[var(--maincolor)] disabled:cursor-default disabled:hover:border-[var(--lighttext)]`}
     >
       <p className="text-base text-[var(--mediumfont)] tracking-[2.7px] uppercase">
         {slot.day}
@@ -187,11 +205,36 @@ function SlotCard({ slot, onSelect }) {
       <p className="text-base font-medium text-[var(--mediumfont)]">
         {slot.time}
       </p>
-    </div>
+    </button>
   );
 }
 
-function mapTour(data) {
+const getAssetUrl = (value) => {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+  return value.secureUrl ?? value.secure_url ?? value.url ?? value.src ?? "";
+};
+
+const getTourGuideId = (data) => {
+  const reference = data?.guide ?? data?.guideId;
+  if (typeof reference === "string") return reference;
+
+  return String(
+    reference?._id ??
+      reference?.id ??
+      data?.guideId?._id ??
+      data?.guideId?.id ??
+      "",
+  );
+};
+
+const getGuideSource = (payload) =>
+  payload?.guide ?? payload?.user ?? payload?.profile ?? payload ?? {};
+
+const getActivityPrice = (activity, groupType) =>
+  Number(activity?.pricing?.[groupType] ?? activity?.price) || 0;
+
+function mapTour(data, publicGuideProfile = null) {
   const pricing = data.pricing || {};
   const packages = Object.keys(GROUP_META)
     .filter((k) => pricing[k] > 0)
@@ -203,21 +246,30 @@ function mapTour(data) {
     }));
 
   const gallery = [
-    data.coverImage?.secureUrl,
-    ...(Array.isArray(data.images)
-      ? data.images.map((img) => img?.secureUrl)
+    getAssetUrl(data.coverImage),
+    ...(Array.isArray(data.galleryImages)
+      ? data.galleryImages.map(getAssetUrl)
+      : Array.isArray(data.images)
+        ? data.images.map(getAssetUrl)
       : []),
   ].filter(Boolean);
 
   const activities = (data.activities || []).map((act, i) => {
+    const pricing =
+      act?.pricing && typeof act.pricing === "object" ? act.pricing : {};
     const priceValue = Number(act.price) || 0;
-    const included = act.included ?? priceValue === 0;
+    const hasPricedOption = Object.values(pricing).some(
+      (price) => Number(price) > 0,
+    );
+    const included = act.included ?? (!hasPricedOption && priceValue === 0);
     return {
       id: act._id || act.id || String(i),
       title: act.name || act.title || "Activity",
       desc: act.description || "",
       included,
-      locked: !!act.locked,
+      locked: Boolean(act.locked ?? act.removable === false),
+      removable: act.removable !== false,
+      pricing,
       price: priceValue,
       note: act.note || "",
     };
@@ -237,6 +289,15 @@ function mapTour(data) {
     };
   });
 
+  const embeddedGuide =
+    data?.guide && typeof data.guide === "object"
+      ? data.guide
+      : data?.guideId && typeof data.guideId === "object"
+        ? data.guideId
+        : {};
+  const publicGuide = getGuideSource(publicGuideProfile);
+  const guide = publicGuideProfile ? publicGuide : embeddedGuide;
+
   return {
     id: data._id || data.id,
     title: data.title || "",
@@ -249,13 +310,29 @@ function mapTour(data) {
       : data.language || "",
     gallery,
     guide: {
-      id: data.guide?._id || data.guide?.id || "", //
-      name: data.guide?.fullName || data.guide?.name || "Local Guide",
-      photo: data.guide?.profilePhoto?.secureUrl || "",
-      rating: data.guide?.rating || 0,
-      totalTours: data.guide?.totalTours || 0,
-      reviews: data.guide?.reviewsCount || data.guide?.reviews || 0,
-      bio: data.guide?.bio || "",
+      id: getTourGuideId(data),
+      name: guide?.fullName || guide?.name || "Local Guide",
+      photo:
+        getAssetUrl(guide?.profilePhoto) ||
+        getAssetUrl(guide?.avatar) ||
+        getAssetUrl(embeddedGuide?.profilePhoto),
+      rating:
+        Number(
+          guide?.averageRating ??
+            guide?.rating ??
+            guide?.reviewsSummary?.averageRating,
+        ) || 0,
+      totalTours:
+        Number(
+          guide?.totalTours ?? guide?.activeToursCount ?? guide?.toursCount,
+        ) || 0,
+      reviews:
+        Number(
+          guide?.reviewCount ??
+            guide?.reviewsCount ??
+            guide?.reviewsSummary?.count,
+        ) || 0,
+      bio: guide?.bio || "",
     },
     packages,
     activities,
@@ -267,6 +344,9 @@ export default function TourDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, userRole } = useAuth();
+  const normalizedRole = String(userRole ?? "").toLowerCase();
+  const isTourist = isAuthenticated && normalizedRole === "tourist";
+  const isReadOnly = !isTourist;
 
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -280,13 +360,28 @@ export default function TourDetail() {
   const [pendingBookingId, setPendingBookingId] = useState("");
   const [msg, setMsg] = useState({ type: "", text: "" });
 
-  const unwrap = (res) => res?.data?.data ?? res?.data ?? res;
-
   useEffect(() => {
-    apiClient
-      .get(`/tours/${id}`)
-      .then((res) => {
-        const mapped = mapTour(unwrap(res));
+    let isMounted = true;
+
+    const loadTour = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const tourRecord = await toursApi.getTourDetails(id);
+        const guideId = getTourGuideId(tourRecord);
+        let guideProfile = null;
+
+        if (guideId) {
+          try {
+            guideProfile = await guidesApi.getPublicGuide(guideId);
+          } catch {
+            // The embedded guide remains a safe fallback if profile loading fails.
+          }
+        }
+
+        if (!isMounted) return;
+        const mapped = mapTour(tourRecord, guideProfile);
         setTour(mapped);
         if (mapped.packages.length > 0)
           setSelectedPackage(mapped.packages[0].id);
@@ -295,19 +390,35 @@ export default function TourDetail() {
           if (a.locked || a.included) lockedDefaults[a.id] = true;
         });
         setEnabledActivities(lockedDefaults);
-      })
-      .catch((err) => setError(err.message || "Failed to load tour"))
-      .finally(() => setLoading(false));
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError.message || "Failed to load tour");
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    void loadTour();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  const toggleActivity = (activityId) =>
+  const toggleActivity = (activityId) => {
+    if (isReadOnly) return;
+
     setEnabledActivities((prev) => ({
       ...prev,
       [activityId]: !prev[activityId],
     }));
+  };
 
-  const selectSlot = (slotId) =>
+  const selectSlot = (slotId) => {
+    if (isReadOnly) return;
     setSelectedSlotId((prev) => (prev === slotId ? null : slotId));
+  };
 
   const pkg = useMemo(
     () => tour?.packages.find((p) => p.id === selectedPackage) || null,
@@ -318,8 +429,15 @@ export default function TourDetail() {
     if (!tour) return 0;
     return tour.activities
       .filter((a) => a.locked || enabledActivities[a.id])
-      .reduce((sum, a) => sum + (a.included ? 0 : a.price), 0);
-  }, [tour, enabledActivities]);
+      .reduce(
+        (sum, activity) =>
+          sum +
+          (activity.included
+            ? 0
+            : getActivityPrice(activity, selectedPackage)),
+        0,
+      );
+  }, [tour, enabledActivities, selectedPackage]);
 
   const tourBase = pkg?.price || 0;
   const total = tourBase + activitiesTotal;
@@ -395,6 +513,16 @@ export default function TourDetail() {
     }
   };
 
+  const handleBookingAction = () => {
+    if (!isAuthenticated) {
+      navigate("/login?redirect=" + encodeURIComponent(`/tours/${id}`));
+      return;
+    }
+
+    if (!isTourist) return;
+    setShowReview(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
@@ -426,6 +554,13 @@ export default function TourDetail() {
       <Navbar />
 
       <main className="max-w-[1920px] mx-auto px-8 lg:px-24 py-12 flex flex-col gap-22">
+        <Link
+          to="/tours"
+          className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#d8d7e8] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--maincolor)] shadow-sm transition hover:border-[var(--maincolor)] hover:bg-[#f7f7fc]"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to tours
+        </Link>
+
         <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
           {/* Left column */}
           <div className="flex flex-col gap-12 flex-1 w-full">
@@ -570,6 +705,7 @@ export default function TourDetail() {
                       pkg={p}
                       active={selectedPackage === p.id}
                       onSelect={setSelectedPackage}
+                      disabled={isReadOnly}
                     />
                   ))}
                 </div>
@@ -584,17 +720,22 @@ export default function TourDetail() {
                     Included activities
                   </h2>
                   <p className="text-xl text-[var(--maincolor)]">
-                    Opt out of removable items; locked items are part of the
-                    core experience.
+                    {isReadOnly
+                      ? "Activities included with this experience."
+                      : "Opt out of removable items; locked items are part of the core experience."}
                   </p>
                 </div>
                 <div className="border border-[var(--lighttext)] rounded-2xl shadow-[0px_8px_24px_0px_rgba(1,1,56,0.08)] overflow-hidden w-full">
                   {tour.activities.map((a, i) => (
                     <ActivityRow
                       key={a.id}
-                      activity={a}
+                      activity={{
+                        ...a,
+                        price: getActivityPrice(a, selectedPackage),
+                      }}
                       enabled={!!enabledActivities[a.id]}
                       onToggle={toggleActivity}
+                      disabled={isReadOnly}
                       isFirst={i === 0}
                       isLast={i === tour.activities.length - 1}
                     />
@@ -611,8 +752,9 @@ export default function TourDetail() {
                     Available time slots
                   </h2>
                   <p className="text-xl text-[var(--maincolor)]">
-                    Pick a window. Booked slots return to availability if the
-                    guide cancels.
+                    {isReadOnly
+                      ? "Available dates and times for this experience."
+                      : "Pick a window. Booked slots return to availability if the guide cancels."}
                   </p>
                 </div>
                 <div className="flex flex-col gap-6 w-full items-center">
@@ -638,7 +780,12 @@ export default function TourDetail() {
                   </div>
                   <div className="flex flex-wrap gap-6 w-full">
                     {slotsWithStatus.map((s) => (
-                      <SlotCard key={s.id} slot={s} onSelect={selectSlot} />
+                      <SlotCard
+                        key={s.id}
+                        slot={s}
+                        onSelect={selectSlot}
+                        disabled={isReadOnly}
+                      />
                     ))}
                   </div>
                 </div>
@@ -667,7 +814,7 @@ export default function TourDetail() {
                     Live receipt
                   </p>
                   <span className="bg-[rgba(1,1,112,0.05)] text-[var(--mediumfont)] rounded-full px-6 py-2 text-base font-medium">
-                    Editable
+                    {isTourist ? "Editable" : "Read-only"}
                   </span>
                 </div>
 
@@ -691,7 +838,11 @@ export default function TourDetail() {
                           className="flex items-center justify-between text-[var(--maincolor)]"
                         >
                           <p>{a.title}</p>
-                          <p>{a.included ? "Included" : `$${a.price}`}</p>
+                          <p>
+                            {a.included
+                              ? "Included"
+                              : `$${getActivityPrice(a, selectedPackage)}`}
+                          </p>
                         </div>
                       ))}
                   </div>
@@ -706,11 +857,19 @@ export default function TourDetail() {
 
                 <div className="flex flex-col gap-3 items-center">
                   <button
-                    onClick={() => setShowReview(true)}
-                    disabled={!selectedSlotId || !selectedPackage}
-                    className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-semibold text-lg w-full disabled:opacity-60"
+                    type="button"
+                    onClick={handleBookingAction}
+                    disabled={
+                      (isAuthenticated && !isTourist) ||
+                      (isTourist && (!selectedSlotId || !selectedPackage))
+                    }
+                    className="h-14 px-6 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-semibold text-base w-full disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isAuthenticated ? "Proceed to booking" : "Log in to book"}
+                    {!isAuthenticated
+                      ? "Log in as a tourist to book"
+                      : isTourist
+                        ? "Proceed to booking"
+                        : "Available to tourist accounts only"}
                   </button>
                   <div className="flex items-center gap-2">
                     <Lock className="size-4 text-[var(--maincolor)]" />
@@ -722,29 +881,30 @@ export default function TourDetail() {
               </div>
             </div>
 
-            <div className="flex gap-4 items-start">
+            <details
+              id="cancellation-policy"
+              className="group rounded-2xl border border-[#ded7b5] bg-[#fffdf5] p-5"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-4 text-[var(--darkgold)]">
               <Check className="size-10 text-[var(--darkgold)] shrink-0" />
-              <div className="flex flex-col gap-2">
-                <a
-                  href="/cancellation-policy"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-lg font-medium text-[var(--darkgold)] underline"
-                >
-                  View our cancellation policies
-                </a>
-                <p className="text-base text-[rgba(135,114,43,0.7)]">
-                  Upgrade for total flexibility with Any Reason Cancellation
-                </p>
-              </div>
-            </div>
+                <span className="text-lg font-medium underline">
+                  View our cancellation policy
+                </span>
+              </summary>
+              <p className="mt-4 border-t border-[#ded7b5] pt-4 text-sm leading-6 text-[rgba(96,81,28,0.82)]">
+                Cancellation eligibility and refunds depend on the booking
+                status and how close the tour is to its start time. Your exact
+                refund terms are shown before payment and remain available in
+                your booking history.
+              </p>
+            </details>
           </div>
         </div>
       </main>
 
       <Footer />
 
-      {showReview && (
+      {showReview && isTourist && (
         <CheckoutReviewModal
           className="max-w-[200px] h-[220px]"
           onClose={() => setShowReview(false)}
@@ -760,7 +920,9 @@ export default function TourDetail() {
               .filter((a) => a.locked || enabledActivities[a.id])
               .map((a) => ({
                 name: a.title,
-                price: a.included ? "Included" : `$${a.price}`,
+                price: a.included
+                  ? "Included"
+                  : `$${getActivityPrice(a, selectedPackage)}`,
               })),
             date: selectedSlot
               ? `${selectedSlot.day} . ${selectedSlot.date}`

@@ -13,6 +13,7 @@ const CheckEmailNoticePage = () => {
     loading,
     error,
     successMessage,
+    verificationResendCooldownSeconds,
   } = useAuth();
 
   const emailFromNavigation = location.state?.email ?? null;
@@ -43,6 +44,7 @@ const CheckEmailNoticePage = () => {
         loading={loading}
         apiError={error}
         successMessage={successMessage}
+        resendCooldownSeconds={verificationResendCooldownSeconds}
         onResend={resendVerificationEmail}
       />
     </VerificationGlassShell>

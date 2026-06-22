@@ -33,17 +33,43 @@ const toLanguageCode = (language) => {
  * per-section skip toggles. Computes isProfileReady based on filled or skipped
  * sections.
  */
-export const useGuideProfile = () => {
-	const [profile, setProfile] = useState(initialProfileState);
+const toInitialProfile = (source) => {
+	const nestedProfile = source?.guideProfile ?? source?.profile ?? {};
+	const interests = Array.isArray(source?.interests)
+		? source.interests
+		: Array.isArray(nestedProfile?.interests)
+			? nestedProfile.interests
+			: [];
+
+	return {
+		bio: source?.bio ?? nestedProfile?.bio ?? initialProfileState.bio,
+		city:
+			source?.city ??
+			source?.governorate ??
+			nestedProfile?.city ??
+			nestedProfile?.governorate ??
+			initialProfileState.city,
+		yearsOfExperience:
+			source?.experience?.year ??
+			nestedProfile?.experience?.year ??
+			initialProfileState.yearsOfExperience,
+		interests,
+	};
+};
+
+export const useGuideProfile = ({ initialProfile } = {}) => {
+	const [profile, setProfile] = useState(() => toInitialProfile(initialProfile));
 	const [submittingProfile, setSubmittingProfile] = useState(false);
 	const [profileSkips, setProfileSkips] = useState({
 		bio: false,
+		city: false,
 		yearsOfExperience: false,
 		interests: false,
 	});
 
 	const isProfileReady =
 		(Boolean(profile.bio.trim()) || profileSkips.bio) &&
+		(Boolean(profile.city) || profileSkips.city) &&
 		(Boolean(profile.yearsOfExperience) || profileSkips.yearsOfExperience) &&
 		(profile.interests.length > 0 || profileSkips.interests);
 
@@ -53,6 +79,10 @@ export const useGuideProfile = () => {
 
 	const setExperience = (value) => {
 		setProfile((current) => ({ ...current, yearsOfExperience: value }));
+	};
+
+	const setCity = (value) => {
+		setProfile((current) => ({ ...current, city: value }));
 	};
 
 	const toggleInterest = (interest) => {
@@ -97,17 +127,22 @@ export const useGuideProfile = () => {
 				profilePayload.interests = profile.interests;
 			}
 
+			if (!profileSkips.city && profile.city) {
+				profilePayload.city = profile.city;
+			}
+
 			if (!profileSkips.yearsOfExperience && profile.yearsOfExperience) {
 				profilePayload.experience = {
 					year: profile.yearsOfExperience,
 				};
 			}
 
-			if (Object.keys(profilePayload).length > 0) {
-				await guideVerificationApi.completeGuideProfile(profilePayload);
-			}
+			const savedProfile =
+				Object.keys(profilePayload).length > 0
+					? await guideVerificationApi.completeGuideProfile(profilePayload)
+					: null;
 
-			return {
+			return savedProfile ?? {
 				...profilePayload,
 				...(languages.length > 0 ? { languages } : {}),
 			};
@@ -122,6 +157,7 @@ export const useGuideProfile = () => {
 		isProfileReady,
 		submittingProfile,
 		setBio,
+		setCity,
 		setExperience,
 		toggleInterest,
 		toggleProfileSkip,

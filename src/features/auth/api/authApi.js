@@ -65,6 +65,70 @@ const postWithMessage = async (path, payload, fallbackMessage) => {
 	}
 };
 
+const extractCooldownSeconds = (error) => {
+	const errorData = error?.response?.data ?? error?.cause?.response?.data ?? {};
+	const explicitSeconds = Number(
+		error?.cooldownSeconds ??
+			errorData?.retryAfterSeconds ??
+			errorData?.retryAfter ??
+			errorData?.remainingSeconds,
+	);
+
+	if (Number.isFinite(explicitSeconds) && explicitSeconds > 0) {
+		return Math.ceil(explicitSeconds);
+	}
+
+	const message = String(
+		error?.message ??
+			errorData?.message ??
+			errorData?.error ??
+			error?.cause?.message ??
+			"",
+	);
+	const match = message.match(/wait\s+(\d+)\s+seconds?/i);
+
+	return match ? Number(match[1]) : 0;
+};
+
+const formatCooldownDuration = (totalSeconds) => {
+	const seconds = Math.max(0, Math.ceil(Number(totalSeconds) || 0));
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const remainingSeconds = seconds % 60;
+	const parts = [];
+
+	if (hours) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+	if (minutes) parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+	if (remainingSeconds || parts.length === 0) {
+		parts.push(
+			`${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`,
+		);
+	}
+
+	return parts.join(", ");
+};
+
+const resendVerificationEmail = async (email) => {
+	try {
+		return await postWithMessage(
+			"/auth/resend-verification-email",
+			{ email },
+			"Unable to resend verification email. Please try again.",
+		);
+	} catch (error) {
+		const cooldownSeconds = extractCooldownSeconds(error);
+
+		if (!cooldownSeconds) throw error;
+
+		const cooldownError = new Error(
+			`A verification email is already active. You can request another in ${formatCooldownDuration(cooldownSeconds)}.`,
+			{ cause: error },
+		);
+		cooldownError.cooldownSeconds = cooldownSeconds;
+		throw cooldownError;
+	}
+};
+
 const loginWithMessage = async (payload) => {
 	try {
 		return await apiClient.post("/auth/login", payload);
@@ -177,12 +241,7 @@ export const authApi = {
 			data,
 			"Unable to create guide account. Please try again.",
 		),
-	resendVerificationEmail: (email) =>
-		postWithMessage(
-			"/auth/resend-verification-email",
-			{ email },
-			"Unable to resend verification email. Please try again.",
-		),
+	resendVerificationEmail,
 	register: (data) => apiClient.post("/auth/register", data),
 		login: (data) => loginWithMessage(data),
 	verifyEmail: (token) => apiClient.get(`/auth/verify-email?token=${token}`),

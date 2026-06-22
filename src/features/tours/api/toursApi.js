@@ -127,6 +127,22 @@ export const toursApi = {
 			unwrapToursPage,
 		),
 
+	getTourDetails: (tourId) => {
+		const id = String(tourId ?? "").trim();
+
+		if (!id) {
+			return Promise.reject(new Error("A tour ID is required."));
+		}
+
+		return withErrorMessage(
+			() =>
+				apiClient.get(`/tours/${encodeURIComponent(id)}`, {
+					timeout: 60000,
+				}),
+			"Unable to load tour details.",
+		);
+	},
+
 	createTour: (payload) =>
 		withErrorMessage(() => apiClient.post("/tours", payload), "Unable to create tour."),
 

@@ -1,11 +1,10 @@
-import { ArrowRight, MapPin } from "lucide-react";
-import { Link } from "react-router-dom";
+import { MapPin } from "lucide-react";
 
 export default function DestinationCard({ destination }) {
   const { name, tourCount, img, placeholderImage } = destination;
 
   return (
-    <div className="group relative h-[280px] cursor-pointer overflow-hidden rounded-2xl shadow-[0_6px_24px_rgba(1,1,112,0.18)]">
+    <div className="group relative h-[280px] cursor-default overflow-hidden rounded-2xl shadow-[0_6px_24px_rgba(1,1,112,0.18)]">
       {/* Background image */}
       <img
         src={img || placeholderImage}
@@ -37,12 +36,6 @@ export default function DestinationCard({ destination }) {
           </span>
         </div>
 
-        <Link
-          to="/signup"
-          className="flex items-center gap-1.5 text-[11px] font-medium text-white transition-all duration-200 hover:gap-3"
-        >
-          View all tours <ArrowRight size={12} />
-        </Link>
       </div>
     </div>
   );

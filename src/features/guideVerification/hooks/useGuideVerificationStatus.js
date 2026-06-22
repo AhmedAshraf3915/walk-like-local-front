@@ -38,17 +38,21 @@ export const getGuideVerificationPayload = (data) => {
     : data;
 };
 
-export const readGuideVerificationStatus = (source) =>
-  normalizeGuideVerificationStatus(
-    source?.isVerified ??
-      source?.isGuideVerified ??
-      source?.verified ??
-      source?.verificationStatus ??
+export const readGuideVerificationStatus = (source) => {
+  const explicitStatus = normalizeGuideVerificationStatus(
+    source?.verificationStatus ??
       source?.guideVerificationStatus ??
       source?.guideVerification?.status ??
       source?.verification?.status ??
       source?.status,
   );
+
+  if (explicitStatus !== "none") return explicitStatus;
+
+  return normalizeGuideVerificationStatus(
+    source?.isVerified ?? source?.isGuideVerified ?? source?.verified,
+  );
+};
 
 export const useGuideVerificationStatus = ({ user, enabled = true } = {}) => {
   const [status, setStatus] = useState(() =>

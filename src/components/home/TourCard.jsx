@@ -42,7 +42,6 @@ export default function TourCard({ tour }) {
     duration,
     groupType,
     price,
-    href = "/signup",
   } = tour;
   const [imageFailed, setImageFailed] = useState(false);
   const hasTourImage = Boolean(photo) && !imageFailed;

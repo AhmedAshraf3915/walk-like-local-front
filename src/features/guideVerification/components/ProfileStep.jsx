@@ -3,7 +3,9 @@ const ProfileStep = ({
   profileSkips,
   experienceOptions,
   interestOptions,
+  locationOptions,
   onBioChange,
+  onLocationChange,
   onExperienceChange,
   onToggleProfileSkip,
   onToggleInterest,
@@ -42,6 +44,44 @@ const ProfileStep = ({
       <section className="rounded-[18px] border border-[#c7c6dc] bg-white p-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-[38px] font-semibold text-[#111041]">
+            Location
+          </h2>
+          <button
+            type="button"
+            onClick={() => onToggleProfileSkip("city")}
+            className={`rounded-full border px-4 py-2 text-sm ${
+              profileSkips.city
+                ? "border-[#17169d] bg-[#f1f0ff] text-[#17169d]"
+                : "border-[#bebdd2] text-[#35345d]"
+            }`}
+          >
+            {profileSkips.city ? "Skipped" : "Skip"}
+          </button>
+        </div>
+        <label
+          htmlFor="guide-location"
+          className="mt-4 block text-[24px] font-medium text-[#232252]"
+        >
+          Guide location
+        </label>
+        <select
+          id="guide-location"
+          className="mt-3 w-full max-w-xl rounded-[16px] border border-[#cbcbdd] px-5 py-4 text-[18px] text-[#171646]"
+          value={profile.city}
+          onChange={(event) => onLocationChange(event.target.value)}
+        >
+          <option value="">Choose your governorate</option>
+          {locationOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      <section className="rounded-[18px] border border-[#c7c6dc] bg-white p-8">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-[38px] font-semibold text-[#111041]">
             Experiences
           </h2>
           <button
@@ -56,10 +96,14 @@ const ProfileStep = ({
             {profileSkips.yearsOfExperience ? "Skipped" : "Skip"}
           </button>
         </div>
-        <label className="mt-4 block text-[24px] font-medium text-[#232252]">
+        <label
+          htmlFor="guide-experience"
+          className="mt-4 block text-[24px] font-medium text-[#232252]"
+        >
           Years of Experience
         </label>
         <select
+          id="guide-experience"
           className="mt-3 w-full max-w-xl rounded-[16px] border border-[#cbcbdd] px-5 py-4 text-[18px] text-[#171646]"
           value={profile.yearsOfExperience}
           onChange={(event) => onExperienceChange(event.target.value)}

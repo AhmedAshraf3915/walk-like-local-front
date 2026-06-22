@@ -38,7 +38,7 @@ describe("landing page header", () => {
   });
 
   it("shows the sign-up and login action", () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <Navbar />
       </MemoryRouter>,
@@ -53,6 +53,9 @@ describe("landing page header", () => {
     expect(authAction.className).not.toContain("hidden");
     expect(screen.getAllByText("Explore Trips").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Profile" })).toBeNull();
+    expect(container.querySelector("nav").className).toContain(
+      "bg-[#f4f3f8]/95",
+    );
   });
 
   it("uses the authenticated user's uploaded image", () => {
@@ -74,6 +77,9 @@ describe("landing page header", () => {
     expect(screen.getByAltText("Nour Hassan profile").getAttribute("src")).toBe(
       "https://images.example/nour.jpg",
     );
+    expect(
+      screen.queryByRole("link", { name: /sign up \/ log in/i }),
+    ).toBeNull();
   });
 
   it("offers every Egyptian governorate in the styled destination select", () => {
@@ -115,10 +121,13 @@ describe("landing page header", () => {
       screen.getByRole("combobox", { name: /type of tour/i }),
     );
     fireEvent.click(screen.getByRole("option", { name: "Food Tour" }));
+    fireEvent.change(screen.getByLabelText("Select Date"), {
+      target: { value: "2026-07-01" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /search tours/i }));
 
     expect(screen.getByTestId("current-location").textContent).toBe(
-      "/tours?destination=Cairo&search=Food+Tour",
+      "/tours?destination=Cairo&search=Food+Tour&date=2026-07-01",
     );
   });
 });

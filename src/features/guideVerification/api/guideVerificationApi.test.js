@@ -9,6 +9,16 @@ const apiClientMocks = vi.hoisted(() => ({
   put: vi.fn(),
 }));
 
+const cloudinaryClientMocks = vi.hoisted(() => ({
+  post: vi.fn(),
+}));
+
+vi.mock("axios", () => ({
+  default: {
+    create: () => cloudinaryClientMocks,
+  },
+}));
+
 vi.mock("@/services/apiClient", () => ({
   apiClient: apiClientMocks,
 }));
@@ -50,6 +60,120 @@ describe("guideVerificationApi timeouts", () => {
       "/guides/language-test/status",
       {
         data: { languages: ["en"] },
+        timeout: 60000,
+      },
+    );
+  });
+
+  it("submits the documented verification payload", async () => {
+    const payload = {
+      nationality: "Egypt",
+      nationalId: { secureUrl: "https://files/id", publicId: "guides/id" },
+      profilePhoto: {
+        secureUrl: "https://files/profile",
+        publicId: "guides/profile",
+      },
+      tourismLicense: {
+        secureUrl: "https://files/license",
+        publicId: "guides/license",
+      },
+      introductionVideo: {
+        secureUrl: "https://files/intro",
+        publicId: "guides/intro",
+      },
+    };
+    apiClientMocks.post.mockResolvedValue({ data: { status: "PENDING" } });
+
+    await guideVerificationApi.submitVerification(payload);
+
+    expect(apiClientMocks.post).toHaveBeenCalledWith(
+      "/guides/verification",
+      payload,
+      { timeout: 60000 },
+    );
+  });
+
+  it("uses the rejected-only resubmission endpoint", async () => {
+    const payload = {
+      nationality: "Egypt",
+      nationalId: { secureUrl: "https://files/id", publicId: "guides/id" },
+    };
+    apiClientMocks.patch.mockResolvedValue({ data: { status: "PENDING" } });
+
+    await guideVerificationApi.resubmitVerification(payload);
+
+    expect(apiClientMocks.patch).toHaveBeenCalledWith(
+      "/guides/verification/resubmit",
+      payload,
+      { timeout: 60000 },
+    );
+  });
+
+  it("uploads guide images with the documented Cloudinary form fields", async () => {
+    const file = new Blob(["image"], { type: "image/jpeg" });
+    cloudinaryClientMocks.post.mockResolvedValue({
+      data: {
+        secure_url: "https://res.cloudinary.com/guide.jpg",
+        public_id: "walk-like-local/guides/images/guide",
+      },
+    });
+
+    const result = await guideVerificationApi.uploadImage(file);
+    const [url, formData, config] = cloudinaryClientMocks.post.mock.calls[0];
+
+    expect(url).toBe(
+      "https://api.cloudinary.com/v1_1/dau2lq7gn/image/upload",
+    );
+    expect(formData.get("file")).toMatchObject({
+      size: file.size,
+      type: file.type,
+    });
+    expect(formData.get("upload_preset")).toBe("walk_like_local");
+    expect(formData.get("folder")).toBe("walk-like-local/guides/images");
+    expect(config).toMatchObject({
+      timeout: 90000,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    expect(result).toEqual({
+      secureUrl: "https://res.cloudinary.com/guide.jpg",
+      publicId: "walk-like-local/guides/images/guide",
+    });
+  });
+
+  it("uploads introduction videos to the documented Cloudinary folder", async () => {
+    const file = new Blob(["video"], { type: "video/mp4" });
+    cloudinaryClientMocks.post.mockResolvedValue({
+      data: {
+        secure_url: "https://res.cloudinary.com/intro.mp4",
+        public_id: "walk-like-local/guides/videos/intro",
+      },
+    });
+
+    await guideVerificationApi.uploadVideo(file);
+    const [url, formData, config] = cloudinaryClientMocks.post.mock.calls[0];
+
+    expect(url).toBe(
+      "https://api.cloudinary.com/v1_1/dau2lq7gn/auto/upload",
+    );
+    expect(formData.get("folder")).toBe("walk-like-local/guides/videos");
+    expect(config.timeout).toBe(180000);
+  });
+
+  it("gets question audio from the documented session endpoint", async () => {
+    const audioBlob = new Blob(["audio"], { type: "audio/mpeg" });
+    apiClientMocks.get.mockResolvedValue({ data: audioBlob });
+
+    await guideVerificationApi.getLanguageTestQuestionAudio(
+      "session/one",
+      "q4",
+      "en",
+    );
+
+    expect(apiClientMocks.get).toHaveBeenCalledWith(
+      "/guides/language-test/session%2Fone/questions/q4/audio",
+      {
+        data: { language: "en" },
+        responseType: "blob",
         timeout: 60000,
       },
     );

@@ -28,19 +28,32 @@ const toLanguageCode = (language) => {
     : LANGUAGE_TO_CODE[trimmedLanguage] ?? "";
 };
 
-const extractSessionId = (payload) =>
-  payload?.sessionId ??
-  payload?.session?._id ??
-  payload?.session?.id ??
-  payload?.languageTestSession?._id ??
-  payload?.languageTestSession?.id ??
-  payload?._id ??
-  payload?.id ??
-  "";
+const extractSessionId = (payload) => {
+  const containers = [
+    payload,
+    payload?.test,
+    payload?.session,
+    payload?.languageTest,
+    payload?.languageTestSession,
+  ];
+
+  for (const container of containers) {
+    const sessionId =
+      container?.sessionId ??
+      container?.sessionID ??
+      container?._id ??
+      container?.id;
+
+    if (sessionId) return sessionId;
+  }
+
+  return "";
+};
 
 const extractActiveSessionId = (payload) => {
   const direct =
     payload?.activeSessionId ??
+    payload?.activeSession?.sessionId ??
     payload?.activeSession?._id ??
     payload?.activeSession?.id;
   if (direct) return direct;

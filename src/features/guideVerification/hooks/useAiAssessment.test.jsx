@@ -90,6 +90,42 @@ describe("useAiAssessment", () => {
     });
   });
 
+  it("reads the session ID from the test object returned by the start endpoint", async () => {
+    apiMocks.startLanguageTest.mockResolvedValue({
+      test: {
+        sessionId: "nested-session",
+        questions: [
+          { questionId: "nested-q1", type: "text", prompt: "Nested question" },
+        ],
+      },
+    });
+    apiMocks.getLanguageTestSession.mockResolvedValue({
+      session: {
+        sessionId: "nested-session",
+        questions: [
+          { questionId: "nested-q1", type: "text", prompt: "Nested question" },
+        ],
+      },
+    });
+    const setErrorMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAiAssessment({ setErrorMessage }),
+    );
+
+    await act(async () => {
+      await result.current.startSession();
+    });
+
+    expect(apiMocks.getLanguageTestSession).toHaveBeenCalledWith(
+      "nested-session",
+    );
+    expect(result.current.activeSessionId).toBe("nested-session");
+    expect(result.current.isAiSessionStarted).toBe(true);
+    expect(setErrorMessage).not.toHaveBeenCalledWith(
+      "Language test session did not return a session ID.",
+    );
+  });
+
   it("maps every offered language, including French, to its API code", async () => {
     const { result } = renderHook(() =>
       useAiAssessment({ setErrorMessage: vi.fn() }),

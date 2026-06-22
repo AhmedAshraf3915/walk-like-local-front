@@ -40,4 +40,20 @@ describe("landing page APIs", () => {
       timeout: 60000,
     });
   });
+
+  it("uses the documented public detail endpoints with encoded IDs", async () => {
+    await toursApi.getTourDetails("tour/one");
+    await guidesApi.getPublicGuide("guide/one");
+
+    expect(apiClientMocks.get).toHaveBeenNthCalledWith(
+      1,
+      "/tours/tour%2Fone",
+      { timeout: 60000 },
+    );
+    expect(apiClientMocks.get).toHaveBeenNthCalledWith(
+      2,
+      "/guides/guide%2Fone",
+      { timeout: 60000 },
+    );
+  });
 });

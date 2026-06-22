@@ -54,7 +54,7 @@ export default function Navbar() {
     pathname.startsWith("/tours") || pathname.startsWith("/guides");
 
   return (
-    <nav className="relative z-50 bg-white shadow-[0_1px_12px_rgba(1,1,56,0.07)] border-b border-[#e8e7f2]">
+    <nav className="relative z-50 border-b border-[#deddea] bg-[#f4f3f8]/95 shadow-[0_1px_12px_rgba(1,1,56,0.07)] backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">

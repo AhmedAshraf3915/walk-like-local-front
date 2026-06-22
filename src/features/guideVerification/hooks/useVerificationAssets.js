@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { guideVerificationApi } from "@/features/guideVerification/api/guideVerificationApi";
 import { initialAssetsState } from "@/features/guideVerification/constants";
+import {
+	getGuideVerificationPayload,
+	readGuideVerificationStatus,
+} from "@/features/guideVerification/hooks/useGuideVerificationStatus";
 
 const REQUIRED_ASSET_KEYS = [
 	"nationalId",
@@ -9,37 +13,35 @@ const REQUIRED_ASSET_KEYS = [
 	"introductionVideo",
 ];
 
-const normalizeVerificationStatus = (statusValue) => {
-	if (typeof statusValue !== "string") return "none";
-
-	const value = statusValue.trim().toLowerCase();
-	if (value.includes("pending")) return "pending";
-	if (value.includes("approved")) return "approved";
-	if (value.includes("rejected")) return "rejected";
-	if (value.includes("submitted")) return "pending";
-
-	return "none";
-};
-
 const getAssetFromStatus = (statusPayload, key) => {
 	const source =
 		statusPayload?.verificationDocuments?.[key] ??
+		statusPayload?.documents?.[key] ??
 		statusPayload?.verification?.[key] ??
 		statusPayload?.[key];
+	const secureUrl =
+		typeof source === "string"
+			? source
+			: source?.secureUrl ?? source?.secure_url ?? source?.url ?? "";
+	const publicId =
+		typeof source === "object"
+			? source?.publicId ?? source?.public_id ?? ""
+			: "";
 
-	if (!source || !source.secureUrl || !source.publicId) {
+	if (!secureUrl) {
 		return null;
 	}
 
 	return {
-		secureUrl: source.secureUrl,
-		publicId: source.publicId,
-		name: source.publicId.split("/").pop(),
+		secureUrl,
+		publicId,
+		name:
+			source?.name ||
+			publicId.split("/").pop() ||
+			secureUrl.split("/").pop()?.split("?")[0] ||
+			"Uploaded",
 	};
 };
-
-const getStatusPayload = (data) =>
-	data?.verification ?? data?.guideVerification ?? data ?? {};
 
 const toVerificationAssetPayload = (asset) => {
 	if (!asset?.secureUrl || !asset?.publicId) {
@@ -59,12 +61,6 @@ const toVerificationAssetPayload = (asset) => {
 export const useVerificationAssets = ({ setErrorMessage }) => {
 	const [verificationStatus, setVerificationStatus] = useState("none");
 	const [assets, setAssets] = useState(initialAssetsState);
-	const [verificationSkips, setVerificationSkips] = useState({
-		nationalId: false,
-		tourismLicense: false,
-		profilePhoto: false,
-		introductionVideo: false,
-	});
 	const [uploadingField, setUploadingField] = useState("");
 	const [submittingVerification, setSubmittingVerification] = useState(false);
 	const [loadingStatus, setLoadingStatus] = useState(true);
@@ -74,16 +70,8 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 	const profilePhotoInputRef = useRef(null);
 	const introVideoInputRef = useRef(null);
 
-	const hasAllRequiredAssets = REQUIRED_ASSET_KEYS.every(
-		(key) => Boolean(assets[key]) || verificationSkips[key],
-	);
-
 	const hasAllUploadedAssets = REQUIRED_ASSET_KEYS.every((key) =>
 		Boolean(assets[key]),
-	);
-
-	const hasSkippedRequiredAssets = REQUIRED_ASSET_KEYS.some(
-		(key) => !assets[key] && verificationSkips[key],
 	);
 
 	useEffect(() => {
@@ -93,10 +81,8 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 
 			try {
 				const responseData = await guideVerificationApi.getVerificationStatus();
-				const statusPayload = getStatusPayload(responseData);
-				const normalizedStatus = normalizeVerificationStatus(
-					statusPayload?.status ?? statusPayload?.verificationStatus,
-				);
+				const statusPayload = getGuideVerificationPayload(responseData);
+				const normalizedStatus = readGuideVerificationStatus(statusPayload);
 
 				setVerificationStatus(normalizedStatus);
 				setAssets((currentAssets) => ({
@@ -136,10 +122,6 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 				...currentAssets,
 				[field]: { ...uploadedAsset, name: file.name },
 			}));
-			setVerificationSkips((currentSkips) => ({
-				...currentSkips,
-				[field]: false,
-			}));
 		} catch (error) {
 			setErrorMessage(error.message ?? "Upload failed.");
 		} finally {
@@ -158,17 +140,10 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 		refsByField[field]?.current?.click();
 	};
 
-	const toggleVerificationSkip = (field) => {
-		setVerificationSkips((currentSkips) => ({
-			...currentSkips,
-			[field]: !currentSkips[field],
-		}));
-	};
-
 	const submitVerification = async () => {
 		if (!hasAllUploadedAssets) {
 			setErrorMessage("Please upload all required files before continuing.");
-			return;
+			return false;
 		}
 
 		setErrorMessage("");
@@ -190,8 +165,10 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 			}
 
 			setVerificationStatus("pending");
+			return true;
 		} catch (error) {
 			setErrorMessage(error.message ?? "Unable to submit verification.");
+			return false;
 		} finally {
 			setSubmittingVerification(false);
 		}
@@ -200,20 +177,16 @@ export const useVerificationAssets = ({ setErrorMessage }) => {
 	return {
 		verificationStatus,
 		assets,
-		verificationSkips,
 		uploadingField,
 		submittingVerification,
 		loadingStatus,
-		hasAllRequiredAssets,
 		hasAllUploadedAssets,
-		hasSkippedRequiredAssets,
 		nationalIdInputRef,
 		licenseInputRef,
 		profilePhotoInputRef,
 		introVideoInputRef,
 		handleUpload,
 		openFilePicker,
-		toggleVerificationSkip,
 		submitVerification,
 	};
 };

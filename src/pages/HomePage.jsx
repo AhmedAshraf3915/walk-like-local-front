@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import useAuth from "@/contexts/useAuth";
 
 import Navbar from "@/components/home/Navbar.jsx";
 import HeroSection from "@/components/home/HeroSection.jsx";
@@ -368,6 +369,8 @@ function BecomeGuideSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const { isAuthenticated, userRole } = useAuth();
+  const isGuide = String(userRole ?? "").toLowerCase() === "guide";
   const [content, setContent] = useState({
     tours: [],
     guides: [],
@@ -461,7 +464,7 @@ export default function HomePage() {
       />
       <HeritageSection />
       <ReviewsSection />
-      <BecomeGuideSection />
+      {!isAuthenticated || !isGuide ? <BecomeGuideSection /> : null}
       <Footer />
     </div>
   );

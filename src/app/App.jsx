@@ -193,6 +193,14 @@ function App() {
           }
         />
         <Route
+          path="/guide/complete-profile/details"
+          element={
+            <RequireRole allowedRoles={["guide"]}>
+              <GuideCompleteProfilePage />
+            </RequireRole>
+          }
+        />
+        <Route
           path="/guide/bookings"
           element={
             <RequireRole allowedRoles={["guide"]}>

@@ -53,15 +53,9 @@ export const AI_TEST_QUESTIONS = [
 
 export const initialProfileState = {
 	bio: "",
+	city: "",
 	yearsOfExperience: "",
 	interests: [],
-};
-
-export const initialPaymentState = {
-	nameOnCard: "",
-	cardNumber: "",
-	expiryDate: "",
-	cvv: "",
 };
 
 export const initialAssetsState = {

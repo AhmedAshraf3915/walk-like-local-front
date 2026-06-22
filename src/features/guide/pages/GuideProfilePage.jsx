@@ -52,19 +52,6 @@ const toList = (payload, keys) => {
   return [];
 };
 
-const getGuideRecordId = (record) => {
-  const source = record?.guide ?? record?.user ?? record?.profile ?? record ?? {};
-
-  return String(
-    source?._id ??
-      source?.id ??
-      record?.guideId?._id ??
-      record?.guideId?.id ??
-      record?.guideId ??
-      "",
-  );
-};
-
 const getTourGuideId = (tour) =>
   String(
     tour?.guide?._id ??
@@ -102,6 +89,39 @@ const toDisplayLanguages = (value) => {
     .filter(Boolean);
 };
 
+const toDisplayInterests = (...values) => {
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+
+    const interests = value
+      .map((entry) =>
+        String(
+          typeof entry === "string"
+            ? entry
+            : entry?.label ?? entry?.name ?? entry?.title ?? entry?.value ?? "",
+        ).trim(),
+      )
+      .filter(Boolean);
+
+    if (interests.length > 0) return interests;
+  }
+
+  return [];
+};
+
+const toLocationLabel = (...values) => {
+  for (const value of values) {
+    const label =
+      typeof value === "string"
+        ? value
+        : value?.city ?? value?.governorate ?? value?.name ?? "";
+
+    if (String(label).trim()) return String(label).trim();
+  }
+
+  return "";
+};
+
 const buildProfile = ({ databaseProfile, user, verification }) => {
   const source =
     databaseProfile?.guide ??
@@ -128,11 +148,14 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
       getAssetUrl(user?.profilePhoto) ||
       getAssetUrl(user?.avatar),
     bio: source?.bio ?? user?.bio ?? nestedProfile?.bio ?? "",
-    interests: Array.isArray(source?.interests)
-      ? source.interests
-      : Array.isArray(user?.interests)
-        ? user.interests
-        : [],
+    interests: toDisplayInterests(
+      source?.interests,
+      source?.specialties,
+      user?.interests,
+      user?.specialties,
+      nestedProfile?.interests,
+      nestedProfile?.specialties,
+    ),
     experience:
       source?.experience?.year ??
       user?.experience?.year ??
@@ -141,14 +164,20 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
     experiencePhoto:
       getAssetUrl(source?.experience?.photo) ||
       getAssetUrl(user?.experience?.photo),
-    location:
-      source?.city ??
-      source?.location ??
-      source?.nationality ??
-      verification?.nationality ??
-      user?.city ??
-      user?.nationality ??
-      "",
+    location: toLocationLabel(
+      source?.city,
+      source?.governorate,
+      source?.location,
+      nestedProfile?.city,
+      nestedProfile?.governorate,
+      nestedProfile?.location,
+      user?.city,
+      user?.governorate,
+      user?.location,
+      source?.nationality,
+      verification?.nationality,
+      user?.nationality,
+    ),
     languages,
     verifiedLanguages,
     introductionVideo:
@@ -236,7 +265,7 @@ export default function GuideProfilePage() {
       setErrorMessage("");
 
       const requests = [
-        guidesApi.getPublicGuides({ page: 1, limit: 100 }),
+        guideId ? guidesApi.getPublicGuide(guideId) : Promise.resolve(null),
         toursApi.browseActiveTours({ page: 1, limit: 100 }),
         guidesApi.getReceivedReviews({ page: 1, limit: 10 }),
       ];
@@ -246,17 +275,7 @@ export default function GuideProfilePage() {
       if (!isMounted) return;
 
       if (profileResult.status === "fulfilled") {
-        const publicGuides = toList(profileResult.value, [
-          "guides",
-          "items",
-          "results",
-          "docs",
-        ]);
-        setDatabaseProfile(
-          publicGuides.find(
-            (guide) => getGuideRecordId(guide) === guideId,
-          ) ?? null,
-        );
+        setDatabaseProfile(profileResult.value);
       }
 
       if (toursResult.status === "fulfilled") {
@@ -447,7 +466,7 @@ export default function GuideProfilePage() {
             {profile.interests.length > 0 ? (
               <section className="mt-10">
                 <h2 className="text-sm font-bold uppercase tracking-[0.2em]">
-                  Specialties
+                  Interests
                 </h2>
                 <div className="mt-4 flex flex-wrap gap-3">
                   {profile.interests.map((interest) => (

@@ -64,18 +64,9 @@ export default function HeroSection({ stats }) {
   const [city, setCity] = useState("");
   const [tourType, setTourType] = useState("");
   const [date, setDate] = useState("");
-  const [resolvedStats, setResolvedStats] = useState(() =>
-    Array.isArray(stats) && stats.length ? stats : DEFAULT_HERO_STATS,
-  );
-
-  useEffect(() => {
-    if (Array.isArray(stats) && stats.length) {
-      setResolvedStats(stats);
-      return;
-    }
-
-    setResolvedStats(DEFAULT_HERO_STATS);
-  }, [stats]);
+  const [loadedStats, setLoadedStats] = useState(DEFAULT_HERO_STATS);
+  const hasProvidedStats = Array.isArray(stats) && stats.length > 0;
+  const resolvedStats = hasProvidedStats ? stats : loadedStats;
 
   useEffect(() => {
     if (Array.isArray(stats) && stats.length) {
@@ -105,7 +96,7 @@ export default function HeroSection({ stats }) {
           return;
         }
 
-        setResolvedStats(
+        setLoadedStats(
           buildHeroStats(
             {
               items: allTours.records,
@@ -119,7 +110,7 @@ export default function HeroSection({ stats }) {
         );
       } catch {
         if (!cancelled) {
-          setResolvedStats(DEFAULT_HERO_STATS);
+          setLoadedStats(DEFAULT_HERO_STATS);
         }
       }
     };
@@ -138,6 +129,7 @@ export default function HeroSection({ stats }) {
 
     if (city) searchParams.set("destination", city);
     if (tourType) searchParams.set("search", tourType);
+    if (date) searchParams.set("date", date);
 
     const query = searchParams.toString();
     navigate(query ? `/tours?${query}` : "/tours");

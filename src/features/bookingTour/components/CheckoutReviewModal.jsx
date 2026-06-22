@@ -1,4 +1,4 @@
-import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
+import { ArrowRight, AlertCircle, Loader2, X } from 'lucide-react'
 import BackButton from './BackButton'
 
 export default function CheckoutReviewModal({ onClose, onBack, onContinue, summary, error, loading }) {

@@ -73,8 +73,8 @@ export const touristApi = {
     apiClient.post("/tourists/bookings", data).then((r) => r.data?.data ?? r.data),
 
   cancelBooking: (bookingId, reason) =>
-    apiClient.patch(`/tourists/bookings/${bookingId}/cancel`, { reason }).then((r) => r.data?.data ?? r.data),
+    apiClient.patch(`/tourists/bookings/${encodeURIComponent(bookingId)}/cancel`, { reason }).then((r) => r.data?.data ?? r.data),
 
   getPaymentStatus: (bookingId) =>
-    apiClient.get(`/payments/status/${bookingId}`).then((r) => r.data?.data ?? r.data),
+    apiClient.get(`/payments/status/${encodeURIComponent(bookingId)}`).then((r) => r.data?.data ?? r.data),
 };
