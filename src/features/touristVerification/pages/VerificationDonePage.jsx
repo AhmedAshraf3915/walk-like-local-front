@@ -12,7 +12,7 @@ const checkGoldIcon = ICONS.checkGoldIcon;
 const verifiedIcon = ICONS.verifiedIcon;
 const lockIcon = ICONS.lockIcon;
 
-const POLL_INTERVAL_MS = 8000; // ✅ FIX: poll every 8s instead of checking once
+const POLL_INTERVAL_MS = 8000; //  FIX: poll every 8s instead of checking once
 
 export default function VerificationDonePage() {
   const navigate = useNavigate();
@@ -74,7 +74,7 @@ export default function VerificationDonePage() {
 
         <div className="text-center flex flex-col gap-2 sm:gap-3">
           <p className="text-[10px] sm:text-xs lg:text-sm font-light tracking-[0.2em] text-[#010138] uppercase">
-            Step 2 of 3
+            Step 2 of 2
           </p>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-wide text-[#010138]">
             Verify Your Identity
@@ -123,7 +123,7 @@ export default function VerificationDonePage() {
             </div>
           </div>
 
-          {/* ✅ FIX: manual refresh option in addition to auto-polling */}
+          {/*  FIX: manual refresh option in addition to auto-polling */}
           {status === "pending" && (
             <div className="flex justify-center mt-6">
               <button
@@ -147,11 +147,11 @@ export default function VerificationDonePage() {
 
       <OnboardingFooter
         backTo="/onboarding/verification"
-        continueTo={status === "pending" ? null : "/onboarding/payment"}
-        continueLabel={status === "pending" ? "Wait for Review" : "Continue"}
+        continueTo={status === "pending" ? null : "/tourist/profile"}
+        continueLabel={status === "pending" ? "Wait for Review" : "Finish & Explore"}
         continueEnabled={status !== "pending"}
         skipLabel={status === "pending" ? "Continue anyway" : null}
-        onSkip={status === "pending" ? () => navigate("/onboarding/payment") : null}
+        onSkip={status === "pending" ? () => navigate("/tourist/profile") : null}
       />
     </OnboardingPage>
   );
