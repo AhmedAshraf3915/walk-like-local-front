@@ -99,20 +99,16 @@ function StepConnector({ gold }) {
 }
 
 export function OnboardingStepBar({ step }) {
-const statuses =
+  const statuses =
     step === 1
-      ? ["active", "upcoming", "upcoming"]
-      : step === 2
-      ? ["done", "active", "upcoming"]
-      : ["done", "done", "active"];
+      ? ["active", "upcoming"]
+      : ["done", "active"];
 
   return (
     <div className="flex items-center justify-center gap-4">
       <StepNode number={1} label="Profile details" status={statuses[0]} />
       <StepConnector gold={step >= 2} />
       <StepNode number={2} label="Verification" status={statuses[1]} />
-      <StepConnector gold={step >= 3} />
-      <StepNode number={3} label="Secure checkout" status={statuses[2]} />
     </div>
   );
 }

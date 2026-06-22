@@ -93,7 +93,7 @@ export default function VerificationPage() {
 
         <div className="text-center flex flex-col gap-2 sm:gap-3">
           <p className="text-[10px] sm:text-xs lg:text-sm font-light tracking-[0.2em] text-[#010138] uppercase">
-            Step 2 of 3
+            Step 2 of 2
           </p>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-wide text-[#010138]">
             Verify Your Identity
@@ -220,7 +220,7 @@ export default function VerificationPage() {
         continueEnabled={fileReady}
         onContinue={handleSubmit}
         skipLabel="Skip for now"
-        onSkip={() => navigate("/onboarding/payment")}
+        onSkip={() => navigate("/tourist/profile")}
       />
     </OnboardingPage>
   );

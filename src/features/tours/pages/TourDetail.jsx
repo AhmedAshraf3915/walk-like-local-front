@@ -255,10 +255,10 @@ function mapTour(data, publicGuideProfile = null) {
   ].filter(Boolean);
 
   const activities = (data.activities || []).map((act, i) => {
-    const pricing =
+    const activityPricing =
       act?.pricing && typeof act.pricing === "object" ? act.pricing : {};
     const priceValue = Number(act.price) || 0;
-    const hasPricedOption = Object.values(pricing).some(
+    const hasPricedOption = Object.values(activityPricing).some(
       (price) => Number(price) > 0,
     );
     const included = act.included ?? (!hasPricedOption && priceValue === 0);
@@ -269,7 +269,7 @@ function mapTour(data, publicGuideProfile = null) {
       included,
       locked: Boolean(act.locked ?? act.removable === false),
       removable: act.removable !== false,
-      pricing,
+      pricing: activityPricing,
       price: priceValue,
       note: act.note || "",
     };
@@ -285,7 +285,10 @@ function mapTour(data, publicGuideProfile = null) {
       time: slot.startTime
         ? `${slot.startTime}${slot.endTime ? " - " + slot.endTime : ""}`
         : "",
-      status: slot.available === false ? "unavailable" : "available",
+      status:
+        slot.available === false || slot.isBooked
+          ? "unavailable"
+          : "available",
     };
   });
 
@@ -314,6 +317,7 @@ function mapTour(data, publicGuideProfile = null) {
       name: guide?.fullName || guide?.name || "Local Guide",
       photo:
         getAssetUrl(guide?.profilePhoto) ||
+        getAssetUrl(guide?.profilePicture) ||
         getAssetUrl(guide?.avatar) ||
         getAssetUrl(embeddedGuide?.profilePhoto),
       rating:
@@ -685,9 +689,14 @@ export default function TourDetail() {
                       {tour.guide.bio}
                     </p>
                   )}
-                  {/* <button className="self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg">
-                    view guide profile
-                  </button> */}
+                  {tour.guide.id && (
+                    <Link
+                      to={`/guides/${tour.guide.id}`}
+                      className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg"
+                    >
+                      View guide profile
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -912,6 +921,7 @@ export default function TourDetail() {
           onContinue={handleBook}
           continueLabel={booking ? "Opening Stripe..." : "Continue to payment"}
           continueDisabled={booking}
+          error={msg.type === "error" ? msg.text : null}
           summary={{
             package: pkg?.label || "—",
             guestsNote: pkg?.guests || "—",

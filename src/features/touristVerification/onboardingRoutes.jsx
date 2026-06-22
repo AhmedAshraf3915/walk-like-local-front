@@ -1,5 +1,5 @@
 /**
- * Onboarding Routes
+ * Onboarding Routes — 2-step flow: Profile → Verification
  */
 
 import { useEffect, useState } from "react";
@@ -8,11 +8,8 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import ProfileDetailsPage from "./pages/ProfileDetailsPage";
 import VerificationPage from "./pages/VerificationPage";
 import VerificationDonePage from "./pages/VerificationDonePage";
-import PaymentMethodPage from "./pages/PaymentMethodPage";
-import PaymentFormPage from "./pages/PaymentFormPage";
-import PaymentDonePage from "./pages/PaymentDonePage";
+
 import { touristApi } from "./api/touristApi";
-import { getPaymentMethods } from "../bookingTour/services/paymentMethods.js";
 import {
   OnboardingNavbar,
   OnboardingStepBar,
@@ -21,26 +18,19 @@ import {
 } from "./layouts/OnboardingLayout";
 
 // Re-export for use in other files
-export {
-  OnboardingNavbar,
-  OnboardingStepBar,
-  OnboardingFooter,
-  OnboardingPage,
-};
+export { OnboardingNavbar, OnboardingStepBar, OnboardingFooter, OnboardingPage };
 
 const isProfileComplete = (profile) =>
   Boolean(
     profile &&
-    profile.nationality &&
-    profile.preferredLanguages?.length &&
-    profile.interests?.length,
+      profile.nationality &&
+      profile.preferredLanguages?.length &&
+      profile.interests?.length
   );
+
 /**
- * Entry point for "/onboarding". Figures out which step the tourist
- * actually still needs and sends them straight there, instead of always
- * restarting the flow from the profile page. Used whenever someone lands
- * on the bare /onboarding route (first visit, refresh, or coming back
- * after closing the tab mid-flow).
+ * Resumes the tourist at whichever step they actually need next,
+ * instead of always restarting at step 1.
  */
 function OnboardingEntry() {
   const navigate = useNavigate();
@@ -51,42 +41,29 @@ function OnboardingEntry() {
 
     const resume = async () => {
       try {
-        const [profile, verificationStatus, paymentRes] =
-          await Promise.allSettled([
-            touristApi.getProfile(),
-            touristApi.getVerificationStatus(),
-            getPaymentMethods(),
-          ]);
+        const [profileRes, verificationRes] = await Promise.allSettled([
+          touristApi.getProfile(),
+          touristApi.getVerificationStatus(),
+        ]);
 
         if (cancelled) return;
 
-        const profileData =
-          profile.status === "fulfilled" ? profile.value : null;
+        const profile = profileRes.status === "fulfilled" ? profileRes.value : null;
         const vStatus =
-          verificationStatus.status === "fulfilled"
-            ? verificationStatus.value
-            : null;
-        const cardsRaw =
-          paymentRes.status === "fulfilled" ? paymentRes.value : null;
-        const cards = Array.isArray(cardsRaw?.data ?? cardsRaw)
-          ? (cardsRaw?.data ?? cardsRaw)
-          : [];
+          verificationRes.status === "fulfilled" ? verificationRes.value : null;
 
-        if (!isProfileComplete(profileData)) {
+        if (!isProfileComplete(profile)) {
           navigate("/onboarding/profile", { replace: true });
         } else if (vStatus === "pending") {
           navigate("/onboarding/verification-done", { replace: true });
-        } else if (vStatus !== "approved") {
-          // null / "rejected" / unknown → still needs to (re)submit a document
-          navigate("/onboarding/verification", { replace: true });
-        } else if (cards.length === 0) {
-          navigate("/onboarding/payment", { replace: true });
-        } else {
-          // Everything is already done — nothing left to onboard
+        } else if (vStatus === "approved") {
+          // All done
           navigate("/tourist/profile", { replace: true });
+        } else {
+          // null / "rejected" → still needs to (re)submit
+          navigate("/onboarding/verification", { replace: true });
         }
-      } catch (error) {
-        console.error("Failed to resume onboarding:", error);
+      } catch {
         if (!cancelled) navigate("/onboarding/profile", { replace: true });
       } finally {
         if (!cancelled) setChecking(false);
@@ -117,9 +94,6 @@ export function TouristRoutes() {
       <Route path="profile" element={<ProfileDetailsPage />} />
       <Route path="verification" element={<VerificationPage />} />
       <Route path="verification-done" element={<VerificationDonePage />} />
-      <Route path="payment" element={<PaymentMethodPage />} />
-      <Route path="payment-form" element={<PaymentFormPage />} />
-      <Route path="payment-done" element={<PaymentDonePage />} />
       <Route path="*" element={<Navigate to="." replace />} />
     </Routes>
   );

@@ -43,7 +43,7 @@ export default function GuideCard({ guide }) {
     reviewCount,
     photo,
     fallbackPhoto,
-    href = "/signup",
+    // href = `/guides/${guide.id}`,
   } = guide;
 
   return (
@@ -83,7 +83,7 @@ export default function GuideCard({ guide }) {
         </div>
 
         <Link
-          to={href}
+          to={`/guides/${guide.id}`}
           className="mt-auto flex items-center justify-center rounded-lg border border-[#010170] px-4 py-2 text-[11px] font-semibold text-[#010138] shadow-[0_3px_8px_rgba(1,1,112,0.12)] transition-opacity hover:opacity-75"
         >
           View profile
