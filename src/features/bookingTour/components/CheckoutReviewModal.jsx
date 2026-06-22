@@ -1,4 +1,4 @@
-import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
+import { ArrowRight, AlertCircle, Loader2, X } from 'lucide-react'
 import BackButton from './BackButton'
 
 export default function CheckoutReviewModal({ onClose, onBack, onContinue, summary, error, loading }) {
@@ -18,22 +18,27 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
   return (
     <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[var(--mediabackground)] rounded-2xl p-8 m-24 md:p-16 w-full max-w-[1000px] flex flex-col gap-12">
+      <div className="bg-[var(--mediabackground)] rounded-2xl p-8 md:p-16 w-full max-w-[1000px] flex flex-col gap-12 my-auto">
+
+        {/* Close button — fixed: was <a/>, now proper X icon */}
         <button
           type="button"
           aria-label="Close checkout review"
           onClick={onClose}
-          className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--maincolor)] shadow-sm"
+          className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--maincolor)] shadow-sm hover:bg-[var(--lighttext)] transition-colors"
         >
-          <a className="h-5 w-5" />
+          <X className="h-5 w-5" />
         </button>
-        <div className="flex flex-col gap-8 p-32">
+
+        <div className="flex flex-col gap-8">
           <p className="font-bold text-2xl text-[var(--mediumfont)] tracking-[4.8px] uppercase">Checkout</p>
           <p className="font-semibold text-3xl md:text-4xl text-[var(--maincolor)]">Review</p>
         </div>
 
         <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[0px_8px_24px_0px_rgba(1,1,56,0.08)] px-8 md:px-24 py-12 md:py-16 w-full">
           <div className="flex flex-col gap-12 w-full">
+
+            {/* Package */}
             <div className="flex flex-col gap-6 w-full">
               <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Package</p>
               <div className="flex flex-col gap-4 w-full">
@@ -50,6 +55,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
             <hr className="border-[var(--lighttext)]" />
 
+            {/* Activities */}
             <div className="flex flex-col gap-6 w-full">
               <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Activities</p>
               <div className="flex flex-col gap-3 w-full">
@@ -64,6 +70,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
             <hr className="border-[var(--lighttext)]" />
 
+            {/* Time */}
             <div className="flex flex-col gap-6 w-full">
               <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Time</p>
               <div className="flex items-center justify-between w-full font-medium text-2xl md:text-3xl text-[var(--maincolor)]">
@@ -74,6 +81,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
             <hr className="border-[var(--lighttext)]" />
 
+            {/* Total */}
             <div className="flex flex-col gap-6">
               <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Total</p>
               <div className="flex items-end gap-2 text-[var(--maincolor)]">
@@ -84,7 +92,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
             <hr className="border-[var(--lighttext)]" />
 
-            {/*  error message inside the modal */}
+            {/* Error */}
             {error && (
               <div className="flex items-center gap-3 bg-[rgba(228,29,29,0.1)] border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] rounded-2xl px-6 py-4">
                 <AlertCircle className="size-6 shrink-0" />
@@ -92,6 +100,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
               </div>
             )}
 
+            {/* Actions */}
             <div className="flex items-center justify-between w-full">
               <BackButton onClick={onBack} />
               <button
@@ -102,15 +111,16 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
               >
                 {loading ? (
                   <>
-                    Processing… <Loader2 className="size-5 animate-spin" />
+                    Opening Stripe… <Loader2 className="size-5 animate-spin" />
                   </>
                 ) : (
                   <>
-                    Continue <ArrowRight className="size-5" />
+                    Continue to payment <ArrowRight className="size-5" />
                   </>
                 )}
               </button>
             </div>
+
           </div>
         </div>
       </div>
