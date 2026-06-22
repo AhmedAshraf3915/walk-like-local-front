@@ -45,6 +45,7 @@ import ViewAllPlacesPage from "../pages/ViewAllPlacesPage.jsx";
 import VerificationPage from "../features/touristVerification/pages/VerificationPage.jsx";
 import TourDetail from "../features/tours/pages/TourDetail.jsx";
 import CheckoutResult from "../features/bookingTour/pages/CheckoutResult.jsx";
+import GuideDetailsPage from "../features/guide/pages/GuideDetailsPage.jsx";
 
 function TouristRoute() {
   const { isAuthenticated, userRole } = useAuth();
@@ -288,6 +289,7 @@ function App() {
         />
 
         <Route path="/guides" element={<ViewAllGuidePage />} />
+        <Route path="/guides/:guideId" element={<GuideDetailsPage />} />
         <Route path="/places" element={<ViewAllPlacesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
