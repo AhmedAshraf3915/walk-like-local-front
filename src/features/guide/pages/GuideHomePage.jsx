@@ -8,9 +8,12 @@ import TourCard from "@/components/home/TourCard.jsx";
 import GuideCard from "@/components/home/GuideCard.jsx";
 import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 import Footer from "@/components/home/Footer.jsx";
-import { GUIDES } from "@/data/homeData.js";
+import { guidesApi } from "@/features/guide/api/guidesApi";
 import { toursApi } from "@/features/tours/api/toursApi";
-import { mapActiveTours } from "@/features/landingPage/utils/landingContentMappers";
+import {
+  mapActiveTours,
+  mapPublicGuides,
+} from "@/features/landingPage/utils/landingContentMappers";
 
 const LANGUAGE_LABELS = {
   ar: "Arabic",
@@ -31,7 +34,6 @@ const LANGUAGE_LABELS = {
 const DEFAULT_PROFILE = {
   name: "",
   languages: [],
-  location: "Not added yet",
   expertise: [],
   rating: 0,
   activeTours: 0,
@@ -197,17 +199,11 @@ function GuideHero({ profile, verified }) {
               ) : null}
             </div>
 
-            <div className="mt-5 grid gap-5 text-[#010138] sm:grid-cols-3">
+            <div className="mt-5 grid gap-5 text-[#010138] sm:grid-cols-2">
               <div>
                 <p className="text-[13px] font-bold">Languages :</p>
                 <p className="mt-2 text-[16px] font-bold leading-snug">
                   {joinWithDots(profile.languages) || "Not added yet"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[13px] font-bold">Location :</p>
-                <p className="mt-2 text-[16px] font-bold leading-snug">
-                  {profile.location}
                 </p>
               </div>
               <div>
@@ -304,7 +300,7 @@ function MarketplaceSection({ tours, isLoading, errorMessage, onRetry }) {
   );
 }
 
-function GuidesSection() {
+function GuidesSection({ guides, isLoading, errorMessage, onRetry }) {
   return (
     <section id="guides" className="bg-[#FDFDFF] px-4 py-8 sm:px-6 md:py-10">
       <div className="mx-auto max-w-6xl">
@@ -316,11 +312,43 @@ function GuidesSection() {
           actionHref="/guides"
         />
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
-          {GUIDES.map((guide) => (
-            <GuideCard key={guide.id} guide={{ ...guide, href: "#" }} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div
+                key={index}
+                className="h-[430px] animate-pulse rounded-2xl bg-[#eeeeF6]"
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {!isLoading && errorMessage ? (
+          <div className="rounded-2xl border border-[#efc2c2] bg-[#fff5f5] px-5 py-8 text-center">
+            <p className="text-sm text-[#8f2929]">{errorMessage}</p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-4 rounded-lg bg-[#010138] px-5 py-2.5 text-xs font-semibold text-white"
+            >
+              Try again
+            </button>
+          </div>
+        ) : null}
+
+        {!isLoading && !errorMessage && guides.length === 0 ? (
+          <div className="rounded-2xl border border-[#e4e3f0] bg-[#f8f8fc] px-5 py-10 text-center text-sm text-[#65638a]">
+            No public guide profiles are available yet.
+          </div>
+        ) : null}
+
+        {!isLoading && !errorMessage && guides.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
+            {guides.map((guide) => (
+              <GuideCard key={guide.id} guide={guide} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -364,18 +392,6 @@ const buildGuideProfile = (user, remoteVerification = {}) => {
         remoteGuide?.name,
       ) || DEFAULT_PROFILE.name,
     languages: normalizeDisplayList(languages, DEFAULT_PROFILE.languages),
-    location:
-      readFirst(
-        user?.city,
-        user?.location,
-        user?.address?.city,
-        user?.nationality,
-        nestedProfile?.location,
-        nestedProfile?.nationality,
-        remoteGuide?.city,
-        remoteGuide?.location,
-        guideVerification?.nationality,
-      ) || DEFAULT_PROFILE.location,
     expertise: normalizeDisplayList(expertise, DEFAULT_PROFILE.expertise),
     rating:
       Number(
@@ -410,6 +426,12 @@ export default function GuideHomePage() {
     errorMessage: "",
   });
   const [marketplaceReloadKey, setMarketplaceReloadKey] = useState(0);
+  const [guidesState, setGuidesState] = useState({
+    guides: [],
+    isLoading: true,
+    errorMessage: "",
+  });
+  const [guidesReloadKey, setGuidesReloadKey] = useState(0);
   const {
     isVerified,
     isLoading: loadingVerification,
@@ -462,6 +484,44 @@ export default function GuideHomePage() {
     };
   }, [marketplaceReloadKey]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadGuides = async () => {
+      setGuidesState((current) => ({
+        ...current,
+        isLoading: true,
+        errorMessage: "",
+      }));
+
+      try {
+        const response = await guidesApi.getPublicGuides({ page: 1, limit: 3 });
+
+        if (!isMounted) return;
+
+        setGuidesState({
+          guides: mapPublicGuides(response).slice(0, 3),
+          isLoading: false,
+          errorMessage: "",
+        });
+      } catch (error) {
+        if (!isMounted) return;
+
+        setGuidesState({
+          guides: [],
+          isLoading: false,
+          errorMessage: error?.message ?? "Unable to load public guides.",
+        });
+      }
+    };
+
+    void loadGuides();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [guidesReloadKey]);
+
   return (
     <div className="overflow-x-hidden bg-[#FDFDFF] text-[#010138]">
       <GuideNavbar verified={verified} profilePhoto={profile.photo} />
@@ -472,7 +532,12 @@ export default function GuideHomePage() {
         errorMessage={marketplace.errorMessage}
         onRetry={() => setMarketplaceReloadKey((current) => current + 1)}
       />
-      <GuidesSection />
+      <GuidesSection
+        guides={guidesState.guides}
+        isLoading={guidesState.isLoading}
+        errorMessage={guidesState.errorMessage}
+        onRetry={() => setGuidesReloadKey((current) => current + 1)}
+      />
       <Footer />
     </div>
   );

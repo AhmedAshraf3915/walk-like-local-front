@@ -12,7 +12,7 @@ const NAV_LINKS = [
 
 const PROFILE_PATHS = {
   admin: "/admin/profile",
-  guide: "/guide/profile",
+  guide: "/guide/complete-profile/details",
   tourist: "/tourist/profile",
 };
 

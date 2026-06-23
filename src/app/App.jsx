@@ -17,8 +17,6 @@ import TestPage from "../features/test/pages/TestPage.jsx";
 import GuideVerificationPage from "../features/guideVerification/pages/GuideVerificationPage";
 import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
 import GuideHomePage from "../features/guide/pages/GuideHomePage";
-import GuideProfilePage from "../features/guide/pages/GuideProfilePage";
-import GuideSettingsPage from "../features/guide/pages/GuideSettingsPage";
 import GuideCompleteProfilePage from "../features/guide/pages/GuideCompleteProfilePage";
 import GuideBookingsPage from "../features/guide/pages/GuideBookingsPage";
 import GuideEarningsPage from "../features/guide/pages/GuideEarningsPage";
@@ -173,19 +171,11 @@ function App() {
         />
         <Route
           path="/guide/profile"
-          element={
-            <RequireRole allowedRoles={["guide"]}>
-              <GuideProfilePage />
-            </RequireRole>
-          }
+          element={<Navigate to="/guide/complete-profile/details" replace />}
         />
         <Route
           path="/guide/settings"
-          element={
-            <RequireRole allowedRoles={["guide"]}>
-              <GuideSettingsPage />
-            </RequireRole>
-          }
+          element={<Navigate to="/guide/complete-profile/details" replace />}
         />
         <Route
           path="/guide/complete-profile"
@@ -229,7 +219,7 @@ function App() {
         />
         <Route
           path="/guide/account"
-          element={<Navigate to="/guide/settings" replace />}
+          element={<Navigate to="/guide/complete-profile/details" replace />}
         />
         <Route
           path="/guide/tours/new"

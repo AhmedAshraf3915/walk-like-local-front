@@ -4,12 +4,15 @@ import { Menu, UserRound, X } from "lucide-react";
 
 import { IMG } from "@/assets/images/landingPage/images.js";
 import useAuth from "@/contexts/useAuth";
-import { useGuideVerificationStatus } from "@/features/guideVerification/hooks/useGuideVerificationStatus";
+import {
+  readGuideVerificationStatus,
+  useGuideVerificationStatus,
+} from "@/features/guideVerification/hooks/useGuideVerificationStatus";
 
 const GUIDE_LINKS = [
   { label: "Explore tours", to: "/tours" },
   { label: "Guide home", to: "/guide" },
-  { label: "Profile", to: "/guide/profile" },
+  { label: "Profile details", to: "/guide/complete-profile/details" },
 ];
 
 const getAssetUrl = (value) => {
@@ -31,8 +34,14 @@ export default function GuideNavbar({
     user,
     enabled: shouldLoadVerification && Boolean(user),
   });
+  const localVerificationStatus = readGuideVerificationStatus(user);
+  const locallyVerified = localVerificationStatus === "approved";
   const verified =
-    typeof verifiedProp === "boolean" ? verifiedProp : isVerified && !isLoading;
+    typeof verifiedProp === "boolean"
+      ? verifiedProp
+      : isLoading
+        ? locallyVerified
+        : isVerified || locallyVerified;
   const avatar =
     getAssetUrl(profilePhoto) ||
     getAssetUrl(user?.profilePhoto) ||
@@ -90,7 +99,7 @@ export default function GuideNavbar({
           </Link>
 
           <Link
-            to="/guide/profile"
+            to="/guide/complete-profile/details"
             aria-label="Guide profile"
             className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-[#EDC84C] bg-[#f1f0f8] text-[#65638a] sm:flex"
           >

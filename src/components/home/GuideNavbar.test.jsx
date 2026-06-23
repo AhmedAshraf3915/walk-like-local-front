@@ -12,6 +12,7 @@ vi.mock("@/contexts/useAuth", () => ({
 vi.mock(
   "@/features/guideVerification/hooks/useGuideVerificationStatus",
   () => ({
+    readGuideVerificationStatus: () => "none",
     useGuideVerificationStatus: () => ({
       isVerified: false,
       isLoading: false,

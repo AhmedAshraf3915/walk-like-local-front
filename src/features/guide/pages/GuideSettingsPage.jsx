@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 
 import GuideAccountShell from "@/features/guide/components/GuideAccountShell";
+import {
+  readCachedGuideProfile,
+  writeCachedGuideProfile,
+} from "@/features/guide/utils/guideProfileCache";
 import useAuth from "@/contexts/useAuth";
 import { guidesApi } from "@/features/guide/api/guidesApi";
 import { guideVerificationApi } from "@/features/guideVerification/api/guideVerificationApi";
@@ -106,6 +110,28 @@ const buildForm = (record, user, verification) => {
 };
 
 const EMPTY_FORM = buildForm(null, null, null);
+
+const mergeFormWithCachedProfile = (form, cachedProfile) => {
+  if (!cachedProfile || typeof cachedProfile !== "object") return form;
+
+  return {
+    ...form,
+    city: cachedProfile.city ?? cachedProfile.governorate ?? form.city,
+    bio: cachedProfile.bio ?? form.bio,
+    experience: cachedProfile.experience?.year ?? form.experience,
+    interests: Array.isArray(cachedProfile.interests)
+      ? cachedProfile.interests
+      : form.interests,
+    languages: Array.isArray(cachedProfile.languages)
+      ? toLanguageLabels(cachedProfile.languages)
+      : form.languages,
+    photo:
+      getAssetUrl(cachedProfile.profilePhoto) ||
+      getAssetUrl(cachedProfile.photo) ||
+      form.photo,
+    video: getAssetUrl(cachedProfile.introductionVideo) || form.video,
+  };
+};
 
 const resolveGuideProfileId = (user, verification) => {
   const candidates = [
@@ -275,13 +301,19 @@ export default function GuideSettingsPage() {
     profileRequest
       .then((record) => {
         if (!isMounted) return;
-        const nextForm = buildForm(record, user, verification);
+        const nextForm = mergeFormWithCachedProfile(
+          buildForm(record, user, verification),
+          readCachedGuideProfile(),
+        );
         setForm(nextForm);
         setSavedForm(nextForm);
       })
       .catch((error) => {
         if (!isMounted) return;
-        const nextForm = buildForm(null, user, verification);
+        const nextForm = mergeFormWithCachedProfile(
+          buildForm(null, user, verification),
+          readCachedGuideProfile(),
+        );
         setForm(nextForm);
         setSavedForm(nextForm);
         if (!shouldIgnoreProfileLoadError(error)) {
@@ -296,6 +328,26 @@ export default function GuideSettingsPage() {
       isMounted = false;
     };
   }, [guideProfileId, user, verification]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    writeCachedGuideProfile({
+      fullName: form.fullName,
+      email: form.email,
+      bio: form.bio,
+      city: form.city,
+      governorate: form.city,
+      experience: { year: form.experience },
+      interests: form.interests,
+      languages: form.languages.map(
+        (language) =>
+          LANGUAGE_CODES[language] ?? String(language).toLowerCase(),
+      ),
+      profilePhoto: form.photo,
+      introductionVideo: form.video,
+    });
+  }, [form, isLoading]);
 
   const isDirty = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(savedForm),
@@ -332,6 +384,23 @@ export default function GuideSettingsPage() {
       });
 
       if (savedProfile) updateUser(savedProfile);
+      writeCachedGuideProfile({
+        ...(savedProfile && typeof savedProfile === "object"
+          ? savedProfile
+          : {}),
+        fullName: form.fullName,
+        email: form.email,
+        bio: form.bio.trim(),
+        city: form.city,
+        governorate: form.city,
+        interests: form.interests,
+        experience: { year: form.experience },
+        languages: form.languages.map(
+          (language) => LANGUAGE_CODES[language] ?? language.toLowerCase(),
+        ),
+        profilePhoto: form.photo,
+        introductionVideo: form.video,
+      });
       setSavedForm(form);
       setSuccessMessage("Guide profile updated successfully.");
     } catch (error) {

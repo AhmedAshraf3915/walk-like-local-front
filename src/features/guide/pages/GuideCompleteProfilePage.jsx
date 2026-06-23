@@ -51,14 +51,16 @@ export default function GuideCompleteProfilePage() {
     setSuccessMessage("");
 
     if (!guideProfile.isProfileReady) {
-      setErrorMessage("Complete or skip each profile section before saving.");
+      setErrorMessage("Please complete all profile details before saving.");
       return;
     }
 
     setErrorMessage("");
 
     try {
-      const savedProfile = await guideProfile.submitProfile();
+      const savedProfile = await guideProfile.submitProfile({
+        selectedLanguages: assessment.selectedLanguages,
+      });
       if (savedProfile) updateUser(savedProfile);
       setSuccessMessage("Your public profile details were saved.");
     } catch (error) {
@@ -113,14 +115,14 @@ export default function GuideCompleteProfilePage() {
           <div>
             <ProfileStep
               profile={guideProfile.profile}
-              profileSkips={guideProfile.profileSkips}
+              languageOptions={LANGUAGE_OPTIONS}
               experienceOptions={EXPERIENCE_OPTIONS}
               interestOptions={INTEREST_OPTIONS}
               locationOptions={EGYPT_GOVERNORATES}
               onBioChange={guideProfile.setBio}
               onLocationChange={guideProfile.setCity}
               onExperienceChange={guideProfile.setExperience}
-              onToggleProfileSkip={guideProfile.toggleProfileSkip}
+              onToggleLanguage={guideProfile.toggleLanguage}
               onToggleInterest={guideProfile.toggleInterest}
             />
             <div className="mt-6 flex justify-end">
@@ -145,7 +147,9 @@ export default function GuideCompleteProfilePage() {
                 <BadgeCheck className="h-10 w-10" />
               </span>
               <h1 className="mt-6 text-3xl font-bold">
-                {assessment.testResult?.pass ? "Test Passed!" : "Test Completed"}
+                {assessment.testResult?.pass
+                  ? "Test Passed!"
+                  : "Test Completed"}
               </h1>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#65638a]">
                 Your answers were submitted successfully. Verified languages
@@ -174,15 +178,15 @@ export default function GuideCompleteProfilePage() {
                   </p>
                   {assessment.testResult.issues &&
                     assessment.testResult.issues.length > 0 && (
-                    <div className="mt-3">
-                      <p className="font-medium text-[#3b3a70]">Issues:</p>
-                      <ul className="mt-1 list-inside list-disc text-[#3b3a70]">
-                        {assessment.testResult.issues.map((issue, index) => (
-                          <li key={index}>{issue}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                      <div className="mt-3">
+                        <p className="font-medium text-[#3b3a70]">Issues:</p>
+                        <ul className="mt-1 list-inside list-disc text-[#3b3a70]">
+                          {assessment.testResult.issues.map((issue, index) => (
+                            <li key={index}>{issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                 </div>
               )}
             </section>

@@ -23,9 +23,51 @@ describe("useVerificationAssets", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     apiMocks.getVerificationStatus.mockResolvedValue({ status: "NONE" });
     apiMocks.submitVerification.mockResolvedValue({ status: "PENDING" });
     apiMocks.resubmitVerification.mockResolvedValue({ status: "PENDING" });
+  });
+
+  it("keeps uploaded documents after remounting the hook", async () => {
+    apiMocks.uploadImage.mockResolvedValue({
+      secureUrl: "https://files.example/id.jpg",
+      publicId: "guides/id.jpg",
+    });
+
+    const firstRender = renderHook(() =>
+      useVerificationAssets({ setErrorMessage: vi.fn() }),
+    );
+
+    await waitFor(() =>
+      expect(firstRender.result.current.loadingStatus).toBe(false),
+    );
+
+    await act(async () => {
+      await firstRender.result.current.handleUpload(
+        "nationalId",
+        new File(["id"], "id.jpg"),
+        "image",
+      );
+    });
+
+    expect(firstRender.result.current.assets.nationalId?.secureUrl).toBe(
+      "https://files.example/id.jpg",
+    );
+
+    firstRender.unmount();
+
+    const secondRender = renderHook(() =>
+      useVerificationAssets({ setErrorMessage: vi.fn() }),
+    );
+
+    await waitFor(() =>
+      expect(secondRender.result.current.loadingStatus).toBe(false),
+    );
+
+    expect(secondRender.result.current.assets.nationalId?.secureUrl).toBe(
+      "https://files.example/id.jpg",
+    );
   });
 
   it("restores previously submitted documents from the verification status", async () => {

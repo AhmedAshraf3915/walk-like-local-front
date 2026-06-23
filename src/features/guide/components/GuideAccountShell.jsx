@@ -1,10 +1,9 @@
-import { BadgeCheck, Clock3, UserRound, WalletCards } from "lucide-react";
+import { BadgeCheck, Clock3, WalletCards } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 
 const ACCOUNT_LINKS = [
-  { label: "Profile & Settings", to: "/guide/settings", icon: UserRound },
   {
     label: "Complete profile",
     to: "/guide/complete-profile",
@@ -21,23 +20,35 @@ export default function GuideAccountShell({ children }) {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
         <nav
           aria-label="Guide account"
-          className="overflow-x-auto rounded-2xl border border-[#d7d6e8] bg-white p-2 shadow-[0_10px_28px_rgba(1,1,56,0.10)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="rounded-3xl border border-[#d9d8ea] bg-[linear-gradient(160deg,#ffffff_0%,#f8f8ff_100%)] p-2.5 shadow-[0_14px_36px_rgba(1,1,56,0.11)]"
         >
-          <div className="grid min-w-[760px] grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {ACCOUNT_LINKS.map(({ label, to, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `flex h-14 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition lg:text-base ${
+                  `group flex h-14 items-center justify-center gap-2.5 rounded-2xl px-4 text-sm font-semibold transition duration-200 lg:text-base ${
                     isActive
-                      ? "bg-[#07078c] text-white shadow-[0_6px_18px_rgba(1,1,112,0.24)]"
-                      : "text-[#010138] hover:bg-[#f2f1f8]"
+                      ? "bg-gradient-to-r from-[#090993] via-[#1414a5] to-[#2d2db5] text-white shadow-[0_10px_24px_rgba(6,6,132,0.34)]"
+                      : "text-[#19185a] hover:bg-[#efeff9] hover:text-[#07078c]"
                   }`
                 }
               >
-                <Icon className="h-5 w-5" />
-                {label}
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`grid h-8 w-8 place-items-center rounded-full transition ${
+                        isActive
+                          ? "bg-white/16"
+                          : "bg-[#e9eafb] group-hover:bg-[#dfe0f7]"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    {label}
+                  </>
+                )}
               </NavLink>
             ))}
           </div>

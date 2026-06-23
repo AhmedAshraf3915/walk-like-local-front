@@ -14,6 +14,10 @@ import Footer from "@/components/home/Footer.jsx";
 import TourCard from "@/components/home/TourCard.jsx";
 import useAuth from "@/contexts/useAuth";
 import { guidesApi } from "@/features/guide/api/guidesApi";
+import {
+  readCachedGuideProfile,
+  writeCachedGuideProfile,
+} from "@/features/guide/utils/guideProfileCache";
 import { toursApi } from "@/features/tours/api/toursApi";
 import { useGuideVerificationStatus } from "@/features/guideVerification/hooks/useGuideVerificationStatus";
 import { mapActiveTours } from "@/features/landingPage/utils/landingContentMappers";
@@ -151,6 +155,7 @@ const toLocationLabel = (...values) => {
 };
 
 const buildProfile = ({ databaseProfile, user, verification }) => {
+  const cachedProfile = readCachedGuideProfile() ?? {};
   const source =
     databaseProfile?.guide ?? databaseProfile?.profile ?? databaseProfile ?? {};
   const nestedProfile = user?.guideProfile ?? user?.profile ?? {};
@@ -158,7 +163,10 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
     source?.verifiedLanguages ?? user?.verifiedLanguages,
   );
   const languages = toDisplayLanguages(
-    source?.languages ?? user?.languages ?? nestedProfile?.languages,
+    source?.languages ??
+      user?.languages ??
+      nestedProfile?.languages ??
+      cachedProfile?.languages,
   );
 
   return {
@@ -168,11 +176,18 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
     photo:
       getAssetUrl(source?.profilePicture) ||
       getAssetUrl(source?.profilePhoto) ||
+      getAssetUrl(cachedProfile?.profilePhoto) ||
+      getAssetUrl(cachedProfile?.photo) ||
       getAssetUrl(verification?.profilePhoto) ||
       getAssetUrl(verification?.verificationDocuments?.profilePhoto) ||
       getAssetUrl(user?.profilePhoto) ||
       getAssetUrl(user?.avatar),
-    bio: source?.bio ?? user?.bio ?? nestedProfile?.bio ?? "",
+    bio:
+      source?.bio ??
+      user?.bio ??
+      nestedProfile?.bio ??
+      cachedProfile?.bio ??
+      "",
     interests: toDisplayInterests(
       source?.interests,
       source?.specialties,
@@ -180,11 +195,13 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
       user?.specialties,
       nestedProfile?.interests,
       nestedProfile?.specialties,
+      cachedProfile?.interests,
     ),
     experience:
       source?.experience?.year ??
       user?.experience?.year ??
       nestedProfile?.experience?.year ??
+      cachedProfile?.experience?.year ??
       "",
     experiencePhoto:
       getAssetUrl(source?.experience?.photo) ||
@@ -199,6 +216,9 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
       user?.city,
       user?.governorate,
       user?.location,
+      cachedProfile?.city,
+      cachedProfile?.governorate,
+      cachedProfile?.location,
       source?.nationality,
       verification?.nationality,
       user?.nationality,
@@ -207,6 +227,7 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
     verifiedLanguages,
     introductionVideo:
       getAssetUrl(source?.introductionVideo) ||
+      getAssetUrl(cachedProfile?.introductionVideo) ||
       getAssetUrl(verification?.introductionVideo) ||
       getAssetUrl(verification?.verificationDocuments?.introductionVideo),
     rating:
@@ -314,6 +335,7 @@ export default function GuideProfilePage() {
 
       if (profileResult.status === "fulfilled") {
         setDatabaseProfile(profileResult.value);
+        writeCachedGuideProfile(profileResult.value);
       }
 
       if (toursResult.status === "fulfilled") {

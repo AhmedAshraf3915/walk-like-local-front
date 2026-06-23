@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import GuideProfilePage from "@/features/guide/pages/GuideProfilePage";
+import { writeCachedGuideProfile } from "@/features/guide/utils/guideProfileCache";
 
 const apiMocks = vi.hoisted(() => ({
   getPublicGuide: vi.fn(),
@@ -59,6 +60,7 @@ describe("GuideProfilePage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     apiMocks.getPublicGuide.mockResolvedValue({
       _id: "guide-1",
       fullName: "Database Guide",
@@ -93,6 +95,30 @@ describe("GuideProfilePage", () => {
         tourist: { fullName: "Database Traveler", nationality: "France" },
       },
     ]);
+  });
+
+  it("falls back to cached profile details when profile endpoint fails", async () => {
+    writeCachedGuideProfile({
+      fullName: "Cached Guide",
+      bio: "Cached profile bio.",
+      city: "Aswan",
+      interests: ["Culture"],
+      languages: ["en"],
+      experience: { year: "2 years" },
+    });
+
+    apiMocks.getPublicGuide.mockRejectedValueOnce(new Error("Network down"));
+
+    render(
+      <MemoryRouter>
+        <GuideProfilePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Authenticated Guide")).toBeDefined();
+    expect(screen.getByText("Cached profile bio.")).toBeDefined();
+    expect(screen.getByText("Aswan")).toBeDefined();
+    expect(screen.getByText("Culture")).toBeDefined();
   });
 
   it("renders profile sections only from database responses", async () => {

@@ -1,4 +1,4 @@
-import { ChevronDown, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { IMG } from "../../../assets/images/landingPage/images.js";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -6,7 +6,7 @@ import useAuth from "@/contexts/useAuth";
 
 const PROFILE_PATHS = {
   admin: "/admin",
-  guide: "/guide/profile",
+  guide: "/guide/complete-profile/details",
   tourist: "/tourist/profile",
 };
 

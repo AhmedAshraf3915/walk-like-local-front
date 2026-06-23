@@ -1,13 +1,13 @@
 const ProfileStep = ({
   profile,
-  profileSkips,
+  languageOptions,
   experienceOptions,
   interestOptions,
   locationOptions,
   onBioChange,
   onLocationChange,
   onExperienceChange,
-  onToggleProfileSkip,
+  onToggleLanguage,
   onToggleInterest,
 }) => {
   const bioCount = profile.bio.length;
@@ -19,17 +19,6 @@ const ProfileStep = ({
           <h2 className="text-[38px] font-semibold text-[#111041]">
             Bio / About
           </h2>
-          <button
-            type="button"
-            onClick={() => onToggleProfileSkip("bio")}
-            className={`rounded-full border px-4 py-2 text-sm ${
-              profileSkips.bio
-                ? "border-[#17169d] bg-[#f1f0ff] text-[#17169d]"
-                : "border-[#bebdd2] text-[#35345d]"
-            }`}
-          >
-            {profileSkips.bio ? "Skipped" : "Skip"}
-          </button>
           <p className="text-[24px] text-[#8888a4]">{bioCount} / 400</p>
         </div>
 
@@ -43,20 +32,7 @@ const ProfileStep = ({
 
       <section className="rounded-[18px] border border-[#c7c6dc] bg-white p-8">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-[38px] font-semibold text-[#111041]">
-            Location
-          </h2>
-          <button
-            type="button"
-            onClick={() => onToggleProfileSkip("city")}
-            className={`rounded-full border px-4 py-2 text-sm ${
-              profileSkips.city
-                ? "border-[#17169d] bg-[#f1f0ff] text-[#17169d]"
-                : "border-[#bebdd2] text-[#35345d]"
-            }`}
-          >
-            {profileSkips.city ? "Skipped" : "Skip"}
-          </button>
+          <h2 className="text-[38px] font-semibold text-[#111041]">Location</h2>
         </div>
         <label
           htmlFor="guide-location"
@@ -84,17 +60,6 @@ const ProfileStep = ({
           <h2 className="text-[38px] font-semibold text-[#111041]">
             Experiences
           </h2>
-          <button
-            type="button"
-            onClick={() => onToggleProfileSkip("yearsOfExperience")}
-            className={`rounded-full border px-4 py-2 text-sm ${
-              profileSkips.yearsOfExperience
-                ? "border-[#17169d] bg-[#f1f0ff] text-[#17169d]"
-                : "border-[#bebdd2] text-[#35345d]"
-            }`}
-          >
-            {profileSkips.yearsOfExperience ? "Skipped" : "Skip"}
-          </button>
         </div>
         <label
           htmlFor="guide-experience"
@@ -120,19 +85,40 @@ const ProfileStep = ({
       <section className="rounded-[18px] border border-[#c7c6dc] bg-white p-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-[38px] font-semibold text-[#111041]">
+            Languages
+          </h2>
+        </div>
+        <p className="mt-1 text-[17px] text-[#33325b]">
+          Select your speaking languages.
+        </p>
+
+        <div className="mt-5 flex flex-wrap gap-3">
+          {languageOptions.map((language) => {
+            const active = profile.languages.includes(language);
+
+            return (
+              <button
+                key={language}
+                type="button"
+                onClick={() => onToggleLanguage(language)}
+                className={`rounded-full border px-5 py-2 text-[16px] transition ${
+                  active
+                    ? "border-[#17169d] bg-[#17169d] text-white"
+                    : "border-[#bdbdcf] bg-white text-[#2b2a52]"
+                }`}
+              >
+                {language}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rounded-[18px] border border-[#c7c6dc] bg-white p-8">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-[38px] font-semibold text-[#111041]">
             Interests
           </h2>
-          <button
-            type="button"
-            onClick={() => onToggleProfileSkip("interests")}
-            className={`rounded-full border px-4 py-2 text-sm ${
-              profileSkips.interests
-                ? "border-[#17169d] bg-[#f1f0ff] text-[#17169d]"
-                : "border-[#bebdd2] text-[#35345d]"
-            }`}
-          >
-            {profileSkips.interests ? "Skipped" : "Skip"}
-          </button>
         </div>
         <p className="mt-1 text-[17px] text-[#33325b]">
           Pick your interests to help us match travelers to your style.

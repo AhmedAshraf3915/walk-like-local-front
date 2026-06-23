@@ -1,5 +1,11 @@
 /* @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -48,7 +54,7 @@ vi.mock("@/features/guideVerification/hooks/useVerificationAssets", () => ({
 }));
 
 vi.mock("@/features/guideVerification/hooks/useAiAssessment", () => ({
-  useAiAssessment: () => ({ aiTestCompleted: false }),
+  useAiAssessment: () => ({ aiTestCompleted: false, selectedLanguages: [] }),
 }));
 
 vi.mock("@/features/guideVerification/api/guideVerificationApi", () => ({
@@ -79,7 +85,7 @@ describe("GuideCompleteProfilePage", () => {
       name: "Submit for verification",
     });
     expect(submitButton.disabled).toBe(false);
-    expect(screen.queryByRole("button", { name: "Skip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /skip/i })).toBeNull();
 
     fireEvent.click(submitButton);
     expect(mocks.submitVerification).toHaveBeenCalledOnce();

@@ -1,5 +1,6 @@
 /* @vitest-environment jsdom */
 import {
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -7,10 +8,11 @@ import {
   within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EGYPT_GOVERNORATES } from "@/features/tours/constants/tourOptions";
 import GuideSettingsPage from "@/features/guide/pages/GuideSettingsPage";
+import { writeCachedGuideProfile } from "@/features/guide/utils/guideProfileCache";
 
 const mocks = vi.hoisted(() => ({
   user: {
@@ -55,8 +57,14 @@ vi.mock(
 );
 
 describe("GuideSettingsPage governorate field", () => {
+  afterEach(() => {
+    cleanup();
+    window.sessionStorage.clear();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     mocks.getPublicGuide.mockResolvedValue({
       _id: "guide-1",
       fullName: "Marwa Guide",
@@ -69,6 +77,32 @@ describe("GuideSettingsPage governorate field", () => {
     });
     mocks.updateGuideLanguages.mockResolvedValue({});
     mocks.completeGuideProfile.mockResolvedValue({ city: "Cairo" });
+  });
+
+  it("hydrates settings form from cached profile data", async () => {
+    writeCachedGuideProfile({
+      city: "Alexandria",
+      bio: "Cached settings bio",
+      interests: ["Adventure"],
+      languages: ["en"],
+      experience: { year: "3 - 5 years" },
+    });
+
+    render(
+      <MemoryRouter>
+        <GuideSettingsPage />
+      </MemoryRouter>,
+    );
+
+    const cityField = await screen.findByRole("combobox", { name: "City" });
+    expect(cityField.textContent).toContain("Alexandria");
+    expect(screen.getByDisplayValue("Cached settings bio")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Adventure" }).className,
+    ).toContain("bg-[#010170]");
+    expect(screen.getByRole("button", { name: "English" }).className).toContain(
+      "bg-[#010170]",
+    );
   });
 
   it("offers all Egyptian governorates and saves the selected city", async () => {
@@ -101,7 +135,13 @@ describe("GuideSettingsPage governorate field", () => {
     );
     expect(cityField.textContent).toContain("Cairo");
 
-    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    const saveButtons = screen.getAllByRole("button", {
+      name: /save changes/i,
+    });
+    const enabledSaveButton =
+      saveButtons.find((button) => !button.hasAttribute("disabled")) ??
+      saveButtons[0];
+    fireEvent.click(enabledSaveButton);
 
     await waitFor(() => {
       expect(mocks.completeGuideProfile).toHaveBeenCalledWith({
