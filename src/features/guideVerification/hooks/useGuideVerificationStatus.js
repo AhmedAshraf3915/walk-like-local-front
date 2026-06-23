@@ -12,7 +12,14 @@ export const normalizeGuideVerificationStatus = (statusValue) => {
 
   const value = statusValue.trim().toLowerCase();
 
-  if (value.includes("approved") || value.includes("verified")) {
+  if (value.includes("unverified") || value.includes("not verified")) {
+    return "none";
+  }
+  if (
+    value === "true" ||
+    value.includes("approved") ||
+    value.includes("verified")
+  ) {
     return "approved";
   }
   if (value.includes("pending") || value.includes("submitted")) {
@@ -26,6 +33,10 @@ export const normalizeGuideVerificationStatus = (statusValue) => {
 };
 
 export const getGuideVerificationPayload = (data) => {
+  if (typeof data === "string" || typeof data === "boolean") {
+    return { verificationStatus: data };
+  }
+
   if (!data || typeof data !== "object") {
     return {};
   }
@@ -39,18 +50,37 @@ export const getGuideVerificationPayload = (data) => {
 };
 
 export const readGuideVerificationStatus = (source) => {
+  if (typeof source === "string" || typeof source === "boolean") {
+    return normalizeGuideVerificationStatus(source);
+  }
+
   const explicitStatus = normalizeGuideVerificationStatus(
     source?.verificationStatus ??
       source?.guideVerificationStatus ??
+      source?.approvalStatus ??
+      source?.verificationState ??
       source?.guideVerification?.status ??
       source?.verification?.status ??
+      (typeof source?.guideVerification === "string"
+        ? source.guideVerification
+        : undefined) ??
+      (typeof source?.verification === "string"
+        ? source.verification
+        : undefined) ??
       source?.status,
   );
 
   if (explicitStatus !== "none") return explicitStatus;
 
   return normalizeGuideVerificationStatus(
-    source?.isVerified ?? source?.isGuideVerified ?? source?.verified,
+    source?.isGuideVerified ??
+      source?.isVerifiedGuide ??
+      source?.isGuideApproved ??
+      source?.isApproved ??
+      source?.guideVerification?.isVerified ??
+      source?.verification?.isVerified ??
+      source?.isVerified ??
+      source?.verified,
   );
 };
 

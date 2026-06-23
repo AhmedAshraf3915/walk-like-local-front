@@ -147,16 +147,27 @@ const getDurationSeconds = (...payloads) => {
       if (seconds > 0) return seconds;
     }
 
-    const duration = Number(
+    const seconds = Number(
       session?.remainingSeconds ??
         session?.timeRemainingSeconds ??
         session?.expiresIn ??
         session?.durationSeconds ??
-        session?.timeLimitSeconds ??
-        session?.duration ??
-        session?.timeLimit,
+        session?.timeLimitSeconds,
     );
-    if (Number.isFinite(duration) && duration > 0) return duration;
+    if (Number.isFinite(seconds) && seconds > 0) return seconds;
+
+    const minutes = Number(
+      session?.durationMinutes ?? session?.timeLimitMinutes,
+    );
+    if (Number.isFinite(minutes) && minutes > 0) return minutes * 60;
+
+    const genericDuration = Number(session?.duration ?? session?.timeLimit);
+    if (Number.isFinite(genericDuration) && genericDuration > 0) {
+      // The language-test API has returned the three-minute limit as both
+      // `duration: 3` and `durationSeconds: 180`. Treat small, unitless values
+      // as minutes so a valid session does not expire after only three seconds.
+      return genericDuration <= 30 ? genericDuration * 60 : genericDuration;
+    }
   }
 
   return DEFAULT_TEST_DURATION_SECONDS;
@@ -259,7 +270,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
   }, []);
 
   useEffect(() => {
-    if (!isAiSessionStarted || aiTestCompleted || remainingSeconds <= 0) {
+    if (!isAiSessionStarted || aiTestCompleted) {
       return undefined;
     }
 
@@ -275,7 +286,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [aiTestCompleted, isAiSessionStarted, remainingSeconds, setErrorMessage]);
+  }, [aiTestCompleted, isAiSessionStarted, setErrorMessage]);
 
   useEffect(() => {
     if (!isAiSessionStarted || !activeSessionId || aiTestCompleted) {

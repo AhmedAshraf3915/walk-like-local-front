@@ -126,6 +126,27 @@ describe("useAiAssessment", () => {
     );
   });
 
+  it("treats the API's unitless three-minute duration as 180 seconds", async () => {
+    apiMocks.getLanguageTestSession.mockResolvedValue({
+      session: {
+        _id: "session-1",
+        duration: 3,
+        questions: [
+          { questionId: "server-q1", type: "text", prompt: "Continue" },
+        ],
+      },
+    });
+    const { result } = renderHook(() =>
+      useAiAssessment({ setErrorMessage: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.startSession();
+    });
+
+    expect(result.current.remainingSeconds).toBe(180);
+  });
+
   it("maps every offered language, including French, to its API code", async () => {
     const { result } = renderHook(() =>
       useAiAssessment({ setErrorMessage: vi.fn() }),
