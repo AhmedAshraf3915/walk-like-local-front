@@ -482,8 +482,8 @@ export default function TourDetail() {
   // Effective group size: user-chosen (from modal) or package default
   const effectiveGroupSize = groupSize ?? GROUP_META[selectedPackage]?.size ?? 1;
 
-  const tourBase = pkg ? pkg.price * effectiveGroupSize : 0;
-  const total = tourBase + activitiesTotal * effectiveGroupSize;
+const tourBase = pkg ? pkg.price : 0;
+  const total = tourBase + activitiesTotal;
 
   const selectedSlot = tour?.slots.find((s) => s.id === selectedSlotId) || null;
   const slotsWithStatus = useMemo(() => {
@@ -730,11 +730,10 @@ export default function TourDetail() {
                   )}
                   {tour.guide.id && (
                     <Link
-                      to={`/guides/${tour.guide.id}`}
-                      className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg"
-                    >
-                      View guide profile
-                    </Link>
+                        to={`/guides/${tour.guide.id}`}
+className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] !text-[var(--maintaxt)] hover:!text-[var(--maintaxt)] font-medium text-lg no-underline"                      >
+                        View guide profile
+                      </Link>
                   )}
                 </div>
               </div>
@@ -879,7 +878,7 @@ export default function TourDetail() {
                         Tour base{pkg ? ` . ${pkg.label}` : ""}
                         {effectiveGroupSize > 1 && (
                           <span className="ml-2 text-base text-[var(--mediumfont)]">
-                            × {effectiveGroupSize} guests
+                            . {effectiveGroupSize} guests
                           </span>
                         )}
                       </p>
@@ -894,16 +893,12 @@ export default function TourDetail() {
                         >
                           <p>
                             {a.title}
-                            {pkg && !a.included && effectiveGroupSize > 1 && (
-                              <span className="ml-1 text-sm text-[var(--mediumfont)]">
-                                . {pkg.label} × {effectiveGroupSize} guests
-                              </span>
-                            )}
+                      
                           </p>
                           <p>
                             {a.included
-                              ? "Included"
-                              : `$${getActivityPrice(a, selectedPackage) * effectiveGroupSize}`}
+                                ? "Included"
+                                : `$${getActivityPrice(a, selectedPackage)}`}
                           </p>
                         </div>
                       ))}
@@ -914,7 +909,7 @@ export default function TourDetail() {
 
                 <div className="flex items-center justify-between text-lg text-[var(--maintaxt)]">
                   <p>Activities subtotal</p>
-                  <p>${activitiesTotal * effectiveGroupSize}</p>
+                  <p>${activitiesTotal}</p>
                 </div>
 
                 <div className="flex flex-col gap-3 items-center">
