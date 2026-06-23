@@ -1,4 +1,4 @@
-import { Check, MapPin } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 export default function PaymentDone({ onDone, booking }) {
   const b = booking || {
@@ -47,16 +47,6 @@ export default function PaymentDone({ onDone, booking }) {
               </div>
             </div>
           </div>
-
-          <hr className="border-[var(--lighttext)] w-full" />
-
-          <div className="bg-[rgba(204,204,226,0.4)] rounded-2xl h-[252px] w-full flex items-center justify-center px-10 py-8">
-            <div className="flex flex-col gap-4 items-center justify-center">
-              <MapPin className="size-12 text-[var(--maincolor)]" />
-              <p className="text-xl md:text-2xl text-[var(--maincolor)]">Meeting point map preview</p>
-            </div>
-          </div>
-
           <hr className="border-[var(--lighttext)] w-full" />
 
           <button

@@ -5,8 +5,8 @@ import Navbar from "@/components/home/Navbar.jsx";
 import Footer from "@/components/home/Footer.jsx";
 import PaymentDone from "@/features/bookingTour/components/PaymentDone";
 import { paymentApi } from "@/features/payment/api/paymentApi";
-
-const REDIRECT_AFTER_SECONDS = 60;
+import { apiClient } from "@/services/apiClient"; 
+const REDIRECT_AFTER_SECONDS = 30;
 
 /**
  * Landing page Stripe redirects back to after successful checkout.
@@ -26,16 +26,17 @@ export default function CheckoutResult() {
     "";
 
   const [payment, setPayment] = useState(null);
+  const [bookingDetails, setBookingDetails] = useState(null)
   const [isLoading, setIsLoading] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [countdown, setCountdown] = useState(REDIRECT_AFTER_SECONDS);
 
-  // 1. Fetch Payment Status
+  // 1. Fetch Payment Status & Booking Details in Parallel
   useEffect(() => {
     let isMounted = true;
     
-    const fetchPaymentStatus = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
         let currentBookingId = bookingId;
@@ -43,11 +44,11 @@ export default function CheckoutResult() {
         if (sessionId && !currentBookingId) {
           try {
             const sessionData = await paymentApi.getSessionData(sessionId);
-            // تأمين جلب الـ bookingId من الـ metadata أو الـ session مباشرة
             currentBookingId = 
               sessionData?.metadata?.bookingId || 
               sessionData?.metadata?.booking_id || 
-              sessionData?.bookingId;
+              sessionData?.bookingId ||
+              sessionData?.client_reference_id;
             
             if (currentBookingId && isMounted) {
               sessionStorage.setItem("pendingPaymentBookingId", currentBookingId);
@@ -65,16 +66,29 @@ export default function CheckoutResult() {
           return;
         }
 
-        const result = await paymentApi.getPaymentStatus(currentBookingId);
+        const [paymentResult, bookingResult] = await Promise.all([
+          paymentApi.getPaymentStatus(currentBookingId),
+          apiClient.get(`/tourists/bookings/${currentBookingId}`)
+            .then(res => res.data)
+            .catch(err => {
+              console.warn("Booking details fetch failed, trying fallback...", err);
+              return null;
+            })
+        ]);
         
         if (isMounted) {
-          setPayment(result);
+          setPayment(paymentResult);
+          setBookingDetails(bookingResult);
           setErrorMessage("");
         }
       } catch (err) {
-        console.error("Error fetching payment:", err);
+        console.error("Error fetching payment data:", err);
         if (isMounted) {
-          setErrorMessage(err?.response?.data?.message || err?.message || "Unable to retrieve payment status.");
+          setErrorMessage(
+            err?.response?.data?.message || 
+            err?.message || 
+            "Unable to retrieve payment status."
+          );
         }
       } finally {
         if (isMounted) setIsLoading(false);
@@ -82,7 +96,7 @@ export default function CheckoutResult() {
     };
 
     if (sessionId || bookingId) {
-      fetchPaymentStatus();
+      fetchData();
     } else {
       setErrorMessage("No payment session or booking reference found.");
       setIsLoading(false);
@@ -93,15 +107,14 @@ export default function CheckoutResult() {
     };
   }, [sessionId, bookingId]);
 
-  // 2. Check if Paid (Added Stripe's standard "succeeded" status)
   const isPaid = useMemo(() => {
     if (!payment) return false;
-    // فحص الحالة من الكائن الرئيسي أو من داخل تفاصيل الدفع
+    
     const status = String(
+      payment?.paymentState ??
       payment?.status ?? 
+      payment?.data?.paymentState ??
       payment?.data?.status ?? 
-      payment?.paymentStatus ?? 
-      payment?.data?.paymentStatus ?? 
       ""
     ).toLowerCase();
     
@@ -133,7 +146,6 @@ export default function CheckoutResult() {
     navigate("/tourist/bookings");
   };
 
-  // 4. Retry payment logic
   const retryPayment = async () => {
     if (!bookingId) return;
     setIsRetrying(true);
@@ -150,16 +162,15 @@ export default function CheckoutResult() {
     }
   };
 
-  // 5. Build booking summary safely
   const bookingSummary = useMemo(() => {
-    if (!payment) return undefined;
+    const rawBooking = bookingDetails?.data ?? bookingDetails ?? payment?.data ?? payment;
+    const b = rawBooking?.booking ?? rawBooking;
     
-    // استخراج كائن الحجز والدفع بأي شكل متوقع من الـ API (سواء كان ملفوف داخل data أو مباشر)
-    const rawData = payment?.data ?? payment;
-    const b = rawData?.booking ?? rawData;
+    const tourObj = b?.tourId ?? b?.tour;
+    const slotObj = b?.slotId ?? b?.slot;
 
     const fmt = (dateStr) => {
-      if (!dateStr) return "—";
+      if (!dateStr) return "";
       const d = new Date(dateStr);
       return isNaN(d.getTime())
         ? dateStr
@@ -170,34 +181,48 @@ export default function CheckoutResult() {
           });
     };
 
-    const start = b?.startTime ?? b?.slot?.startTime ?? "";
-    const end = b?.endTime ?? b?.slot?.endTime ?? "";
+    const start = b?.startTime ?? slotObj?.startTime ?? "";
+    const end = b?.endTime ?? slotObj?.endTime ?? "";
+    const timeStr = start && end ? `${start} – ${end}` : start;
+
+    const rawDate = b?.date ?? slotObj?.date ?? b?.tourDate ?? "";
+    const dateStr = fmt(rawDate);
+
+    let inferredPackage = b?.package ?? b?.groupType ?? b?.packageType ?? tourObj?.packageType;
+    if (!inferredPackage || inferredPackage === "—") {
+      const size = b?.groupSize ?? 1;
+      if (size === 1) inferredPackage = "Private";
+      else if (size >= 2 && size <= 4) inferredPackage = "Small Group";
+      else if (size >= 5) inferredPackage = "Large Group";
+    }
+
+    const whereLocation = 
+      b?.meetingPoint ?? 
+      tourObj?.meetingPoint ?? 
+      b?.destination ?? 
+      tourObj?.destination ?? 
+      b?.location ?? 
+      "—";
+
+    // السعر الإجمالي المدفوع
+    const cost = payment?.amount ?? payment?.data?.amount ?? b?.totalPrice ?? b?.total ?? b?.price;
 
     return {
       reference:
-        rawData?.reference ?? 
-        rawData?.transactionId ?? 
-        rawData?.paymentIntentId ?? 
-        rawData?.id ?? 
+        payment?.reference ?? 
+        payment?.transactionId ?? 
+        payment?.paymentIntentId ?? 
+        b?.reference ??
+        b?._id ?? 
+        b?.id ??
         bookingId,
-      package: b?.package ?? b?.groupType ?? b?.packageType ?? "—",
-      when: [
-        fmt(b?.date ?? b?.slot?.date ?? b?.tourDate),
-        start && end ? `${start} – ${end}` : start,
-      ]
-        .filter(Boolean)
-        .join(" · ") || "—",
-      where: b?.meetingPoint ?? b?.destination ?? b?.location ?? "—",
-      paid:
-        rawData?.amount != null
-          ? `$${rawData.amount}`
-          : b?.totalPrice != null
-          ? `$${b.totalPrice}`
-          : "—",
+      package: inferredPackage || "Private",
+      when: [dateStr, timeStr].filter(Boolean).join(" · ") || "—",
+      where: whereLocation,
+      paid: cost ? `$${cost}` : "—",
     };
-  }, [payment, bookingId]);
+  }, [payment, bookingDetails, bookingId]);
 
-  // ── Loading Screen ───────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <Shell>
@@ -212,7 +237,6 @@ export default function CheckoutResult() {
     );
   }
 
-  // ── Error / Failed Screen ────────────────────────────────────────────────────
   if (errorMessage || !isPaid) {
     return (
       <Shell>
@@ -255,7 +279,6 @@ export default function CheckoutResult() {
     );
   }
 
-  // ── Success Screen ───────────────────────────────────────────────────────────
   return (
     <Shell>
       <PaymentDone booking={bookingSummary} onDone={goToBookings} />
@@ -271,7 +294,6 @@ export default function CheckoutResult() {
   );
 }
 
-// ── Tiny layout helpers ───────────────────────────────────────────────────────
 function Shell({ children }) {
   return (
     <div className="min-h-screen bg-[#f7f7fb] text-[#010138] flex flex-col justify-between">
