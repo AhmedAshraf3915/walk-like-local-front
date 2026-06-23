@@ -86,6 +86,24 @@ export const paymentApi = {
   redirectToCheckout: (checkoutUrl) => {
     window.location.assign(checkoutUrl);
   },
+
+getPaymentStatusBySessionId: async (sessionId) => {
+    if (!sessionId || typeof sessionId !== "string" || !sessionId.trim()) {
+      throw new Error("A valid session ID is required.");
+    }
+
+    try {
+      const response = await apiClient.get(
+        `/payments/status-by-session?session_id=${encodeURIComponent(sessionId.trim())}`
+      );
+      return unwrapResponseData(response);
+    } catch (error) {
+      throw new Error(
+        getErrorMessage(error, "Unable to retrieve payment status from session."),
+        { cause: error },
+      );
+    }
+  }
 };
 
 export default paymentApi;

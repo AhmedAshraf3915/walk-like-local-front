@@ -19,6 +19,7 @@ const REDIRECT_AFTER_SECONDS = 60;
 export default function CheckoutResult() {
   const { bookingId: routeBookingId } = useParams();
   const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
   const navigate = useNavigate();
   const timerRef = useRef(null);
 
@@ -30,38 +31,52 @@ export default function CheckoutResult() {
     "";
 
   const [payment, setPayment] = useState(null);
-  const [isLoading, setIsLoading] = useState(Boolean(bookingId));
+  const [isLoading, setIsLoading] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(
-    bookingId ? "" : "The payment return did not include a booking reference.",
-  );
+  const [errorMessage, setErrorMessage] = useState("");
   const [countdown, setCountdown] = useState(REDIRECT_AFTER_SECONDS);
 
   // ── 1. Fetch payment status ───────────────────────────────────────────────
   useEffect(() => {
-    if (!bookingId) return;
-    let alive = true;
-
-    paymentApi
-      .getPaymentStatus(bookingId)
-      .then((result) => {
-        if (!alive) return;
-        setPayment(result);
-        setErrorMessage("");
-        sessionStorage.removeItem("pendingPaymentBookingId");
-      })
-      .catch((err) => {
-        if (!alive) return;
-        setErrorMessage(err?.message ?? "Unable to retrieve payment status.");
-      })
-      .finally(() => {
-        if (alive) setIsLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [bookingId]);
+    if (sessionId) {
+      paymentApi
+        .getPaymentStatusBySessionId(sessionId)
+        .then((result) => {
+          console.log("Payment result:", result); 
+          setPayment(result);
+          
+          if (result.bookingId) {
+            sessionStorage.setItem("pendingPaymentBookingId", result.bookingId);
+          }
+          setErrorMessage("");
+        })
+        .catch((err) => {
+          console.error("Error fetching payment:", err);
+          setErrorMessage(err?.message || "Unable to retrieve payment status.");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } 
+    else if (bookingId) {
+      paymentApi
+        .getPaymentStatus(bookingId)
+        .then((result) => {
+          setPayment(result);
+          setErrorMessage("");
+        })
+        .catch((err) => {
+          setErrorMessage(err?.message || "Unable to retrieve payment status.");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } 
+    else {
+      setErrorMessage("No payment session or booking reference found.");
+      setIsLoading(false);
+    }
+  }, [sessionId, bookingId]);
 
   const isPaid = useMemo(() => {
     if (!payment) return false;
@@ -69,37 +84,23 @@ export default function CheckoutResult() {
     return ["paid", "success", "completed"].includes(status);
   }, [payment]);
 
-  // ── 2. Auto-redirect countdown (success only) ─────────────────────────────
-  useEffect(() => {
-    if (!isPaid) return;
-
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          navigate("/tourist/bookings");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timerRef.current);
-  }, [isPaid, navigate]);
-
   // ── 3. Retry payment ──────────────────────────────────────────────────────
   const retryPayment = async () => {
-    if (!bookingId || isRetrying) return;
-    setIsRetrying(true);
-    setErrorMessage("");
-    try {
-      sessionStorage.setItem("pendingPaymentBookingId", bookingId);
-      const { checkoutUrl } = await paymentApi.createCheckoutSession(bookingId);
-      paymentApi.redirectToCheckout(checkoutUrl);
-    } catch (err) {
-      setErrorMessage(err?.message ?? "Unable to restart secure checkout.");
-      setIsRetrying(false);
-    }
+     if (!bookingId && !sessionId) {
+    return (
+      <Shell>
+        <Card>
+          <h1 className="text-3xl font-bold text-[#ae1818]">Something went wrong</h1>
+          <p className="mt-3 text-sm leading-6 text-[#65638a]">
+            {errorMessage || "No payment session or booking reference found."}
+          </p>
+          <Btn onClick={goToBookings} className="mt-8">
+            View my bookings
+          </Btn>
+        </Card>
+      </Shell>
+    );
+  }
   };
 
   // ── 4. Build booking summary for PaymentDone ──────────────────────────────
