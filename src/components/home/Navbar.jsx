@@ -55,7 +55,7 @@ export default function Navbar() {
 
   // Nav links are intentionally hidden on /tours and /guides pages
   const hideNavLinks =
-    pathname.startsWith("/tours") || pathname.startsWith("/guides");
+    pathname.startsWith("/tours") || pathname.startsWith("/guides") || pathname.startsWith("/tourist");
 
   // Close avatar dropdown when clicking outside
   useEffect(() => {

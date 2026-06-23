@@ -24,7 +24,7 @@ function Pill({ label, active, onClick }) {
   )
 }
 
-function InfoField({ label, value, onChange, editing, onToggleEdit }) {
+function InfoField({ label, value, onChange, editing, onToggleEdit,available = true }) {
   return (
     <div className="bg-[var(--mediabackground)] rounded-2xl px-8 py-7 flex-1 min-w-[300px]">
       <div className="flex items-center justify-between gap-4">
@@ -42,10 +42,12 @@ function InfoField({ label, value, onChange, editing, onToggleEdit }) {
           ) : (
             <p className="text-2xl text-[var(--maincolor)] truncate">{value || '—'}</p>
           )}
-          <Pencil
-            onClick={onToggleEdit}
-            className="size-6 text-[var(--maincolor)] cursor-pointer shrink-0"
-          />
+          {available && (
+            <Pencil
+              onClick={onToggleEdit}
+              className="size-6 text-[var(--maincolor)] cursor-pointer shrink-0"
+            />
+          )}
         </div>
       </div>
     </div>
@@ -165,7 +167,7 @@ export default function ProfileSettings() {
 
   const photoUrl =
     profile?.profilePhoto?.secureUrl ||
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop'
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrb4OvIZOz-Z2RvlJ0xDl1E_e3qOfh_TQK1va1Z7gJ4g&s=10?w=400&h=400&fit=crop'
 
   if (loading) {
     return (
@@ -224,20 +226,20 @@ export default function ProfileSettings() {
                 alt="profile"
                 className="w-full h-full rounded-full object-cover"
               />
-              <label className="absolute bottom-[10px] right-[10px] bg-[var(--maintaxt)] border-[3px] border-[var(--background)] rounded-full p-5 cursor-pointer">
+              {/* <label className="absolute bottom-[10px] right-[10px] bg-[var(--maintaxt)] border-[3px] border-[var(--background)] rounded-full p-5 cursor-pointer">
                 {uploadingPhoto ? (
                   <Loader2 className="size-8 text-white animate-spin" />
                 ) : (
                   <Pencil className="size-8 text-white" />
                 )}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} disabled={uploadingPhoto} />
-              </label>
+              </label> */}
             </div>
 
             <div className="flex flex-col gap-10 w-full">
               <div className="flex flex-col md:flex-row gap-6">
-                <InfoField label="Full name" value={fullName} editing={false} onToggleEdit={() => {}} />
-                <InfoField label="Email" value={email} editing={false} onToggleEdit={() => {}} />
+                <InfoField label="Full name" value={fullName} editing={false} onToggleEdit={() => {}} available={false} />
+                <InfoField label="Email" value={email} editing={false} onToggleEdit={() => {}} available={false} />
               </div>
               <div className="flex flex-col md:flex-row gap-6">
                 <InfoField
@@ -258,23 +260,6 @@ export default function ProfileSettings() {
             </div>
           </div>
 
-          <div className="flex gap-6">
-            <button
-              onClick={handleDiscard}
-              disabled={saving}
-              className="h-14 px-12 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-xl disabled:opacity-50"
-            >
-              Discard
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="h-14 px-12 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl disabled:opacity-50 flex items-center gap-2"
-            >
-              {saving && <Loader2 className="size-5 animate-spin" />}
-              Save changes
-            </button>
-          </div>
         </section>
 
         <section className="flex flex-col gap-12">
@@ -309,6 +294,23 @@ export default function ProfileSettings() {
               />
             ))}
           </div>
+                    <div className="flex gap-6">
+            <button
+              onClick={handleDiscard}
+              disabled={saving}
+              className="h-14 px-12 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-xl disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-14 px-12 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl disabled:opacity-50 flex items-center gap-2"
+            >
+              {saving && <Loader2 className="size-5 animate-spin" />}
+              Save changes
+            </button>
+          </div>
         </section>
 
 
@@ -327,7 +329,7 @@ export default function ProfileSettings() {
             Log out
           </button>
         </section>
-        
+
       </main>
     </div>
   )

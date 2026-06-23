@@ -463,7 +463,7 @@ export default function HomePage() {
         errorMessage={content.guidesError}
       />
       <HeritageSection />
-      <ReviewsSection />
+      {/* <ReviewsSection /> */}
       {!isAuthenticated || !isGuide ? <BecomeGuideSection /> : null}
       <Footer />
     </div>

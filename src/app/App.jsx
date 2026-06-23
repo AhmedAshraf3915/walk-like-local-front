@@ -25,7 +25,6 @@ import GuideEarningsPage from "../features/guide/pages/GuideEarningsPage";
 import TourCreationPage from "../features/tours/pages/TourCreationPage";
 import AllToursPage from "../features/tours/pages/AllToursPage";
 import { useGuideVerificationStatus } from "../features/guideVerification/hooks/useGuideVerificationStatus";
-
 import {
   ForgotPassword,
   EnterOTP,
@@ -38,7 +37,6 @@ import HomePage from "../pages/HomePage.jsx";
 
 import ProfileSettings from "../features/touristProfile/pages/ProfileSettings.jsx";
 import BookingHistory from "../features/touristProfile/pages/BookingHistory.jsx";
-import Payments from "../features/touristProfile/pages/Payments.jsx";
 import ViewAllGuidePage from "../pages/ViewAllGuidePage.jsx";
 import ViewAllPlacesPage from "../pages/ViewAllPlacesPage.jsx";
 import VerificationPage from "../features/touristVerification/pages/VerificationPage.jsx";
@@ -192,11 +190,8 @@ function App() {
         <Route path="/tourist/bookings" element={
           <RequireRole allowedRoles={["tourist"]}><BookingHistory /></RequireRole>
         } />
-        <Route path="/tourist/payments" element={
-          <RequireRole allowedRoles={["tourist"]}><Payments /></RequireRole>
-        } />
 
-        <Route path="/tourist/bookings/:bookingId/confirmation" element={
+        <Route path="/payment/success" element={
           <RequireRole allowedRoles={["tourist"]}>
             <CheckoutResult />
           </RequireRole>
@@ -207,7 +202,7 @@ function App() {
         <Route path="/guides" element={<ViewAllGuidePage />} />
         <Route path="/guides/:guideId" element={<GuideDetailsPage />} />
         <Route path="/places" element={<ViewAllPlacesPage />} />
-        
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
