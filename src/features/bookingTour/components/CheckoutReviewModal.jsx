@@ -50,7 +50,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
               </div>
             </div>
 
-            <hr className="border-[var(--lighttext,#dfdeed)]" />
+            
 
             {/* Customized Activities List */}
             {s.activities && s.activities.length > 0 && (
@@ -64,6 +64,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
                     </div>
                   ))}
                 </div>
+                <hr className="border-[var(--lighttext,#dfdeed)]" />
               </div>
             )}
 
