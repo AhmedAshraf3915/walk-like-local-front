@@ -152,12 +152,17 @@ const normalizeAllowedRoles = (allowedRoles) => {
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState(() => readStoredAuth());
   const [loading, setLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [pendingVerificationEmail, setPendingVerificationEmail] =
     useState(null);
   const [verificationResendCooldownSeconds, setVerificationResendCooldownSeconds] =
     useState(0);
+  
+    useEffect(() => {
+      setIsInitializing(false);
+  }, []);
 
   useEffect(() => {
     if (verificationResendCooldownSeconds <= 0) return undefined;
@@ -364,6 +369,7 @@ export const AuthProvider = ({ children }) => {
         successMessage,
         pendingVerificationEmail,
         verificationResendCooldownSeconds,
+        isInitializing,
         login,
         signup,
         resendVerificationEmail,

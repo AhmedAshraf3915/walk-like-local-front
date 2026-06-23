@@ -14,7 +14,6 @@ import {
   X as XIcon,
   Gift,
   QrCode,
-  MessageCircle,
   Loader2,
 } from 'lucide-react'
 
@@ -203,7 +202,7 @@ function UpcomingCard({ booking, onCancel }) {
               Cancel
             </button>
             <button className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-lg flex items-center gap-2">
-              Message guide <MessageCircle className="size-5" />
+             <MapPin className="size-5" /> Map 
             </button>
           </div>
         </div>
