@@ -45,6 +45,7 @@ import VerificationPage from "../features/touristVerification/pages/Verification
 import TourDetail from "../features/tours/pages/TourDetail.jsx";
 import CheckoutResult from "../features/bookingTour/pages/CheckoutResult.jsx";
 import GuideDetailsPage from "../features/guide/pages/GuideDetailsPage.jsx";
+import GroupSelection from "../features/bookingTour/components/GroupSelection.jsx";
 
 function TouristRoute() {
   const { isAuthenticated, userRole } = useAuth();
@@ -287,6 +288,8 @@ function App() {
         <Route path="/guides" element={<ViewAllGuidePage />} />
         <Route path="/guides/:guideId" element={<GuideDetailsPage />} />
         <Route path="/places" element={<ViewAllPlacesPage />} />
+        <Route path="/groupeSelection" element= {<GroupSelection/>} />
+
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

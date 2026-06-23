@@ -1,5 +1,9 @@
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { User, Clock } from 'lucide-react'
+
+import {
+  ArrowLeft
+} from "lucide-react";
 
 const tabs = [
   { to: '/tourist/profile', label: 'Profile & Settings', icon: User },
@@ -8,7 +12,19 @@ const tabs = [
 
 export default function AccountTabs() {
   return (
-    <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[0px_8px_24px_0px_rgba(53,53,114,0.15)] p-4 w-full">
+
+    <div>
+      {/* Back link */}
+         <div className="text-center flex flex-col mt-0">
+            <Link
+              to="/"
+              className="mb-4 inline-flex w-fit items-center gap-2 rounded-xl border border-[#d8d7e8] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--maincolor)] shadow-sm transition hover:border-[var(--maincolor)] hover:bg-[#f7f7fc]"
+            >
+              <ArrowLeft size={14} /> Back to Home
+            </Link>
+          </div>
+
+      <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[0px_8px_24px_0px_rgba(53,53,114,0.15)] p-4 w-full">
       <div className="flex flex-col sm:flex-row gap-4 w-full">
         {tabs.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -27,6 +43,8 @@ export default function AccountTabs() {
           </NavLink>
         ))}
       </div>
+    </div>
+
     </div>
   )
 }

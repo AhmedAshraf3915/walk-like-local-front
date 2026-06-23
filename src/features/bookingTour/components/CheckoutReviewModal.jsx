@@ -17,105 +17,105 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[var(--mediabackground)] rounded-2xl p-8 md:p-16 w-full max-w-[1000px] flex flex-col gap-12 my-auto">
+    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-xs">
+      <div className="bg-[var(--mediabackground,#f4f4f9)] rounded-2xl p-8 md:p-16 w-full max-w-[1000px] flex flex-col gap-12 my-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200">
 
-        {/* Close button — fixed: was <a/>, now proper X icon */}
+        {/* Close button — proper structural interactive alignment icon */}
         <button
           type="button"
           aria-label="Close checkout review"
           onClick={onClose}
-          className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--maincolor)] shadow-sm hover:bg-[var(--lighttext)] transition-colors"
+          className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-white text-[var(--maincolor,#010170)] shadow-sm hover:bg-slate-100 transition-colors cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <div className="flex flex-col gap-8">
-          <p className="font-bold text-2xl text-[var(--mediumfont)] tracking-[4.8px] uppercase">Checkout</p>
-          <p className="font-semibold text-3xl md:text-4xl text-[var(--maincolor)]">Review</p>
+        <div className="flex flex-col gap-4">
+          <p className="font-bold text-2xl text-[var(--mediumfont,#65638a)] tracking-[4.8px] uppercase">Checkout</p>
+          <p className="font-semibold text-3xl md:text-4xl text-[var(--maincolor,#010170)]">Review Details</p>
         </div>
 
-        <div className="bg-white border border-[var(--lighttext)] rounded-2xl shadow-[0px_8px_24px_0px_rgba(1,1,56,0.08)] px-8 md:px-24 py-12 md:py-16 w-full">
+        <div className="bg-white border border-[var(--lighttext,#dfdeed)] rounded-2xl shadow-[0px_8px_24px_0px_rgba(1,1,56,0.08)] px-8 md:px-24 py-12 md:py-16 w-full">
           <div className="flex flex-col gap-12 w-full">
-
-            {/* Package */}
+            
+            {/* Package metadata metrics block */}
             <div className="flex flex-col gap-6 w-full">
-              <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Package</p>
-              <div className="flex flex-col gap-4 w-full">
-                <div className="flex items-end justify-between w-full text-[var(--maincolor)]">
-                  <p className="font-medium text-2xl md:text-3xl">{s.package}</p>
-                  <div className="flex items-end gap-2">
-                    <p className="font-semibold text-2xl md:text-4xl">{s.price}</p>
-                    <p className="text-lg md:text-2xl">USD</p>
-                  </div>
+              <p className="font-semibold text-xl text-[var(--mediumfont,#65638a)] tracking-[3.6px] uppercase">Package</p>
+              <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-4 w-full">
+                <div className="flex flex-col gap-2">
+                  <p className="font-semibold text-2xl md:text-3xl text-[var(--maincolor,#010170)]">{s.package}</p>
+                  <p className="text-lg md:text-xl text-[var(--mediumfont,#65638a)]">{s.guestsNote}</p>
                 </div>
-                <p className="text-xl md:text-2xl text-[var(--mediumfont)]">{s.guestsNote}</p>
+                <p className="text-xl md:text-2xl font-medium text-[var(--maincolor,#010170)]">{s.price}</p>
               </div>
             </div>
 
-            <hr className="border-[var(--lighttext)]" />
+            <hr className="border-[var(--lighttext,#dfdeed)]" />
 
-            {/* Activities */}
-            <div className="flex flex-col gap-6 w-full">
-              <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Activities</p>
-              <div className="flex flex-col gap-3 w-full">
-                {s.activities.map((a, i) => (
-                  <div key={i} className="flex items-center justify-between w-full text-xl md:text-2xl text-[var(--maincolor)]">
-                    <p>{a.name}</p>
-                    <p>{a.price}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <hr className="border-[var(--lighttext)]" />
-
-            {/* Time */}
-            <div className="flex flex-col gap-6 w-full">
-              <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Time</p>
-              <div className="flex items-center justify-between w-full font-medium text-2xl md:text-3xl text-[var(--maincolor)]">
-                <p>{s.date}</p>
-                <p>{s.time}</p>
-              </div>
-            </div>
-
-            <hr className="border-[var(--lighttext)]" />
-
-            {/* Total */}
-            <div className="flex flex-col gap-6">
-              <p className="font-semibold text-xl text-[var(--mediumfont)] tracking-[3.6px] uppercase">Total</p>
-              <div className="flex items-end gap-2 text-[var(--maincolor)]">
-                <p className="font-semibold text-2xl md:text-4xl">{s.total}</p>
-                <p className="text-lg md:text-2xl">USD</p>
-              </div>
-            </div>
-
-            <hr className="border-[var(--lighttext)]" />
-
-            {/* Error */}
-            {error && (
-              <div className="flex items-center gap-3 bg-[rgba(228,29,29,0.1)] border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] rounded-2xl px-6 py-4">
-                <AlertCircle className="size-6 shrink-0" />
-                <p className="text-lg">{error}</p>
+            {/* Customized Activities List */}
+            {s.activities && s.activities.length > 0 && (
+              <div className="flex flex-col gap-6 w-full">
+                <p className="font-semibold text-xl text-[var(--mediumfont,#65638a)] tracking-[3.6px] uppercase">Itinerary Add-ons</p>
+                <div className="flex flex-col gap-4 w-full">
+                  {s.activities.map((act, index) => (
+                    <div key={index} className="flex justify-between items-start gap-4 w-full text-lg md:text-xl">
+                      <p className="text-[var(--maincolor,#010170)] font-medium max-w-[75%]">{act.name}</p>
+                      <p className="text-[var(--mediumfont,#65638a)] whitespace-nowrap">{act.price}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-between w-full">
+            <hr className="border-[var(--lighttext,#dfdeed)]" />
+
+            {/* Time slot schedule rows */}
+            <div className="flex flex-col gap-6 w-full">
+              <p className="font-semibold text-xl text-[var(--mediumfont,#65638a)] tracking-[3.6px] uppercase">Schedule Slot</p>
+              <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2 w-full text-lg md:text-xl">
+                <p className="text-[var(--maincolor,#010170)] font-medium">{s.date}</p>
+                <p className="text-[var(--mediumfont,#65638a)]">{s.time}</p>
+              </div>
+            </div>
+
+            <hr className="border-[var(--lighttext,#dfdeed)]" />
+
+            {/* Grand Total Footer Panel Display */}
+            <div className="flex justify-between items-baseline w-full">
+              <p className="font-semibold text-xl text-[var(--mediumfont,#65638a)] tracking-[3.6px] uppercase">Total Due</p>
+              <div className="flex items-baseline gap-2 text-[var(--maincolor,#010170)] font-bold">
+                <p className="text-3xl md:text-4xl">{s.total}</p>
+                <p className="text-lg md:text-2xl uppercase font-medium">USD</p>
+              </div>
+            </div>
+
+            {/* Server side error notices handling banner block */}
+            {error && (
+              <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-6 py-4 animate-shake">
+                <AlertCircle className="size-6 shrink-0 text-red-500" />
+                <p className="text-lg font-medium">{error}</p>
+              </div>
+            )}
+
+            {/* Form actions control buttons row */}
+            <div className="flex items-center justify-between w-full pt-4">
               <BackButton onClick={onBack} />
+              
               <button
                 type="button"
                 onClick={onContinue}
                 disabled={loading}
-                className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl flex items-center gap-2 disabled:opacity-60"
+                className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] hover:from-[#000059] hover:to-[#4a4a8f] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-xl flex items-center gap-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? (
                   <>
-                    Opening Stripe… <Loader2 className="size-5 animate-spin" />
+                    Opening Stripe Payment Hub... 
+                    <Loader2 className="size-5 animate-spin" />
                   </>
                 ) : (
                   <>
-                    Continue to payment <ArrowRight className="size-5" />
+                    Continue to Checkout 
+                    <ArrowRight className="size-5" />
                   </>
                 )}
               </button>
@@ -123,6 +123,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
           </div>
         </div>
+
       </div>
     </div>
   )

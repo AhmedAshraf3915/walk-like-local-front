@@ -7,6 +7,7 @@ import { guidesApi } from "@/features/guide/api/guidesApi";
 import useAuth from "@/contexts/useAuth";
 import Navbar from "@/components/home/Navbar.jsx";
 import CheckoutReviewModal from "../../bookingTour/components/CheckoutReviewModal";
+import GroupSelection from "../../bookingTour/components/GroupSelection";
 import {
   MapPin,
   Clock as ClockIcon,
@@ -364,6 +365,12 @@ export default function TourDetail() {
   const [pendingBookingId, setPendingBookingId] = useState("");
   const [msg, setMsg] = useState({ type: "", text: "" });
 
+  // Group selection state
+  const [showGroupSelection, setShowGroupSelection] = useState(false);
+  const [groupSize, setGroupSize] = useState(null); // actual headcount chosen in GroupSelection
+  const [groupMembers, setGroupMembers] = useState([]); // saved member list from GroupSelection
+  const [touristName, setTouristName] = useState("");
+
   useEffect(() => {
     let isMounted = true;
 
@@ -389,6 +396,16 @@ export default function TourDetail() {
         setTour(mapped);
         if (mapped.packages.length > 0)
           setSelectedPackage(mapped.packages[0].id);
+
+        // Fetch tourist profile to pre-fill group modal
+        if (isTourist) {
+          try {
+            const profile = await touristApi.getProfile();
+            setTouristName(profile?.fullName || profile?.name || "");
+          } catch {
+            // non-critical
+          }
+        }
         const lockedDefaults = {};
         mapped.activities.forEach((a) => {
           if (a.locked || a.included) lockedDefaults[a.id] = true;
@@ -443,7 +460,29 @@ export default function TourDetail() {
       );
   }, [tour, enabledActivities, selectedPackage]);
 
-  const tourBase = pkg?.price || 0;
+  // When the package changes, reset saved group data
+  const handlePackageSelect = (pkgId) => {
+    if (isReadOnly) return;
+    setSelectedPackage(pkgId);
+    setGroupSize(null);
+    setGroupMembers([]);
+    // For group packages, immediately open GroupSelection
+    const meta = GROUP_META[pkgId];
+    if (meta && meta.size > 1) {
+      setShowGroupSelection(true);
+    }
+  };
+
+  // Called when GroupSelection "Confirm" is clicked
+  const handleGroupSave = ({ groupSize: size, members }) => {
+    setGroupSize(size);
+    setGroupMembers(members);
+  };
+
+  // Effective group size: user-chosen (from modal) or package default
+  const effectiveGroupSize = groupSize ?? GROUP_META[selectedPackage]?.size ?? 1;
+
+const tourBase = pkg ? pkg.price : 0;
   const total = tourBase + activitiesTotal;
 
   const selectedSlot = tour?.slots.find((s) => s.id === selectedSlotId) || null;
@@ -480,8 +519,8 @@ export default function TourDetail() {
         const result = await touristApi.createBooking({
           tourId: id,
           slotId: selectedSlotId,
-          groupSize: GROUP_META[selectedPackage]?.size || 1,
-          members: [],
+          groupSize: effectiveGroupSize,
+          members: groupMembers,
           deselectedActivityIds: tour.activities
             .filter(
               (activity) => !activity.locked && !enabledActivities[activity.id],
@@ -691,11 +730,10 @@ export default function TourDetail() {
                   )}
                   {tour.guide.id && (
                     <Link
-                      to={`/guides/${tour.guide.id}`}
-                      className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg"
-                    >
-                      View guide profile
-                    </Link>
+                        to={`/guides/${tour.guide.id}`}
+className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] !text-[var(--maintaxt)] hover:!text-[var(--maintaxt)] font-medium text-lg no-underline"                      >
+                        View guide profile
+                      </Link>
                   )}
                 </div>
               </div>
@@ -713,7 +751,7 @@ export default function TourDetail() {
                       key={p.id}
                       pkg={p}
                       active={selectedPackage === p.id}
-                      onSelect={setSelectedPackage}
+                      onSelect={handlePackageSelect}
                       disabled={isReadOnly}
                     />
                   ))}
@@ -836,7 +874,14 @@ export default function TourDetail() {
                   </div>
                   <div className="flex flex-col gap-4 text-lg text-[var(--maintaxt)]">
                     <div className="flex items-center justify-between">
-                      <p>Tour base{pkg ? ` . ${pkg.label}` : ""}</p>
+                      <p>
+                        Tour base{pkg ? ` . ${pkg.label}` : ""}
+                        {effectiveGroupSize > 1 && (
+                          <span className="ml-2 text-base text-[var(--mediumfont)]">
+                            . {effectiveGroupSize} guests
+                          </span>
+                        )}
+                      </p>
                       <p>${tourBase}</p>
                     </div>
                     {tour.activities
@@ -846,11 +891,14 @@ export default function TourDetail() {
                           key={a.id}
                           className="flex items-center justify-between text-[var(--maincolor)]"
                         >
-                          <p>{a.title}</p>
+                          <p>
+                            {a.title}
+                      
+                          </p>
                           <p>
                             {a.included
-                              ? "Included"
-                              : `$${getActivityPrice(a, selectedPackage)}`}
+                                ? "Included"
+                                : `$${getActivityPrice(a, selectedPackage)}`}
                           </p>
                         </div>
                       ))}
@@ -865,6 +913,17 @@ export default function TourDetail() {
                 </div>
 
                 <div className="flex flex-col gap-3 items-center">
+                  {isTourist && selectedPackage && GROUP_META[selectedPackage]?.size > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupSelection(true)}
+                      className="h-12 px-6 rounded-2xl border border-[var(--maincolor)] text-[var(--maincolor)] font-medium text-base w-full hover:bg-[rgba(1,1,112,0.05)] transition-colors"
+                    >
+                      {groupSize
+                        ? `Edit Group · ${effectiveGroupSize} guests`
+                        : "Set Up Group Members"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleBookingAction}
@@ -913,6 +972,17 @@ export default function TourDetail() {
 
       <Footer />
 
+      {showGroupSelection && isTourist && (
+        <GroupSelection
+          isOpen={showGroupSelection}
+          onClose={() => setShowGroupSelection(false)}
+          onSave={handleGroupSave}
+          initialGroupSize={groupSize ?? GROUP_META[selectedPackage]?.size ?? 2}
+          initialMembers={groupMembers.slice(1)} // exclude primary (index 0)
+          touristAccountName={touristName}
+        />
+      )}
+
       {showReview && isTourist && (
         <CheckoutReviewModal
           className="max-w-[200px] h-[220px]"
@@ -924,7 +994,10 @@ export default function TourDetail() {
           error={msg.type === "error" ? msg.text : null}
           summary={{
             package: pkg?.label || "—",
-            guestsNote: pkg?.guests || "—",
+            guestsNote:
+              effectiveGroupSize > 1
+                ? `${effectiveGroupSize} guests`
+                : pkg?.guests || "—",
             price: `$${tourBase}`,
             activities: tour.activities
               .filter((a) => a.locked || enabledActivities[a.id])
@@ -932,7 +1005,7 @@ export default function TourDetail() {
                 name: a.title,
                 price: a.included
                   ? "Included"
-                  : `$${getActivityPrice(a, selectedPackage)}`,
+                  : `$${getActivityPrice(a, selectedPackage) * effectiveGroupSize}`,
               })),
             date: selectedSlot
               ? `${selectedSlot.day} . ${selectedSlot.date}`
