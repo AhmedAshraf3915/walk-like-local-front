@@ -9,6 +9,12 @@ const apiMocks = vi.hoisted(() => ({
   browseActiveTours: vi.fn(),
 }));
 
+const verificationState = vi.hoisted(() => ({
+  isVerified: true,
+  verification: {},
+  isLoading: false,
+}));
+
 vi.mock("@/contexts/useAuth", () => ({
   default: () => ({
     user: { _id: "guide-1", fullName: "Database Guide" },
@@ -22,11 +28,7 @@ vi.mock("@/features/tours/api/toursApi", () => ({
 vi.mock(
   "@/features/guideVerification/hooks/useGuideVerificationStatus",
   () => ({
-    useGuideVerificationStatus: () => ({
-      isVerified: true,
-      verification: {},
-      isLoading: false,
-    }),
+    useGuideVerificationStatus: () => verificationState,
   }),
 );
 
@@ -45,6 +47,9 @@ describe("GuideHomePage marketplace", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    verificationState.isVerified = true;
+    verificationState.isLoading = false;
+    verificationState.verification = {};
     apiMocks.browseActiveTours.mockResolvedValue({
       items: [
         {
@@ -77,13 +82,41 @@ describe("GuideHomePage marketplace", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: /browse all tours/i }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: /browse all tours/i })
+        .getAttribute("href"),
     ).toBe("/tours");
+    expect(
+      screen
+        .getByRole("link", { name: /view all guides/i })
+        .getAttribute("href"),
+    ).toBe("/guides");
     expect(
       screen.getByRole("link", { name: /view tour/i }).getAttribute("href"),
     ).toBe("/tours/tour-1");
     expect(
-      screen.getByRole("link", { name: /create new tour/i }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: /create new tour/i })
+        .getAttribute("href"),
     ).toBe("/guide/tours/new");
+    expect(screen.getByLabelText("Guide profile placeholder")).toBeDefined();
+  });
+
+  it("routes create-tour CTA to complete profile when guide is not verified", async () => {
+    verificationState.isVerified = false;
+
+    render(
+      <MemoryRouter>
+        <GuideHomePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Endpoint Marketplace Tour")).toBeDefined();
+
+    expect(
+      screen
+        .getByRole("link", { name: /create new tour/i })
+        .getAttribute("href"),
+    ).toBe("/guide/complete-profile");
   });
 });

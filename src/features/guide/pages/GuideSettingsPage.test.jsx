@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EGYPT_GOVERNORATES } from "@/features/tours/constants/tourOptions";
@@ -13,7 +14,8 @@ import GuideSettingsPage from "@/features/guide/pages/GuideSettingsPage";
 
 const mocks = vi.hoisted(() => ({
   user: {
-    _id: "guide-1",
+    _id: "user-1",
+    guideProfile: { _id: "guide-1" },
     fullName: "Marwa Guide",
     email: "guide@example.com",
   },
@@ -70,9 +72,16 @@ describe("GuideSettingsPage governorate field", () => {
   });
 
   it("offers all Egyptian governorates and saves the selected city", async () => {
-    render(<GuideSettingsPage />);
+    render(
+      <MemoryRouter>
+        <GuideSettingsPage />
+      </MemoryRouter>,
+    );
 
     const cityField = await screen.findByRole("combobox", { name: "City" });
+    await waitFor(() => {
+      expect(mocks.getPublicGuide).toHaveBeenCalledWith("guide-1");
+    });
     fireEvent.click(cityField);
     const governorateList = screen.getByRole("listbox", {
       name: "Egyptian governorates",
@@ -87,7 +96,9 @@ describe("GuideSettingsPage governorate field", () => {
       ).toBeTruthy();
     }
 
-    fireEvent.click(within(governorateList).getByRole("option", { name: "Cairo" }));
+    fireEvent.click(
+      within(governorateList).getByRole("option", { name: "Cairo" }),
+    );
     expect(cityField.textContent).toContain("Cairo");
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -96,6 +107,7 @@ describe("GuideSettingsPage governorate field", () => {
       expect(mocks.completeGuideProfile).toHaveBeenCalledWith({
         bio: "",
         city: "Cairo",
+        governorate: "Cairo",
         interests: [],
         experience: { year: "" },
       });

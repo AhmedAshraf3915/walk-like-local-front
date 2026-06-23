@@ -27,15 +27,12 @@ export default function GuideNavbar({
   const { pathname } = useLocation();
   const { user } = useAuth();
   const shouldLoadVerification = typeof verifiedProp !== "boolean";
-  const { isVerified, isLoading, verification } =
-    useGuideVerificationStatus({
-      user,
-      enabled: shouldLoadVerification && Boolean(user),
-    });
+  const { isVerified, isLoading, verification } = useGuideVerificationStatus({
+    user,
+    enabled: shouldLoadVerification && Boolean(user),
+  });
   const verified =
-    typeof verifiedProp === "boolean"
-      ? verifiedProp
-      : isVerified && !isLoading;
+    typeof verifiedProp === "boolean" ? verifiedProp : isVerified && !isLoading;
   const avatar =
     getAssetUrl(profilePhoto) ||
     getAssetUrl(user?.profilePhoto) ||
@@ -111,7 +108,11 @@ export default function GuideNavbar({
             onClick={() => setMenuOpen((open) => !open)}
             className="grid h-10 w-10 place-items-center rounded-full border border-[#e0dfee] bg-[#f7f7fb] text-[#010138] transition hover:bg-[#eeeef8] lg:hidden"
           >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {menuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
 
           {menuOpen ? (

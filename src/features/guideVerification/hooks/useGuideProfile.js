@@ -129,6 +129,7 @@ export const useGuideProfile = ({ initialProfile } = {}) => {
 
 			if (!profileSkips.city && profile.city) {
 				profilePayload.city = profile.city;
+				profilePayload.governorate = profile.city;
 			}
 
 			if (!profileSkips.yearsOfExperience && profile.yearsOfExperience) {

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BadgeCheck, Star } from "lucide-react";
+import { ArrowRight, BadgeCheck, Star, UserRound } from "lucide-react";
 
 import useAuth from "@/contexts/useAuth";
-import { IMG } from "@/assets/images/landingPage/images.js";
 import { useGuideVerificationStatus } from "@/features/guideVerification/hooks/useGuideVerificationStatus";
 import TourCard from "@/components/home/TourCard.jsx";
 import GuideCard from "@/components/home/GuideCard.jsx";
@@ -147,16 +146,30 @@ function GuideBadge() {
 }
 
 function GuideHero({ profile, verified }) {
+  const createTourAction = {
+    label: "Create new tour",
+    to: verified ? "/guide/tours/new" : "/guide/complete-profile",
+  };
+
   return (
     <header className="bg-[#FDFDFF] px-4 pt-10 sm:px-6 md:pt-14">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-6 md:grid-cols-[190px_1fr] md:items-center">
           <div className="relative mx-auto h-40 w-40 shrink-0 overflow-visible rounded-full md:mx-0 md:h-[170px] md:w-[170px]">
-            <img
-              src={profile.photo}
-              alt={profile.name}
-              className="h-full w-full rounded-full object-cover"
-            />
+            {profile.photo ? (
+              <img
+                src={profile.photo}
+                alt={profile.name || "Guide profile"}
+                className="h-full w-full rounded-full object-cover"
+              />
+            ) : (
+              <div
+                aria-label="Guide profile placeholder"
+                className="grid h-full w-full place-items-center rounded-full border border-[#deddec] bg-[#f0eff8] text-[#8d8baa]"
+              >
+                <UserRound className="h-16 w-16" />
+              </div>
+            )}
             {verified ? <GuideBadge /> : null}
           </div>
 
@@ -205,21 +218,25 @@ function GuideHero({ profile, verified }) {
               </div>
             </div>
 
-            {verified ? (
-              <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-3 md:mx-0 md:ml-[110px]">
-                <Link
-                  to="/guide/tours/new"
-                  className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#010170] to-[#5656A0] px-5 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(1,1,112,0.22)] transition-opacity hover:opacity-90"
-                >
-                  Create new tour
-                  <ArrowRight size={15} />
-                </Link>
+            <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-3 md:mx-0 md:ml-[110px]">
+              <Link
+                to={createTourAction.to}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#010170] to-[#5656A0] px-5 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(1,1,112,0.22)] transition-opacity hover:opacity-90"
+              >
+                {createTourAction.label}
+                <ArrowRight size={15} />
+              </Link>
+              {verified ? (
                 <p className="text-center text-[13px] font-medium text-[#353572]">
                   {profile.activeTours} active tours .{" "}
                   {profile.lifetimeBookings} lifetime bookings
                 </p>
-              </div>
-            ) : null}
+              ) : (
+                <p className="text-center text-[13px] font-medium text-[#353572]">
+                  Complete your profile to unlock tour publishing.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -296,7 +313,7 @@ function GuidesSection() {
           title="Meet your locals."
           sub="Verified, story-rich and ready to walk you through their Egypt."
           actionLabel="View all guides"
-          actionHref="#guides"
+          actionHref="/guides"
         />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">

@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   BadgeCheck,
   Check,
@@ -50,7 +51,7 @@ const toLanguageLabels = (value) => {
       const raw =
         typeof entry === "string"
           ? entry
-          : entry?.code ?? entry?.value ?? entry?.name ?? "";
+          : (entry?.code ?? entry?.value ?? entry?.name ?? "");
       const normalized = String(raw).trim();
       return CODE_LABELS[normalized.toLowerCase()] ?? normalized;
     })
@@ -62,7 +63,7 @@ const toGovernorate = (...values) => {
     const candidate =
       typeof value === "string"
         ? value
-        : value?.city ?? value?.governorate ?? value?.name ?? "";
+        : (value?.city ?? value?.governorate ?? value?.name ?? "");
     const normalizedCandidate = String(candidate).trim().toLowerCase();
     const match = EGYPT_GOVERNORATES.find(
       (governorate) => governorate.toLowerCase() === normalizedCandidate,
@@ -105,6 +106,41 @@ const buildForm = (record, user, verification) => {
 };
 
 const EMPTY_FORM = buildForm(null, null, null);
+
+const resolveGuideProfileId = (user, verification) => {
+  const candidates = [
+    verification?.guide?._id,
+    verification?.guide?.id,
+    verification?.guideId?._id,
+    verification?.guideId?.id,
+    verification?.guideId,
+    user?.guideProfile?._id,
+    user?.guideProfile?.id,
+    user?.profile?._id,
+    user?.profile?.id,
+    user?.guide?._id,
+    user?.guide?.id,
+    user?.guideId,
+  ];
+
+  for (const candidate of candidates) {
+    const id = String(candidate ?? "").trim();
+    if (id) return id;
+  }
+
+  return "";
+};
+
+const shouldIgnoreProfileLoadError = (error) => {
+  const message = String(error?.message ?? "")
+    .trim()
+    .toLowerCase();
+
+  return (
+    message.includes("guide profile not found") ||
+    message.includes("not verified")
+  );
+};
 
 function GovernorateSelect({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -214,11 +250,14 @@ function GovernorateSelect({ value, onChange }) {
 
 export default function GuideSettingsPage() {
   const { user, updateUser } = useAuth();
-  const guideId = String(user?._id ?? user?.id ?? user?.userId ?? "");
   const { isVerified, verification } = useGuideVerificationStatus({
     user,
     enabled: Boolean(user),
   });
+  const guideProfileId = useMemo(
+    () => resolveGuideProfileId(user, verification),
+    [user, verification],
+  );
   const [form, setForm] = useState(EMPTY_FORM);
   const [savedForm, setSavedForm] = useState(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
@@ -229,8 +268,8 @@ export default function GuideSettingsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const profileRequest = guideId
-      ? guidesApi.getPublicGuide(guideId)
+    const profileRequest = guideProfileId
+      ? guidesApi.getPublicGuide(guideProfileId)
       : Promise.resolve(null);
 
     profileRequest
@@ -245,7 +284,9 @@ export default function GuideSettingsPage() {
         const nextForm = buildForm(null, user, verification);
         setForm(nextForm);
         setSavedForm(nextForm);
-        setErrorMessage(error?.message ?? "Unable to load guide settings.");
+        if (!shouldIgnoreProfileLoadError(error)) {
+          setErrorMessage(error?.message ?? "Unable to load guide settings.");
+        }
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -254,7 +295,7 @@ export default function GuideSettingsPage() {
     return () => {
       isMounted = false;
     };
-  }, [guideId, user, verification]);
+  }, [guideProfileId, user, verification]);
 
   const isDirty = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(savedForm),
@@ -285,6 +326,7 @@ export default function GuideSettingsPage() {
       const savedProfile = await guideVerificationApi.completeGuideProfile({
         bio: form.bio.trim(),
         city: form.city,
+        governorate: form.city,
         interests: form.interests,
         experience: { year: form.experience },
       });
@@ -313,6 +355,12 @@ export default function GuideSettingsPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Link
+                to="/guide/complete-profile/details"
+                className="inline-flex items-center gap-2 rounded-full border border-[#d3d2e6] bg-white px-4 py-2 text-xs font-semibold text-[#353572] hover:bg-[#f7f6fc]"
+              >
+                Edit profile
+              </Link>
               {isVerified ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#eefbdc] px-4 py-2 text-xs font-semibold text-[#41651f]">
                   <BadgeCheck className="h-4 w-4" /> Verified guide
@@ -357,7 +405,10 @@ export default function GuideSettingsPage() {
                 ["Full name", form.fullName],
                 ["Email", form.email],
               ].map(([label, value]) => (
-                <label key={label} className="text-xs font-semibold text-[#353572]">
+                <label
+                  key={label}
+                  className="text-xs font-semibold text-[#353572]"
+                >
                   {label}
                   <input
                     value={value}
@@ -403,7 +454,10 @@ export default function GuideSettingsPage() {
               <textarea
                 value={form.bio}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, bio: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    bio: event.target.value,
+                  }))
                 }
                 rows={5}
                 className="mt-2 w-full rounded-xl border border-[#d8d7e8] bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-[#010170]"

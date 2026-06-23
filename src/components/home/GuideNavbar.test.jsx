@@ -36,17 +36,25 @@ describe("GuideNavbar", () => {
     renderNavbar({ verified: true });
 
     expect(
-      screen.getByRole("link", { name: /walk like a local/i }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: /walk like a local/i })
+        .getAttribute("href"),
     ).toBe("/");
     expect(screen.queryByRole("link", { name: "Landing" })).toBeNull();
     expect(
-      screen.getAllByRole("link", { name: "Explore tours" })[0].getAttribute("href"),
+      screen
+        .getAllByRole("link", { name: "Explore tours" })[0]
+        .getAttribute("href"),
     ).toBe("/tours");
     expect(
-      screen.getAllByRole("link", { name: "Guide home" })[0].getAttribute("href"),
+      screen
+        .getAllByRole("link", { name: "Guide home" })[0]
+        .getAttribute("href"),
     ).toBe("/guide");
     expect(
-      screen.getAllByRole("link", { name: "Create tour" })[0].getAttribute("href"),
+      screen
+        .getAllByRole("link", { name: "Create tour" })[0]
+        .getAttribute("href"),
     ).toBe("/guide/tours/new");
   });
 
@@ -54,7 +62,9 @@ describe("GuideNavbar", () => {
     renderNavbar({ verified: false });
 
     expect(
-      screen.getAllByRole("link", { name: "Complete profile" })[0].getAttribute("href"),
+      screen
+        .getAllByRole("link", { name: "Complete profile" })[0]
+        .getAttribute("href"),
     ).toBe("/guide/complete-profile");
   });
 });

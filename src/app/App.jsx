@@ -285,11 +285,14 @@ function App() {
             </RequireRole>
           }
         />
-         <Route path="/payment/success" element={
+        <Route
+          path="/payment/success"
+          element={
             <RequireRole allowedRoles={["tourist"]}>
               <CheckoutResult />
             </RequireRole>
-          } />
+          }
+        />
         <Route
           path="/tourist"
           element={<Navigate to="/tourist/profile" replace />}
@@ -298,8 +301,7 @@ function App() {
         <Route path="/guides" element={<ViewAllGuidePage />} />
         <Route path="/guides/:guideId" element={<GuideDetailsPage />} />
         <Route path="/places" element={<ViewAllPlacesPage />} />
-        <Route path="/groupeSelection" element= {<GroupSelection/>} />
-
+        <Route path="/groupeSelection" element={<GroupSelection />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -62,6 +62,30 @@ const getTourGuideId = (tour) =>
       "",
   );
 
+const resolveGuideProfileId = (user, verification) => {
+  const candidates = [
+    verification?.guide?._id,
+    verification?.guide?.id,
+    verification?.guideId?._id,
+    verification?.guideId?.id,
+    verification?.guideId,
+    user?.guideProfile?._id,
+    user?.guideProfile?.id,
+    user?.profile?._id,
+    user?.profile?.id,
+    user?.guide?._id,
+    user?.guide?.id,
+    user?.guideId,
+  ];
+
+  for (const candidate of candidates) {
+    const id = String(candidate ?? "").trim();
+    if (id) return id;
+  }
+
+  return "";
+};
+
 const toDisplayLanguages = (value) => {
   const source = Array.isArray(value)
     ? value
@@ -74,7 +98,7 @@ const toDisplayLanguages = (value) => {
       const raw =
         typeof entry === "string"
           ? entry
-          : entry?.label ?? entry?.name ?? entry?.code ?? entry?.value ?? "";
+          : (entry?.label ?? entry?.name ?? entry?.code ?? entry?.value ?? "");
       const normalized = String(raw).trim();
 
       if (!normalized) return "";
@@ -98,7 +122,11 @@ const toDisplayInterests = (...values) => {
         String(
           typeof entry === "string"
             ? entry
-            : entry?.label ?? entry?.name ?? entry?.title ?? entry?.value ?? "",
+            : (entry?.label ??
+                entry?.name ??
+                entry?.title ??
+                entry?.value ??
+                ""),
         ).trim(),
       )
       .filter(Boolean);
@@ -114,7 +142,7 @@ const toLocationLabel = (...values) => {
     const label =
       typeof value === "string"
         ? value
-        : value?.city ?? value?.governorate ?? value?.name ?? "";
+        : (value?.city ?? value?.governorate ?? value?.name ?? "");
 
     if (String(label).trim()) return String(label).trim();
   }
@@ -124,10 +152,7 @@ const toLocationLabel = (...values) => {
 
 const buildProfile = ({ databaseProfile, user, verification }) => {
   const source =
-    databaseProfile?.guide ??
-    databaseProfile?.profile ??
-    databaseProfile ??
-    {};
+    databaseProfile?.guide ?? databaseProfile?.profile ?? databaseProfile ?? {};
   const nestedProfile = user?.guideProfile ?? user?.profile ?? {};
   const verifiedLanguages = toDisplayLanguages(
     source?.verifiedLanguages ?? user?.verifiedLanguages,
@@ -184,7 +209,8 @@ const buildProfile = ({ databaseProfile, user, verification }) => {
       getAssetUrl(source?.introductionVideo) ||
       getAssetUrl(verification?.introductionVideo) ||
       getAssetUrl(verification?.verificationDocuments?.introductionVideo),
-    rating: Number(source?.rating ?? source?.averageRating ?? user?.rating) || 0,
+    rating:
+      Number(source?.rating ?? source?.averageRating ?? user?.rating) || 0,
     reviewCount:
       Number(
         source?.reviewCount ?? source?.reviewsCount ?? user?.reviewCount,
@@ -213,7 +239,11 @@ const mapReview = (review, index) => {
       getAssetUrl(reviewer?.avatar),
     rating: Math.min(Math.max(Number(review?.rating) || 0, 0), 5),
     comment:
-      review?.comment ?? review?.text ?? review?.review ?? review?.content ?? "",
+      review?.comment ??
+      review?.text ??
+      review?.review ??
+      review?.content ??
+      "",
   };
 };
 
@@ -227,7 +257,10 @@ function EmptySection({ children }) {
 
 function RatingStars({ value }) {
   return (
-    <div className="flex items-center gap-1" aria-label={`${value} out of 5 stars`}>
+    <div
+      className="flex items-center gap-1"
+      aria-label={`${value} out of 5 stars`}
+    >
       {Array.from({ length: 5 }, (_, index) => (
         <Star
           key={index}
@@ -244,13 +277,16 @@ function RatingStars({ value }) {
 
 export default function GuideProfilePage() {
   const { user } = useAuth();
-  const guideId = String(user?._id ?? user?.id ?? user?.userId ?? "");
   const {
     isVerified,
     verification,
     isLoading: loadingVerification,
     errorMessage: verificationError,
   } = useGuideVerificationStatus({ user, enabled: Boolean(user) });
+  const guideProfileId = useMemo(
+    () => resolveGuideProfileId(user, verification),
+    [user, verification],
+  );
   const [databaseProfile, setDatabaseProfile] = useState(null);
   const [activeTourRecords, setActiveTourRecords] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -265,7 +301,9 @@ export default function GuideProfilePage() {
       setErrorMessage("");
 
       const requests = [
-        guideId ? guidesApi.getPublicGuide(guideId) : Promise.resolve(null),
+        guideProfileId
+          ? guidesApi.getPublicGuide(guideProfileId)
+          : Promise.resolve(null),
         toursApi.browseActiveTours({ page: 1, limit: 100 }),
         guidesApi.getReceivedReviews({ page: 1, limit: 10 }),
       ];
@@ -285,7 +323,7 @@ export default function GuideProfilePage() {
         setActiveTourRecords(
           records.filter(
             (tour) =>
-              getTourGuideId(tour) === guideId &&
+              getTourGuideId(tour) === guideProfileId &&
               (!tour?.status || String(tour.status).toUpperCase() === "ACTIVE"),
           ),
         );
@@ -317,7 +355,7 @@ export default function GuideProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [guideId]);
+  }, [guideProfileId]);
 
   const profile = useMemo(
     () => buildProfile({ databaseProfile, user, verification }),
@@ -332,11 +370,10 @@ export default function GuideProfilePage() {
         },
       ]
     : [];
-  const activeTours = mapActiveTours(
-    { items: activeTourRecords },
-    guideCards,
-    { priceGroupType: "PRIVATE", href: "/tours" },
-  );
+  const activeTours = mapActiveTours({ items: activeTourRecords }, guideCards, {
+    priceGroupType: "PRIVATE",
+    href: "/tours",
+  });
   const reviewCount = profile.reviewCount || reviews.length;
 
   return (
@@ -434,7 +471,8 @@ export default function GuideProfilePage() {
                     Complete your guide profile to create tours
                   </h2>
                   <p className="mt-1 text-sm text-[#5d5b84]">
-                    Tour creation unlocks after verification and profile approval.
+                    Tour creation unlocks after verification and profile
+                    approval.
                   </p>
                 </div>
                 <Link
@@ -572,7 +610,9 @@ export default function GuideProfilePage() {
                           )}
                           <div>
                             {review.name ? (
-                              <h3 className="text-sm font-bold">{review.name}</h3>
+                              <h3 className="text-sm font-bold">
+                                {review.name}
+                              </h3>
                             ) : null}
                             {review.location ? (
                               <p className="text-xs text-[#8b89a8]">

@@ -21,7 +21,12 @@ vi.mock("@/contexts/useAuth", () => ({
 
 function CurrentLocation() {
   const location = useLocation();
-  return <div data-testid="current-location">{location.pathname}{location.search}</div>;
+  return (
+    <div data-testid="current-location">
+      {location.pathname}
+      {location.search}
+    </div>
+  );
 }
 
 describe("landing page header", () => {
@@ -52,7 +57,9 @@ describe("landing page header", () => {
     expect(authAction.className).toContain("inline-flex");
     expect(authAction.className).not.toContain("hidden");
     expect(
-      screen.getByRole("link", { name: /walk like a local/i }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: /walk like a local/i })
+        .getAttribute("href"),
     ).toBe("/");
     expect(screen.getAllByText("Explore Trips").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Profile" })).toBeNull();
@@ -104,9 +111,7 @@ describe("landing page header", () => {
     );
 
     for (const governorate of EGYPT_GOVERNORATES) {
-      expect(
-        screen.getByRole("option", { name: governorate }),
-      ).toBeDefined();
+      expect(screen.getByRole("option", { name: governorate })).toBeDefined();
     }
   });
 
@@ -120,9 +125,7 @@ describe("landing page header", () => {
 
     fireEvent.click(screen.getByRole("combobox", { name: /where to/i }));
     fireEvent.click(screen.getByRole("option", { name: "Cairo" }));
-    fireEvent.click(
-      screen.getByRole("combobox", { name: /type of tour/i }),
-    );
+    fireEvent.click(screen.getByRole("combobox", { name: /type of tour/i }));
     fireEvent.click(screen.getByRole("option", { name: "Food Tour" }));
     fireEvent.change(screen.getByLabelText("Select Date"), {
       target: { value: "2026-07-01" },

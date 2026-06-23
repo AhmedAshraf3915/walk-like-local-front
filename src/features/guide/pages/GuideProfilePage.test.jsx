@@ -13,7 +13,11 @@ const apiMocks = vi.hoisted(() => ({
 
 vi.mock("@/contexts/useAuth", () => ({
   default: () => ({
-    user: { _id: "guide-1", fullName: "Authenticated Guide" },
+    user: {
+      _id: "user-1",
+      guideProfile: { _id: "guide-1" },
+      fullName: "Authenticated Guide",
+    },
   }),
 }));
 
