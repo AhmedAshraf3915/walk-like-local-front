@@ -4,6 +4,7 @@ import AccountTabs from '../components/AccountTabs'
 import { useNavigate } from 'react-router-dom'
 import { Pencil, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { getTouristProfile, updateTouristProfile, uploadAndSaveProfilePhoto, getVerificationStatus } from '../services/touristProfile.js';
+import useAuth from '@/contexts/useAuth';
 
 const interestsList = ['Swimming', 'Safari', 'Adventure', 'Riding', 'Climbing', 'Summer', 'Sun rise']
 const preferencesList = ['Solo traveler', 'Family', 'Adventure', 'Budget', 'Luxury']
@@ -53,6 +54,7 @@ function InfoField({ label, value, onChange, editing, onToggleEdit }) {
 
 export default function ProfileSettings() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -180,6 +182,7 @@ export default function ProfileSettings() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
+      
       <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16 flex flex-col gap-16">
         <AccountTabs />
 
@@ -307,6 +310,24 @@ export default function ProfileSettings() {
             ))}
           </div>
         </section>
+
+
+        {/* ── Sign out ─────────────────────────────────────────── */}
+        <section className="flex flex-col gap-6 border-t border-[rgba(228,29,29,0.2)] pt-12">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl font-semibold text-[rgba(174,24,24,0.9)]">Sign out</h2>
+            <p className="text-lg text-[var(--mediumfont)]">
+              You will be signed out of your account on this device.
+            </p>
+          </div>
+          <button
+            onClick={() => { logout(); navigate('/'); }}
+            className="self-start h-12 px-10 rounded-2xl border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] font-medium text-lg hover:bg-[rgba(228,29,29,0.06)] transition-colors"
+          >
+            Log out
+          </button>
+        </section>
+        
       </main>
     </div>
   )
