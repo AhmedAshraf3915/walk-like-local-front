@@ -64,7 +64,6 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
                     </div>
                   ))}
                 </div>
-                <hr className="border-[var(--lighttext,#dfdeed)]" />
               </div>
             )}
 
