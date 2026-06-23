@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check } from 'lucide-react';
 
 export default function PaymentDone({ onDone, booking }) {
   const b = booking || {
@@ -7,7 +7,7 @@ export default function PaymentDone({ onDone, booking }) {
     where: 'Cairo, Egypt',
     paid: '$445',
     reference: 'AEG-Y3H637',
-  }
+  };
 
   return (
     <div className="bg-[var(--mediabackground)] rounded-2xl p-16 w-full">
@@ -22,29 +22,39 @@ export default function PaymentDone({ onDone, booking }) {
                 <p className="font-semibold text-3xl md:text-4xl text-[var(--darksuccess,#396504)]">
                   You&apos;re confirmed.
                 </p>
-                <p className="font-medium text-xl md:text-3xl text-[rgba(57,101,4,0.7)]">
-                  Reference {b.reference}
-                </p>
+                {b.reference && (
+                  <p className="font-medium text-xl md:text-3xl text-[rgba(57,101,4,0.7)]">
+                    Reference {b.reference}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex flex-col gap-6 w-full text-xl md:text-3xl text-[var(--maincolor)]">
-              <div className="flex items-center justify-between w-full">
-                <p>Package</p>
-                <p className="font-semibold">{b.package}</p>
-              </div>
-              <div className="flex items-center justify-between w-full">
-                <p>When</p>
-                <p>{b.when}</p>
-              </div>
-              <div className="flex items-center justify-between w-full">
-                <p>Where</p>
-                <p>{b.where}</p>
-              </div>
-              <div className="flex items-center justify-between w-full">
-                <p>Paid</p>
-                <p className="font-semibold">{b.paid}</p>
-              </div>
+              {b.package && (
+                <div className="flex items-center justify-between w-full">
+                  <p>Package</p>
+                  <p className="font-semibold">{b.package}</p>
+                </div>
+              )}
+              {b.when && (
+                <div className="flex items-center justify-between w-full">
+                  <p>When</p>
+                  <p>{b.when}</p>
+                </div>
+              )}
+              {b.where && (
+                <div className="flex items-center justify-between w-full">
+                  <p>Where</p>
+                  <p>{b.where}</p>
+                </div>
+              )}
+              {b.paid && (
+                <div className="flex items-center justify-between w-full">
+                  <p>Paid</p>
+                  <p className="font-semibold">{b.paid}</p>
+                </div>
+              )}
             </div>
           </div>
           <hr className="border-[var(--lighttext)] w-full" />
@@ -58,5 +68,5 @@ export default function PaymentDone({ onDone, booking }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
