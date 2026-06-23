@@ -81,6 +81,9 @@ describe("GuideHomePage marketplace", () => {
     ).toBe("/tours");
     expect(
       screen.getByRole("link", { name: /view tour/i }).getAttribute("href"),
-    ).toBe("/tours");
+    ).toBe("/tours/tour-1");
+    expect(
+      screen.getByRole("link", { name: /create new tour/i }).getAttribute("href"),
+    ).toBe("/guide/tours/new");
   });
 });

@@ -29,6 +29,19 @@ describe("useGuideVerificationStatus", () => {
     expect(normalizeGuideVerificationStatus("submitted")).toBe("pending");
     expect(normalizeGuideVerificationStatus("REJECTED")).toBe("rejected");
     expect(normalizeGuideVerificationStatus(true)).toBe("approved");
+    expect(normalizeGuideVerificationStatus("true")).toBe("approved");
+    expect(normalizeGuideVerificationStatus("UNVERIFIED")).toBe("none");
+  });
+
+  it("recognizes the approved status when the endpoint returns a bare value", async () => {
+    apiMocks.getVerificationStatus.mockResolvedValue("APPROVED");
+    const { result } = renderHook(() =>
+      useGuideVerificationStatus({ user: { role: "guide" } }),
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.isVerified).toBe(true);
   });
 
   it("prefers a pending status over a false verification boolean", async () => {
