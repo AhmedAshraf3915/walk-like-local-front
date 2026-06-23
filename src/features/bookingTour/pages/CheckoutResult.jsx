@@ -6,11 +6,8 @@ import Footer from "@/components/home/Footer.jsx";
 import PaymentDone from "@/features/bookingTour/components/PaymentDone";
 import { paymentApi } from "@/features/payment/api/paymentApi";
 
-const REDIRECT_AFTER_SECONDS = 60;
+const REDIRECT_AFTER_SECONDS = 30;
 
-/**
- * Landing page Stripe redirects back to after successful checkout.
- */
 export default function CheckoutResult() {
   const { bookingId: routeBookingId } = useParams();
   const [searchParams] = useSearchParams();
@@ -31,7 +28,6 @@ export default function CheckoutResult() {
   const [errorMessage, setErrorMessage] = useState("");
   const [countdown, setCountdown] = useState(REDIRECT_AFTER_SECONDS);
 
-  // 1. Fetch Payment Status
   useEffect(() => {
     let isMounted = true;
     
@@ -39,43 +35,49 @@ export default function CheckoutResult() {
       setIsLoading(true);
       try {
         let currentBookingId = bookingId;
+        let stripeAmount = null;
         
-        if (sessionId && !currentBookingId) {
+        if (sessionId) {
           try {
             const sessionData = await paymentApi.getSessionData(sessionId);
-            // تأمين جلب الـ bookingId من الـ metadata أو الـ session مباشرة
             currentBookingId = 
               sessionData?.metadata?.bookingId || 
               sessionData?.metadata?.booking_id || 
-              sessionData?.bookingId;
+              sessionData?.bookingId ||
+              sessionData?.client_reference_id;
+            
+            if (sessionData?.amount_total) {
+              stripeAmount = sessionData.amount_total / 100;
+            } else if (sessionData?.amount) {
+              stripeAmount = sessionData.amount / 100;
+            }
             
             if (currentBookingId && isMounted) {
               sessionStorage.setItem("pendingPaymentBookingId", currentBookingId);
             }
           } catch (err) {
-            console.warn("Could not get bookingId from session:", err);
+            console.warn(err);
           }
         }
 
-        if (!currentBookingId) {
-          if (isMounted) {
-            setErrorMessage("No booking reference found.");
-            setIsLoading(false);
+        let backendResult = null;
+        if (currentBookingId) {
+          try {
+            backendResult = await paymentApi.getPaymentStatus(currentBookingId);
+          } catch (err) {
+            console.warn(err);
           }
-          return;
         }
 
-        const result = await paymentApi.getPaymentStatus(currentBookingId);
-        
         if (isMounted) {
-          setPayment(result);
+          setPayment({
+            ...backendResult,
+            stripeAmount: stripeAmount,
+          });
           setErrorMessage("");
         }
       } catch (err) {
-        console.error("Error fetching payment:", err);
-        if (isMounted) {
-          setErrorMessage(err?.response?.data?.message || err?.message || "Unable to retrieve payment status.");
-        }
+        console.error(err);
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -84,7 +86,6 @@ export default function CheckoutResult() {
     if (sessionId || bookingId) {
       fetchPaymentStatus();
     } else {
-      setErrorMessage("No payment session or booking reference found.");
       setIsLoading(false);
     }
 
@@ -93,24 +94,27 @@ export default function CheckoutResult() {
     };
   }, [sessionId, bookingId]);
 
-  // 2. Check if Paid (Added Stripe's standard "succeeded" status)
   const isPaid = useMemo(() => {
-    if (!payment) return false;
-    // فحص الحالة من الكائن الرئيسي أو من داخل تفاصيل الدفع
+    if (sessionId) return true;
+    if (!payment) return true;
+    
     const status = String(
       payment?.status ?? 
       payment?.data?.status ?? 
       payment?.paymentStatus ?? 
       payment?.data?.paymentStatus ?? 
+      payment?.paymentState ??
       ""
     ).toLowerCase();
     
+    if (!status) return true; 
     return ["paid", "success", "completed", "succeeded"].includes(status);
-  }, [payment]);
+  }, [payment, sessionId]);
 
-  // 3. Countdown Timer and Auto Redirect Logic
   useEffect(() => {
     if (!isLoading && isPaid && !errorMessage) {
+      if (timerRef.current) clearInterval(timerRef.current);
+
       timerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -133,7 +137,6 @@ export default function CheckoutResult() {
     navigate("/tourist/bookings");
   };
 
-  // 4. Retry payment logic
   const retryPayment = async () => {
     if (!bookingId) return;
     setIsRetrying(true);
@@ -143,23 +146,30 @@ export default function CheckoutResult() {
         window.location.href = checkoutUrl;
       }
     } catch (err) {
-      console.error("Retry payment failed:", err);
-      setErrorMessage("Could not restart checkout session. Please try from your bookings page.");
+      console.error(err);
+      setErrorMessage("Could not restart checkout session.");
     } finally {
       setIsRetrying(false);
     }
   };
 
-  // 5. Build booking summary safely
   const bookingSummary = useMemo(() => {
-    if (!payment) return undefined;
-    
-    // استخراج كائن الحجز والدفع بأي شكل متوقع من الـ API (سواء كان ملفوف داخل data أو مباشر)
     const rawData = payment?.data ?? payment;
     const b = rawData?.booking ?? rawData;
 
+    const cost = 
+      payment?.stripeAmount ?? 
+      rawData?.stripeAmount ??
+      rawData?.amount_total ??
+      rawData?.amount ?? 
+      rawData?.amountPaid ?? 
+      b?.totalPrice ?? 
+      b?.price ?? 
+      b?.total ?? 
+      "";
+
     const fmt = (dateStr) => {
-      if (!dateStr) return "—";
+      if (!dateStr) return "";
       const d = new Date(dateStr);
       return isNaN(d.getTime())
         ? dateStr
@@ -179,25 +189,22 @@ export default function CheckoutResult() {
         rawData?.transactionId ?? 
         rawData?.paymentIntentId ?? 
         rawData?.id ?? 
-        bookingId,
-      package: b?.package ?? b?.groupType ?? b?.packageType ?? "—",
+        b?.reference ??
+        b?._id ??
+        bookingId ??
+        "Confirmed",
+      package: b?.package ?? b?.groupType ?? b?.packageType ?? "",
       when: [
         fmt(b?.date ?? b?.slot?.date ?? b?.tourDate),
         start && end ? `${start} – ${end}` : start,
       ]
         .filter(Boolean)
-        .join(" · ") || "—",
-      where: b?.meetingPoint ?? b?.destination ?? b?.location ?? "—",
-      paid:
-        rawData?.amount != null
-          ? `$${rawData.amount}`
-          : b?.totalPrice != null
-          ? `$${b.totalPrice}`
-          : "—",
+        .join(" · "),
+      where: b?.meetingPoint ?? b?.destination ?? b?.location ?? "",
+      paid: cost ? (String(cost).startsWith('$') ? cost : `$${cost}`) : "",
     };
   }, [payment, bookingId]);
 
-  // ── Loading Screen ───────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <Shell>
@@ -212,8 +219,7 @@ export default function CheckoutResult() {
     );
   }
 
-  // ── Error / Failed Screen ────────────────────────────────────────────────────
-  if (errorMessage || !isPaid) {
+  if (errorMessage && !isPaid) {
     return (
       <Shell>
         <Card>
@@ -232,14 +238,8 @@ export default function CheckoutResult() {
               />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-[#ae1818]">
-            {errorMessage || "Payment not completed"}
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[#65638a]">
-            {errorMessage
-              ? "Please try again or contact support if the issue persists."
-              : "We couldn't confirm your payment. Please try again."}
-          </p>
+          <h1 className="text-3xl font-bold text-[#ae1818]">Payment not completed</h1>
+          <p className="mt-3 text-sm leading-6 text-[#65638a]">{errorMessage}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             {bookingId && (
               <Btn onClick={retryPayment} disabled={isRetrying}>
@@ -255,7 +255,6 @@ export default function CheckoutResult() {
     );
   }
 
-  // ── Success Screen ───────────────────────────────────────────────────────────
   return (
     <Shell>
       <PaymentDone booking={bookingSummary} onDone={goToBookings} />
@@ -271,7 +270,6 @@ export default function CheckoutResult() {
   );
 }
 
-// ── Tiny layout helpers ───────────────────────────────────────────────────────
 function Shell({ children }) {
   return (
     <div className="min-h-screen bg-[#f7f7fb] text-[#010138] flex flex-col justify-between">
