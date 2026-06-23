@@ -3,6 +3,7 @@ import Navbar from "@/components/home/Navbar.jsx";
 import AccountTabs from '../components/AccountTabs'
 import CancelModal from '../components/CancelModal'
 import { getMyBookings, cancelBooking } from '../services/Booking.js'
+import {apiClient} from '@/services/apiClient.js'
 import {
   Hourglass,
   Calendar,
@@ -28,32 +29,97 @@ function Pill({ icon: Icon, label }) {
 
 // Maps a raw booking object from the API into the shape the UI cards expect.
 function normalizeBooking(b) {
-  const tour = b.tour || b.tourId || {}
-  const slot = b.slot || b.slotId || {}
-  const startDate = slot.date || slot.startDate || b.date
-  const startTime = slot.time || slot.startTime || ''
+  const slot = b.slot || {};
+
+  const startDate = slot.date || b.date;
+  const startTime = slot.startTime
+    ? `${slot.startTime}${slot.endTime ? " - " + slot.endTime : ""}`
+    : "";
 
   const daysToGo = startDate
-    ? Math.max(0, Math.ceil((new Date(startDate) - new Date()) / (1000 * 60 * 60 * 24)))
-    : null
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(startDate) - new Date()) /
+          (1000 * 60 * 60 * 24)
+        )
+      )
+    : null;
+
 
   return {
-    id: b._id || b.id,
+    id: b._id,
+
     raw: b,
-    title: tour.title || tour.name || b.title || 'Tour',
-    guide: tour.guideName || b.guideName || tour.guide?.fullName || '',
-    city: tour.city || tour.location || '',
-    date: startDate ? new Date(startDate).toDateString() : '',
-    time: startTime,
-    daysToGo: daysToGo !== null ? `${daysToGo} days to go` : '',
-    isToday: daysToGo === 0,
-    price: b.totalPrice ? `$${b.totalPrice}` : b.pricing?.total ? `$${b.pricing.total}` : '',
-    status: (b.status || '').toLowerCase(),
-    withinRefundWindow: daysToGo === null ? false : daysToGo * 24 > 24,
-    image: tour.coverImage || tour.images?.[0] || null,
-    reason: b.cancellation?.reason || b.cancelReason || '',
-    credit: b.compensationCoupon ? `+${b.compensationCoupon.discountPercent}% coupon` : '',
-  }
+
+    guideId: b.guideId,
+
+    // 
+    title:
+      b.tourTitle ||
+      "Tour",
+
+    // 
+    // 
+    guide:
+      b.guideName ||
+      "",
+
+    // 
+    city:
+      b.destination ||
+      "",
+
+
+    date:
+      startDate
+        ? new Date(startDate).toDateString()
+        : "",
+
+
+    time:
+      startTime,
+
+
+    daysToGo:
+      daysToGo !== null
+        ? `${daysToGo} days to go`
+        : "",
+
+
+    isToday:
+      daysToGo === 0,
+
+
+    // 
+    price:
+      b.pricing?.totalPrice !== undefined
+        ? `$${b.pricing.totalPrice}`
+        : "",
+
+
+    status:
+      (b.status || "").toLowerCase(),
+
+
+    withinRefundWindow:
+      daysToGo === null
+        ? false
+        : daysToGo * 24 > 24,
+
+
+    image:
+      null,
+
+
+    reason:
+      b.cancellation?.reason ||
+      "",
+
+
+    credit:
+      "",
+  };
 }
 
 function TodayCard({ booking }) {
@@ -222,30 +288,106 @@ export default function BookingHistory() {
   const extractErrorMessage = (err) =>
     err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Something went wrong'
 
-  const loadBookings = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await getMyBookings()
-      const list = res?.data?.bookings || res?.bookings || res?.data || res || []
-      setBookings(Array.isArray(list) ? list.map(normalizeBooking) : [])
-    } catch (err) {
-      setError(extractErrorMessage(err))
-    } finally {
-      setLoading(false)
-    }
+  const fetchGuide = async (guideId) => {
+  if (!guideId) return null;
+
+  try {
+    const res = await apiClient.get(`/guides/${guideId}`);
+
+    return res?.data?.data || res?.data || null;
+
+  } catch (err) {
+    console.error("Failed to fetch guide:", guideId, err);
+    return null;
   }
+};
+
+  const loadBookings = async () => {
+  setLoading(true)
+  setError(null)
+
+  try {
+    const res = await getMyBookings()
+
+    const list =
+      res?.data?.data ||
+      res?.data ||
+      [];
+
+
+    const normalizedBookings = list.map(normalizeBooking);
+
+
+    const bookingsWithGuides = await Promise.all(
+      normalizedBookings.map(async (booking, index) => {
+
+        const rawBooking = list[index];
+
+        const guide = await fetchGuide(rawBooking.guideId);
+
+
+        return {
+          ...booking,
+
+          guide:
+            guide?.fullName ||
+            "Local Guide",
+
+          guidePhoto:
+            guide?.profilePicture ||
+            guide?.profilePhoto ||
+            "",
+
+          guideRating:
+            guide?.rating ||
+            0,
+
+          reviewCount:
+            guide?.reviewCount ||
+            0,
+        };
+
+      })
+    );
+
+
+    setBookings(bookingsWithGuides);
+
+
+  } catch (err) {
+    setError(extractErrorMessage(err))
+
+  } finally {
+    setLoading(false)
+  }
+}
 
   useEffect(() => {
     loadBookings()
   }, [])
 
   const upcoming = useMemo(
-    () => bookings.filter((b) => ['pending_payment', 'confirmed', 'active'].includes(b.status)),
+    () => bookings.filter((b) =>
+      ['pending_payment', 'pending', 'confirmed', 'active'].includes(b.status)
+    ),
     [bookings]
   )
-  const past = useMemo(() => bookings.filter((b) => b.status === 'completed'), [bookings])
-  const cancelled = useMemo(() => bookings.filter((b) => b.status === 'cancelled'), [bookings])
+  const past = useMemo(
+    () => bookings.filter((b) => ['completed', 'done', 'finished'].includes(b.status)),
+    [bookings]
+  )
+  // Handle both British ('cancelled') and American ('canceled') spellings from the backend
+ const cancelled = useMemo(
+  () =>
+    bookings.filter((b) =>
+      [
+        'cancelled',
+        'canceled',
+        'cancelled_by_tourist'
+      ].includes(b.status)
+    ),
+  [bookings]
+)
 
   const tabs = [
     { key: 'upcoming', label: 'Upcoming', count: upcoming.length },
