@@ -144,11 +144,47 @@ export default function GuideCompleteProfilePage() {
               <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#eefbdc] text-[#41651f]">
                 <BadgeCheck className="h-10 w-10" />
               </span>
-              <h1 className="mt-6 text-3xl font-bold">Language test submitted</h1>
+              <h1 className="mt-6 text-3xl font-bold">
+                {assessment.testResult?.pass ? "Test Passed!" : "Test Completed"}
+              </h1>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#65638a]">
                 Your answers were submitted successfully. Verified languages
                 appear on your public guide profile after review.
               </p>
+              {assessment.testResult && (
+                <div className="mt-6 space-y-3 text-left max-w-md mx-auto">
+                  <p className="text-lg text-[#3b3a70]">
+                    <span className="font-medium">Score:</span>{" "}
+                    {assessment.testResult.score}
+                  </p>
+                  <p className="text-lg text-[#3b3a70]">
+                    <span className="font-medium">Status:</span>{" "}
+                    {assessment.testResult.pass ? "Passed" : "Not passed"}
+                  </p>
+                  {assessment.testResult.feedback && (
+                    <p className="text-lg text-[#3b3a70]">
+                      <span className="font-medium">Feedback:</span>{" "}
+                      {assessment.testResult.feedback}
+                    </p>
+                  )}
+                  <p className="text-lg text-[#3b3a70]">
+                    <span className="font-medium">Attempts remaining:</span>{" "}
+                    {assessment.testResult.attemptsRemaining} of{" "}
+                    {assessment.testResult.maxAttempts}
+                  </p>
+                  {assessment.testResult.issues &&
+                    assessment.testResult.issues.length > 0 && (
+                    <div className="mt-3">
+                      <p className="font-medium text-[#3b3a70]">Issues:</p>
+                      <ul className="mt-1 list-inside list-disc text-[#3b3a70]">
+                        {assessment.testResult.issues.map((issue, index) => (
+                          <li key={index}>{issue}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           ) : (
             <AiAssessmentStep
