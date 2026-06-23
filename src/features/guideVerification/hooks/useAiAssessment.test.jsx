@@ -186,8 +186,8 @@ describe("useAiAssessment", () => {
   });
 
   it("resumes an active session instead of creating a duplicate test", async () => {
-    apiMocks.getLanguageTestStatus.mockResolvedValue({
-      items: [{ status: "IN_PROGRESS", sessionId: "existing-session" }],
+apiMocks.getLanguageTestStatus.mockResolvedValue({
+      items: [{ status: "IN_PROGRESS", sessionId: "existing-session", language: "en" }],
     });
     apiMocks.getLanguageTestSession.mockResolvedValue({
       session: {
@@ -195,10 +195,12 @@ describe("useAiAssessment", () => {
         questions: [
           { questionId: "existing-q1", type: "text", prompt: "Continue" },
         ],
+        language: "en",
       },
     });
+    const setErrorMessage = vi.fn();
     const { result } = renderHook(() =>
-      useAiAssessment({ setErrorMessage: vi.fn() }),
+      useAiAssessment({ setErrorMessage }),
     );
 
     await act(async () => {

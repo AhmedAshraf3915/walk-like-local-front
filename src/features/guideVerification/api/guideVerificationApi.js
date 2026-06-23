@@ -60,10 +60,12 @@ const uploadToCloudinary = async ({ file, resourceType, folder }) => {
 	formData.append("upload_preset", "walk_like_local");
 	formData.append("folder", folder);
 
-	const endpoint =
-		resourceType === "image"
-			? "https://api.cloudinary.com/v1_1/dau2lq7gn/image/upload"
-			: "https://api.cloudinary.com/v1_1/dau2lq7gn/auto/upload";
+  const endpoint =
+    resourceType === "image"
+      ? "https://api.cloudinary.com/v1_1/dau2lq7gn/image/upload"
+      : resourceType === "audio"
+        ? "https://api.cloudinary.com/v1_1/dau2lq7gn/video/upload"
+        : "https://api.cloudinary.com/v1_1/dau2lq7gn/auto/upload";
 
 	return withErrorMessage(
 		async () => {
@@ -213,10 +215,10 @@ export const guideVerificationApi = {
 			folder: "walk-like-local/guides/videos",
 		}),
 
-	uploadAudio: (file) =>
-		uploadToCloudinary({
-			file,
-			resourceType: "video",
-			folder: "walk-like-local/guides/audio",
-		}),
+  uploadAudio: (file) =>
+    uploadToCloudinary({
+      file,
+      resourceType: "audio",
+      folder: "walk-like-local/guides/audio",
+    }),
 };

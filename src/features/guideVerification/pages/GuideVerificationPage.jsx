@@ -224,6 +224,7 @@ const GuideVerificationPage = () => {
             aiUploadingAudio={aiAssessment.aiUploadingAudio}
             submittingAiTest={aiAssessment.submittingAiTest}
             formatDuration={aiAssessment.formatDuration}
+            aiTestCompleted={aiAssessment.aiTestCompleted}
             onLanguageToggle={aiAssessment.handleLanguageToggle}
             onStartSession={aiAssessment.startSession}
             onTextAnswerChange={aiAssessment.handleTextAnswerChange}
@@ -234,6 +235,7 @@ const GuideVerificationPage = () => {
               void aiAssessment.handleNextQuestion();
             }}
             onRestartSession={aiAssessment.resetSession}
+            testResult={aiAssessment.testResult}
           />
         );
 

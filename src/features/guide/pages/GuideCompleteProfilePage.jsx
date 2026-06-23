@@ -166,6 +166,7 @@ export default function GuideCompleteProfilePage() {
               aiUploadingAudio={assessment.aiUploadingAudio}
               submittingAiTest={assessment.submittingAiTest}
               formatDuration={assessment.formatDuration}
+              aiTestCompleted={assessment.aiTestCompleted}
               onLanguageToggle={assessment.handleLanguageToggle}
               onStartSession={assessment.startSession}
               onTextAnswerChange={assessment.handleTextAnswerChange}
@@ -176,6 +177,7 @@ export default function GuideCompleteProfilePage() {
                 void assessment.handleNextQuestion();
               }}
               onRestartSession={assessment.resetSession}
+              testResult={assessment.testResult}
             />
           )
         ) : (

@@ -23,6 +23,8 @@ const AiAssessmentStep = ({
   aiUploadingAudio,
   submittingAiTest,
   formatDuration,
+  aiTestCompleted,
+  testResult,
   onLanguageToggle,
   onStartSession,
   onTextAnswerChange,
@@ -153,7 +155,43 @@ const AiAssessmentStep = ({
         ) : null}
       </div>
 
-      {currentQuestion.type === "text" ? (
+      {aiTestCompleted && testResult ? (
+        <div className="mt-6 rounded-[16px] border border-[#b8b7dc] bg-[#fbfbff] p-6">
+          <h3 className="text-2xl font-semibold text-[#111041]">
+            {testResult.pass ? "Test Passed!" : "Test Completed"}
+          </h3>
+          <div className="mt-4 space-y-2">
+            <p className="text-lg text-[#3b3a70]">
+              <span className="font-medium">Score:</span> {testResult.score}
+            </p>
+            <p className="text-lg text-[#3b3a70]">
+              <span className="font-medium">Status:</span>{" "}
+              {testResult.pass ? "Passed" : "Not passed"}
+            </p>
+            {testResult.feedback ? (
+              <p className="text-lg text-[#3b3a70]">
+                <span className="font-medium">Feedback:</span> {testResult.feedback}
+              </p>
+            ) : null}
+            <p className="text-lg text-[#3b3a70]">
+              <span className="font-medium">Attempts remaining:</span>{" "}
+              {testResult.attemptsRemaining} of {testResult.maxAttempts}
+            </p>
+            {testResult.issues && testResult.issues.length > 0 ? (
+              <div className="mt-3">
+                <p className="font-medium text-[#3b3a70]">Issues:</p>
+                <ul className="mt-1 list-inside list-disc text-[#3b3a70]">
+                  {testResult.issues.map((issue, index) => (
+                    <li key={index}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {!aiTestCompleted && currentQuestion.type === "text" ? (
         <textarea
           value={aiAnswers[currentProgress] ?? ""}
           onChange={(event) =>
@@ -162,7 +200,8 @@ const AiAssessmentStep = ({
           placeholder="Write your answer"
           className="mt-6 h-20 w-full rounded-[16px] border border-[#b8b7dc] px-5 py-4 text-[18px] text-[#19184f] outline-none placeholder:text-[#6f6ea1]"
         />
-      ) : (
+      ) : null}
+      {!aiTestCompleted && currentQuestion.type !== "text" ? (
         <div className="mt-6 space-y-6">
           <div className="flex items-center gap-4 text-[#3b3a70]">
             <button
@@ -193,8 +232,8 @@ const AiAssessmentStep = ({
               className="w-full"
             />
           ) : null}
-        </div>
-      )}
+         </div>
+      ) : null}
 
       <div className="mt-7 flex items-center justify-between">
         <button
@@ -206,20 +245,34 @@ const AiAssessmentStep = ({
           <ArrowLeft className="h-5 w-5" /> Back
         </button>
 
-        <button
-          type="button"
-          disabled={submittingAiTest || aiUploadingAudio}
-          onClick={remainingSeconds <= 0 ? onRestartSession : onNext}
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {remainingSeconds <= 0
-            ? "Start a new session"
-            : isLastQuestion
-            ? submittingAiTest
-              ? "Submitting..."
-              : "Submit"
-            : "Next"}
-        </button>
+        {aiTestCompleted ? (
+          testResult && testResult.attemptsRemaining > 0 ? (
+            <button
+              type="button"
+              onClick={onRestartSession}
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white"
+            >
+              Start new session
+            </button>
+          ) : (
+            <span className="text-lg text-[#6f6ea1]">No attempts remaining</span>
+          )
+        ) : (
+          <button
+            type="button"
+            disabled={submittingAiTest || aiUploadingAudio}
+            onClick={remainingSeconds <= 0 ? onRestartSession : onNext}
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-[linear-gradient(90deg,#0d0b8b,#5252a4)] px-8 text-lg font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {remainingSeconds <= 0
+              ? "Start a new session"
+              : isLastQuestion
+                ? submittingAiTest
+                  ? "Submitting..."
+                  : "Submit"
+                : "Next"}
+          </button>
+        )}
       </div>
     </section>
   );
