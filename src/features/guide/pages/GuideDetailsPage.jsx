@@ -11,7 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import Navbar from "@/components/home/Navbar.jsx";
+import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 import Footer from "@/components/home/Footer.jsx";
 import { guidesApi } from "@/features/guide/api/guidesApi.js";
 
@@ -49,7 +49,7 @@ const toDisplayLanguages = (value) => {
       const raw =
         typeof entry === "string"
           ? entry
-          : entry?.label ?? entry?.name ?? entry?.code ?? entry?.value ?? "";
+          : (entry?.label ?? entry?.name ?? entry?.code ?? entry?.value ?? "");
       const normalized = String(raw).trim();
       if (!normalized) return "";
       return (
@@ -79,8 +79,7 @@ const mapGuide = (data) => {
       getAssetUrl(source?.avatar),
     bio: source?.bio ?? "",
     rating: Number(source?.rating ?? source?.averageRating) || 0,
-    reviewCount:
-      Number(source?.reviewCount ?? source?.reviewsCount) || 0,
+    reviewCount: Number(source?.reviewCount ?? source?.reviewsCount) || 0,
     nationality: source?.nationality ?? source?.city ?? source?.location ?? "",
     experience: source?.experience?.year ?? "",
     interests: Array.isArray(source?.interests) ? source.interests : [],
@@ -113,8 +112,12 @@ function StatItem({ icon: Icon, label, value }) {
     <div className="flex items-center gap-4">
       <Icon className="size-9 text-[var(--maincolor)] shrink-0" />
       <div className="flex flex-col gap-1">
-        <p className="text-sm text-[var(--lighttext)] tracking-[3px] uppercase">{label}</p>
-        <p className="font-semibold text-2xl text-[var(--maincolor)]">{value}</p>
+        <p className="text-sm text-[var(--lighttext)] tracking-[3px] uppercase">
+          {label}
+        </p>
+        <p className="font-semibold text-2xl text-[var(--maincolor)]">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -125,7 +128,9 @@ function DetailRow({ icon: Icon, label, value }) {
   return (
     <div className="flex items-center gap-2 text-base font-medium text-[var(--maintaxt)]">
       <Icon className="h-5 w-5 text-[var(--maincolor)] shrink-0" />
-      <span className="text-sm text-[var(--lighttext)] uppercase tracking-[2px] mr-1">{label}:</span>
+      <span className="text-sm text-[var(--lighttext)] uppercase tracking-[2px] mr-1">
+        {label}:
+      </span>
       <span>{value}</span>
     </div>
   );
@@ -167,7 +172,7 @@ export default function GuideDetailsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
-        <Navbar />
+        <GuideNavbar />
         <div className="flex items-center justify-center min-h-[70vh]">
           <div className="w-10 h-10 border-4 border-[var(--maincolor)] border-t-transparent rounded-full animate-spin" />
         </div>
@@ -179,7 +184,7 @@ export default function GuideDetailsPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
-        <Navbar />
+        <GuideNavbar />
         <div className="flex items-center justify-center min-h-[70vh] px-4">
           <div className="text-center flex flex-col gap-4">
             <p className="text-red-600 text-sm">{error}</p>
@@ -200,7 +205,7 @@ export default function GuideDetailsPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <Navbar />
+      <GuideNavbar />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-14">
         {/* Back link */}
@@ -242,11 +247,14 @@ export default function GuideDetailsPage() {
               {guide.rating > 0 && (
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-[var(--maintaxt)]">{guide.rating}</span>
+                    <span className="text-lg font-bold text-[var(--maintaxt)]">
+                      {guide.rating}
+                    </span>
                     <RatingStars value={guide.rating} />
                   </div>
                   <span className="text-sm text-[#353572]">
-                    {guide.reviewCount} review{guide.reviewCount !== 1 ? "s" : ""}
+                    {guide.reviewCount} review
+                    {guide.reviewCount !== 1 ? "s" : ""}
                   </span>
                 </div>
               )}
@@ -254,13 +262,25 @@ export default function GuideDetailsPage() {
 
             <div className="mt-6 flex flex-wrap gap-x-7 gap-y-3">
               {guide.experience && (
-                <DetailRow icon={Sparkles} label="Experience" value={guide.experience} />
+                <DetailRow
+                  icon={Sparkles}
+                  label="Experience"
+                  value={guide.experience}
+                />
               )}
               {guide.nationality && (
-                <DetailRow icon={MapPin} label="From" value={guide.nationality} />
+                <DetailRow
+                  icon={MapPin}
+                  label="From"
+                  value={guide.nationality}
+                />
               )}
               {guide.languages.length > 0 && (
-                <DetailRow icon={Languages} label="Languages" value={guide.languages.join(" · ")} />
+                <DetailRow
+                  icon={Languages}
+                  label="Languages"
+                  value={guide.languages.join(" · ")}
+                />
               )}
             </div>
           </div>
@@ -268,9 +288,21 @@ export default function GuideDetailsPage() {
 
         {/* ── Stats row ── */}
         <section className="mt-10 flex flex-wrap gap-10">
-          <StatItem icon={Star} label="Rating" value={guide.rating > 0 ? `${guide.rating} / 5` : null} />
-          <StatItem icon={BadgeCheck} label="Reviews" value={guide.reviewCount > 0 ? guide.reviewCount : null} />
-          <StatItem icon={Globe} label="Nationality" value={guide.nationality || null} />
+          <StatItem
+            icon={Star}
+            label="Rating"
+            value={guide.rating > 0 ? `${guide.rating} / 5` : null}
+          />
+          <StatItem
+            icon={BadgeCheck}
+            label="Reviews"
+            value={guide.reviewCount > 0 ? guide.reviewCount : null}
+          />
+          <StatItem
+            icon={Globe}
+            label="Nationality"
+            value={guide.nationality || null}
+          />
         </section>
 
         {/* ── About / Bio ── */}

@@ -1,11 +1,12 @@
 /* @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
-  MemoryRouter,
-  Route,
-  Routes,
-  useNavigate,
-} from "react-router-dom";
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AllToursPage from "@/features/tours/pages/AllToursPage";
@@ -18,8 +19,8 @@ vi.mock("@/features/tours/api/toursApi", () => ({
   toursApi: apiMocks,
 }));
 
-vi.mock("@/components/home/Navbar.jsx", () => ({
-  default: () => <div>Navbar</div>,
+vi.mock("@/components/home/GuideNavbar.jsx", () => ({
+  default: () => <div>Guide Navbar</div>,
 }));
 
 vi.mock("@/components/home/HeroSection.jsx", () => ({
@@ -36,9 +37,7 @@ function NavigateFromHero() {
   return (
     <button
       type="button"
-      onClick={() =>
-        navigate("/tours?destination=Aswan&search=Adventure")
-      }
+      onClick={() => navigate("/tours?destination=Aswan&tourType=Adventure")}
     >
       Search from hero
     </button>
@@ -87,12 +86,12 @@ describe("AllToursPage", () => {
     expect(await screen.findByText("Old Cairo Walk")).toBeDefined();
     expect(screen.getByText("Tour image coming soon")).toBeDefined();
     expect(screen.queryByLabelText("Group type")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Destination" })).toBeNull();
+    expect(screen.queryByLabelText("Available date")).toBeNull();
 
-    fireEvent.change(screen.getByLabelText("Search"), {
+    fireEvent.change(screen.getByLabelText("Tour / Activity Name"), {
       target: { value: "Pyramids" },
     });
-    fireEvent.click(screen.getByRole("combobox", { name: "Destination" }));
-    fireEvent.click(screen.getByRole("option", { name: "Giza" }));
     const minimumPrice = screen.getByLabelText("Minimum private price");
     const maximumPrice = screen.getByLabelText("Maximum private price");
     expect(minimumPrice.getAttribute("step")).toBe("1");
@@ -116,7 +115,7 @@ describe("AllToursPage", () => {
     expect(apiMocks.browseActiveTours).toHaveBeenLastCalledWith(
       expect.objectContaining({
         search: "Pyramids",
-        destination: "Giza",
+        destination: "",
         groupType: "PRIVATE",
         minPrice: "50",
         maxPrice: "300",
@@ -129,7 +128,7 @@ describe("AllToursPage", () => {
   it("uses filters submitted from the landing-page hero", async () => {
     render(
       <MemoryRouter
-        initialEntries={["/tours?destination=Luxor&search=Food%20Tour"]}
+        initialEntries={["/tours?destination=Luxor&tourType=Food%20Tour"]}
       >
         <AllToursPage />
       </MemoryRouter>,
@@ -157,7 +156,7 @@ describe("AllToursPage", () => {
     );
 
     expect(await screen.findByText("Old Cairo Walk")).toBeDefined();
-    expect(screen.getByLabelText("Available date").value).toBe("2026-07-01");
+    expect(screen.queryByLabelText("Available date")).toBeNull();
     expect(apiMocks.browseActiveTours).toHaveBeenCalledWith(
       expect.objectContaining({
         destination: "Cairo",

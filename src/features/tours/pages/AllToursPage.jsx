@@ -1,38 +1,37 @@
-import { useEffect, useId, useRef, useState } from "react";
-import {
-  Check,
-  ChevronDown,
-  RotateCcw,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
-import Navbar from "@/components/home/Navbar.jsx";
+import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 import HeroSection from "@/components/home/HeroSection.jsx";
 import TourCard from "@/components/home/TourCard.jsx";
 import Footer from "@/components/home/Footer.jsx";
 import { toursApi } from "@/features/tours/api/toursApi";
-import { EGYPT_GOVERNORATES } from "@/features/tours/constants/tourOptions";
 import { mapActiveTours } from "@/features/landingPage/utils/landingContentMappers";
 
 const PAGE_SIZE = 9;
 
 const EMPTY_FILTERS = {
   search: "",
-  destination: "",
-  date: "",
   minPrice: "",
   maxPrice: "",
 };
 
-const getFiltersFromSearchParams = (searchParams) => ({
+const getRefineFiltersFromSearchParams = (searchParams) => ({
   ...EMPTY_FILTERS,
   search: searchParams.get("search") ?? "",
-  destination: searchParams.get("destination") ?? "",
-  date: searchParams.get("date") ?? "",
   minPrice: searchParams.get("minPrice") ?? "",
   maxPrice: searchParams.get("maxPrice") ?? "",
+});
+
+const getHeroSearchFromSearchParams = (searchParams) => ({
+  destination: searchParams.get("destination") ?? "",
+  date: searchParams.get("date") ?? "",
+  tourType:
+    searchParams.get("tourType") ??
+    (searchParams.has("destination") || searchParams.has("date")
+      ? (searchParams.get("search") ?? "")
+      : ""),
 });
 
 const normalizeWholeNumberInput = (value) => {
@@ -72,119 +71,14 @@ function TourGridSkeleton() {
   );
 }
 
-function DestinationSelect({ value, onChange, options, placeholder }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const fieldRef = useRef(null);
-  const listboxId = useId();
-
-  useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
-
-    const handlePointerDown = (event) => {
-      if (!fieldRef.current?.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  const selectOption = (option) => {
-    onChange(option);
-    setIsOpen(false);
-  };
-
-  return (
-    <div ref={fieldRef} className="relative mt-2">
-      <button
-        type="button"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-controls={listboxId}
-        aria-label="Destination"
-        onClick={() => setIsOpen((open) => !open)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown") {
-            event.preventDefault();
-            setIsOpen(true);
-          }
-        }}
-        className={`flex h-11 w-full cursor-pointer items-center rounded-xl border px-3 pr-9 text-left text-sm font-medium normal-case tracking-normal outline-none transition duration-200 focus:ring-2 focus:ring-[#EDC84C]/30 ${
-          isOpen
-            ? "border-[#010170]/60 bg-[#F7F7FC] shadow-[0_4px_18px_rgba(1,1,56,0.12)]"
-            : "border-[#d5d4ea] bg-[#FDFDFF] hover:border-[#c3c1df]"
-        } ${value ? "text-[#010138]" : "text-[#65638a]"}`}
-      >
-        <span className="truncate">{value || placeholder}</span>
-      </button>
-
-      <ChevronDown
-        aria-hidden="true"
-        className={`pointer-events-none absolute right-3 top-[22px] h-3.5 w-3.5 -translate-y-1/2 text-[#010170]/80 transition-transform duration-200 ${
-          isOpen ? "rotate-180" : ""
-        }`}
-      />
-
-      {isOpen ? (
-        <div
-          id={listboxId}
-          role="listbox"
-          aria-label="Destination options"
-          className="absolute left-0 top-[calc(100%+0.55rem)] z-[80] max-h-64 min-w-full overflow-y-auto rounded-2xl border border-[#d9d8ec] bg-white p-2 shadow-[0_18px_55px_rgba(1,1,56,0.18)] ring-1 ring-[#010170]/10"
-        >
-          {["", ...options].map((option) => {
-            const isSelected = value === option;
-
-            return (
-              <button
-                key={option || "all-egypt"}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => selectOption(option)}
-                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition ${
-                  isSelected
-                    ? "bg-gradient-to-r from-[#ececfa] to-[#f6f5fc] text-[#010170]"
-                    : "text-[#353572] hover:bg-[#f1f0f8] hover:text-[#010138]"
-                }`}
-              >
-                <span className="whitespace-nowrap">
-                  {option || placeholder}
-                </span>
-                {isSelected ? (
-                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#010170] text-white shadow-sm">
-                    <Check aria-hidden="true" className="h-3 w-3" />
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export default function AllToursPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const initialFilters = getFiltersFromSearchParams(searchParams);
+  const initialFilters = getRefineFiltersFromSearchParams(searchParams);
+  const initialHeroSearch = getHeroSearchFromSearchParams(searchParams);
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
+  const [heroSearch, setHeroSearch] = useState(initialHeroSearch);
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [tours, setTours] = useState([]);
@@ -200,11 +94,15 @@ export default function AllToursPage() {
       return;
     }
 
-    const nextFilters = getFiltersFromSearchParams(
+    const nextFilters = getRefineFiltersFromSearchParams(
+      new URLSearchParams(location.search),
+    );
+    const nextHeroSearch = getHeroSearchFromSearchParams(
       new URLSearchParams(location.search),
     );
     setDraftFilters(nextFilters);
     setFilters(nextFilters);
+    setHeroSearch(nextHeroSearch);
     setPage(1);
     setFilterError("");
   }, [location.key, location.search]);
@@ -217,23 +115,26 @@ export default function AllToursPage() {
       setErrorMessage("");
 
       try {
+        const combinedSearch = [heroSearch.tourType, filters.search]
+          .filter(Boolean)
+          .join(" ");
         const response = await toursApi.browseActiveTours({
-          search: filters.search,
-          destination: filters.destination,
+          search: combinedSearch,
+          destination: heroSearch.destination,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           groupType: filters.minPrice || filters.maxPrice ? "PRIVATE" : "",
-          page: filters.date ? 1 : page,
-          limit: filters.date ? 100 : PAGE_SIZE,
+          page: heroSearch.date ? 1 : page,
+          limit: heroSearch.date ? 100 : PAGE_SIZE,
         });
 
         if (!isMounted) return;
 
         const dateFilteredItems = filterToursByDate(
           Array.isArray(response?.items) ? response.items : [],
-          filters.date,
+          heroSearch.date,
         );
-        const pageItems = filters.date
+        const pageItems = heroSearch.date
           ? dateFilteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
           : dateFilteredItems;
         const dateTotalPages = Math.max(
@@ -242,14 +143,12 @@ export default function AllToursPage() {
         );
 
         setTours(
-          mapActiveTours(
-            { items: pageItems },
-            [],
-            { priceGroupType: "PRIVATE" },
-          ),
+          mapActiveTours({ items: pageItems }, [], {
+            priceGroupType: "PRIVATE",
+          }),
         );
         setPagination(
-          filters.date
+          heroSearch.date
             ? {
                 page,
                 totalItems: dateFilteredItems.length,
@@ -277,7 +176,7 @@ export default function AllToursPage() {
     return () => {
       isMounted = false;
     };
-  }, [filters, page, reloadKey]);
+  }, [filters, heroSearch, page, reloadKey]);
 
   const setFilterField = (field, value) => {
     setDraftFilters((current) => ({ ...current, [field]: value }));
@@ -312,13 +211,13 @@ export default function AllToursPage() {
   const totalPages = Math.max(Number(pagination?.totalPages) || 1, 1);
   const hasPreviousPage = pagination?.hasPreviousPage ?? page > 1;
   const hasNextPage = pagination?.hasNextPage ?? page < totalPages;
-  const sectionTitle = filters.destination
-    ? `${filters.destination} Journeys`
+  const sectionTitle = heroSearch.destination
+    ? `${heroSearch.destination} Journeys`
     : "Explore Egypt's tours";
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FDFDFF] text-[#010138]">
-      <Navbar />
+      <GuideNavbar />
       <HeroSection />
 
       <main
@@ -327,11 +226,21 @@ export default function AllToursPage() {
       >
         <form
           onSubmit={applyFilters}
-          className="rounded-2xl border border-[#e4e3f0] bg-white p-4 shadow-[0_6px_24px_rgba(1,1,112,0.08)] sm:p-5"
+          className="rounded-2xl border border-[#ebeaf4] bg-[#fbfbfe] p-4 shadow-[0_4px_18px_rgba(1,1,112,0.06)] sm:p-5"
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.25fr_1fr_0.9fr_0.9fr_0.9fr]">
+          <div className="mb-4 flex flex-col gap-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8b89a8]">
+              Refine Results
+            </p>
+            <p className="text-sm text-[#55537a]">
+              Narrow the searched tours by activity name and private price
+              range.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.35fr_0.9fr_0.9fr]">
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
-              Search
+              Tour / Activity Name
               <span className="mt-2 flex h-11 items-center gap-2 rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 focus-within:border-[#010170]">
                 <Search className="h-4 w-4" />
                 <input
@@ -339,35 +248,10 @@ export default function AllToursPage() {
                   onChange={(event) =>
                     setFilterField("search", event.target.value)
                   }
-                  placeholder="Tour or activity"
+                  placeholder="Search by tour or activity"
                   className="min-w-0 flex-1 bg-transparent text-sm font-medium normal-case tracking-normal outline-none"
                 />
               </span>
-            </label>
-
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
-              Destination
-              <DestinationSelect
-                value={draftFilters.destination}
-                onChange={(nextValue) =>
-                  setFilterField("destination", nextValue)
-                }
-                options={EGYPT_GOVERNORATES}
-                placeholder="All Egypt"
-              />
-            </label>
-
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">
-              Available date
-              <input
-                type="date"
-                aria-label="Available date"
-                value={draftFilters.date}
-                onChange={(event) =>
-                  setFilterField("date", event.target.value)
-                }
-                className="mt-2 h-11 w-full rounded-xl border border-[#d5d4ea] bg-[#FDFDFF] px-3 text-sm font-medium normal-case tracking-normal text-[#010138] outline-none focus:border-[#010170]"
-              />
             </label>
 
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#65638a]">

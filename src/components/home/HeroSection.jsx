@@ -128,7 +128,7 @@ export default function HeroSection({ stats }) {
     const searchParams = new URLSearchParams();
 
     if (city) searchParams.set("destination", city);
-    if (tourType) searchParams.set("search", tourType);
+    if (tourType) searchParams.set("tourType", tourType);
     if (date) searchParams.set("date", date);
 
     const query = searchParams.toString();

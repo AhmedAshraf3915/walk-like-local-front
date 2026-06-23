@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
-import Navbar from "@/components/home/Navbar.jsx";
+import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 import HeroSection from "@/components/home/HeroSection.jsx";
 import GuideCard from "@/components/home/GuideCard.jsx";
 import Footer from "@/components/home/Footer.jsx";
@@ -89,7 +89,9 @@ function GuidesSection({ guides, isLoading, errorMessage }) {
           <ContentMessage tone="error">{errorMessage}</ContentMessage>
         ) : null}
         {!isLoading && !errorMessage && guides.length === 0 ? (
-          <ContentMessage>No public guide profiles are available yet.</ContentMessage>
+          <ContentMessage>
+            No public guide profiles are available yet.
+          </ContentMessage>
         ) : null}
         {!isLoading && guides.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -152,7 +154,7 @@ export default function ViewAllGuidePage() {
 
   return (
     <div className="overflow-x-hidden">
-      <Navbar />
+      <GuideNavbar />
       <HeroSection />
       <GuidesSection
         guides={content.guides}

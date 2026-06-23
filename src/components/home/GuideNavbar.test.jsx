@@ -5,19 +5,28 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import GuideNavbar from "@/components/home/GuideNavbar";
 
+const verificationState = vi.hoisted(() => ({
+  isVerified: false,
+  isLoading: false,
+  verification: {},
+}));
+
+const authState = vi.hoisted(() => ({
+  user: { _id: "guide-1" },
+  userRole: "guide",
+  isAuthenticated: true,
+  logout: vi.fn(),
+}));
+
 vi.mock("@/contexts/useAuth", () => ({
-  default: () => ({ user: { _id: "guide-1" } }),
+  default: () => authState,
 }));
 
 vi.mock(
   "@/features/guideVerification/hooks/useGuideVerificationStatus",
   () => ({
     readGuideVerificationStatus: () => "none",
-    useGuideVerificationStatus: () => ({
-      isVerified: false,
-      isLoading: false,
-      verification: {},
-    }),
+    useGuideVerificationStatus: () => verificationState,
   }),
 );
 
@@ -31,6 +40,10 @@ const renderNavbar = (props = {}) =>
 describe("GuideNavbar", () => {
   afterEach(() => {
     cleanup();
+    verificationState.isVerified = false;
+    verificationState.isLoading = false;
+    authState.userRole = "guide";
+    authState.isAuthenticated = true;
   });
 
   it("keeps the brand linked to the landing page and removes the separate landing item", () => {
@@ -67,5 +80,14 @@ describe("GuideNavbar", () => {
         .getAllByRole("link", { name: "Complete profile" })[0]
         .getAttribute("href"),
     ).toBe("/guide/complete-profile");
+  });
+
+  it("does not show guide action while verification status is loading", () => {
+    verificationState.isLoading = true;
+
+    renderNavbar();
+
+    expect(screen.queryByRole("link", { name: "Create tour" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Complete profile" })).toBeNull();
   });
 });

@@ -5,7 +5,7 @@ import { touristApi } from "@/features/touristVerification/api/touristApi";
 import { paymentApi } from "@/features/payment/api/paymentApi";
 import { guidesApi } from "@/features/guide/api/guidesApi";
 import useAuth from "@/contexts/useAuth";
-import Navbar from "@/components/home/Navbar.jsx";
+import GuideNavbar from "@/components/home/GuideNavbar.jsx";
 import CheckoutReviewModal from "../../bookingTour/components/CheckoutReviewModal";
 import GroupSelection from "../../bookingTour/components/GroupSelection";
 import {
@@ -252,7 +252,7 @@ function mapTour(data, publicGuideProfile = null) {
       ? data.galleryImages.map(getAssetUrl)
       : Array.isArray(data.images)
         ? data.images.map(getAssetUrl)
-      : []),
+        : []),
   ].filter(Boolean);
 
   const activities = (data.activities || []).map((act, i) => {
@@ -287,9 +287,7 @@ function mapTour(data, publicGuideProfile = null) {
         ? `${slot.startTime}${slot.endTime ? " - " + slot.endTime : ""}`
         : "",
       status:
-        slot.available === false || slot.isBooked
-          ? "unavailable"
-          : "available",
+        slot.available === false || slot.isBooked ? "unavailable" : "available",
     };
   });
 
@@ -425,7 +423,7 @@ export default function TourDetail() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, isTourist]);
 
   const toggleActivity = (activityId) => {
     if (isReadOnly) return;
@@ -453,9 +451,7 @@ export default function TourDetail() {
       .reduce(
         (sum, activity) =>
           sum +
-          (activity.included
-            ? 0
-            : getActivityPrice(activity, selectedPackage)),
+          (activity.included ? 0 : getActivityPrice(activity, selectedPackage)),
         0,
       );
   }, [tour, enabledActivities, selectedPackage]);
@@ -480,9 +476,10 @@ export default function TourDetail() {
   };
 
   // Effective group size: user-chosen (from modal) or package default
-  const effectiveGroupSize = groupSize ?? GROUP_META[selectedPackage]?.size ?? 1;
+  const effectiveGroupSize =
+    groupSize ?? GROUP_META[selectedPackage]?.size ?? 1;
 
-const tourBase = pkg ? pkg.price : 0;
+  const tourBase = pkg ? pkg.price : 0;
   const total = tourBase + activitiesTotal;
 
   const selectedSlot = tour?.slots.find((s) => s.id === selectedSlotId) || null;
@@ -594,7 +591,7 @@ const tourBase = pkg ? pkg.price : 0;
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <Navbar />
+      <GuideNavbar />
 
       <main className="max-w-[1920px] mx-auto px-8 lg:px-24 py-12 flex flex-col gap-22">
         <Link
@@ -730,10 +727,11 @@ const tourBase = pkg ? pkg.price : 0;
                   )}
                   {tour.guide.id && (
                     <Link
-                        to={`/guides/${tour.guide.id}`}
-className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] !text-[var(--maintaxt)] hover:!text-[var(--maintaxt)] font-medium text-lg no-underline"                      >
-                        View guide profile
-                      </Link>
+                      to={`/guides/${tour.guide.id}`}
+                      className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] !text-[var(--maintaxt)] hover:!text-[var(--maintaxt)] font-medium text-lg no-underline"
+                    >
+                      View guide profile
+                    </Link>
                   )}
                 </div>
               </div>
@@ -891,14 +889,11 @@ className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[
                           key={a.id}
                           className="flex items-center justify-between text-[var(--maincolor)]"
                         >
-                          <p>
-                            {a.title}
-                      
-                          </p>
+                          <p>{a.title}</p>
                           <p>
                             {a.included
-                                ? "Included"
-                                : `$${getActivityPrice(a, selectedPackage)}`}
+                              ? "Included"
+                              : `$${getActivityPrice(a, selectedPackage)}`}
                           </p>
                         </div>
                       ))}
@@ -913,17 +908,19 @@ className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[
                 </div>
 
                 <div className="flex flex-col gap-3 items-center">
-                  {isTourist && selectedPackage && GROUP_META[selectedPackage]?.size > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowGroupSelection(true)}
-                      className="h-12 px-6 rounded-2xl border border-[var(--maincolor)] text-[var(--maincolor)] font-medium text-base w-full hover:bg-[rgba(1,1,112,0.05)] transition-colors"
-                    >
-                      {groupSize
-                        ? `Edit Group · ${effectiveGroupSize} guests`
-                        : "Set Up Group Members"}
-                    </button>
-                  )}
+                  {isTourist &&
+                    selectedPackage &&
+                    GROUP_META[selectedPackage]?.size > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowGroupSelection(true)}
+                        className="h-12 px-6 rounded-2xl border border-[var(--maincolor)] text-[var(--maincolor)] font-medium text-base w-full hover:bg-[rgba(1,1,112,0.05)] transition-colors"
+                      >
+                        {groupSize
+                          ? `Edit Group · ${effectiveGroupSize} guests`
+                          : "Set Up Group Members"}
+                      </button>
+                    )}
                   <button
                     type="button"
                     onClick={handleBookingAction}
@@ -954,7 +951,7 @@ className="btn self-start h-12 px-8 rounded-2xl border border-[#010170] shadow-[
               className="group rounded-2xl border border-[#ded7b5] bg-[#fffdf5] p-5"
             >
               <summary className="flex cursor-pointer list-none items-center gap-4 text-[var(--darkgold)]">
-              <Check className="size-10 text-[var(--darkgold)] shrink-0" />
+                <Check className="size-10 text-[var(--darkgold)] shrink-0" />
                 <span className="text-lg font-medium underline">
                   View our cancellation policy
                 </span>
