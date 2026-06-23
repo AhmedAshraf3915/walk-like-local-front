@@ -103,7 +103,27 @@ getPaymentStatusBySessionId: async (sessionId) => {
         { cause: error },
       );
     }
+  },
+
+getSessionData: async (sessionId) => {
+  if (!sessionId || typeof sessionId !== "string" || !sessionId.trim()) {
+    throw new Error("A valid session ID is required.");
   }
+
+  try {
+    const response = await apiClient.get(
+      `/stripe/session/${encodeURIComponent(sessionId.trim())}`
+    );
+    return unwrapResponseData(response);
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error, "Unable to retrieve session data."),
+      { cause: error },
+    );
+  }
+}
+
+
 };
 
 export default paymentApi;

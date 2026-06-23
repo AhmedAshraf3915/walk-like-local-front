@@ -36,47 +36,57 @@ export default function CheckoutResult() {
   const [errorMessage, setErrorMessage] = useState("");
   const [countdown, setCountdown] = useState(REDIRECT_AFTER_SECONDS);
 
-  // ── 1. Fetch payment status ───────────────────────────────────────────────
+
+
   useEffect(() => {
-    if (sessionId) {
-      paymentApi
-        .getPaymentStatusBySessionId(sessionId)
-        .then((result) => {
-          console.log("Payment result:", result); 
-          setPayment(result);
+  const fetchPaymentStatus = async () => {
+    setIsLoading(true);
+    
+    try {
+      // لو في sessionId، حاول تجيب الـ bookingId من sessionStorage أولاً
+      let currentBookingId = bookingId;
+      
+      if (sessionId && !currentBookingId) {
+        // لو مفيش bookingId، حاول تجيبه من Stripe session
+        try {
+          const sessionData = await paymentApi.getSessionData(sessionId);
+          currentBookingId = sessionData?.metadata?.bookingId || sessionData?.bookingId;
           
-          if (result.bookingId) {
-            sessionStorage.setItem("pendingPaymentBookingId", result.bookingId);
+          if (currentBookingId) {
+            sessionStorage.setItem("pendingPaymentBookingId", currentBookingId);
           }
-          setErrorMessage("");
-        })
-        .catch((err) => {
-          console.error("Error fetching payment:", err);
-          setErrorMessage(err?.message || "Unable to retrieve payment status.");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } 
-    else if (bookingId) {
-      paymentApi
-        .getPaymentStatus(bookingId)
-        .then((result) => {
-          setPayment(result);
-          setErrorMessage("");
-        })
-        .catch((err) => {
-          setErrorMessage(err?.message || "Unable to retrieve payment status.");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } 
-    else {
-      setErrorMessage("No payment session or booking reference found.");
+        } catch (err) {
+          console.warn("Could not get bookingId from session:", err);
+        }
+      }
+
+      // لو لسه مفيش bookingId
+      if (!currentBookingId) {
+        setErrorMessage("No booking reference found.");
+        setIsLoading(false);
+        return;
+      }
+
+      // جيب حالة الدفعة باستخدام الـ bookingId
+      const result = await paymentApi.getPaymentStatus(currentBookingId);
+      setPayment(result);
+      setErrorMessage("");
+      
+    } catch (err) {
+      console.error("Error fetching payment:", err);
+      setErrorMessage(err?.message || "Unable to retrieve payment status.");
+    } finally {
       setIsLoading(false);
     }
-  }, [sessionId, bookingId]);
+  };
+
+  if (sessionId || bookingId) {
+    fetchPaymentStatus();
+  } else {
+    setErrorMessage("No payment session or booking reference found.");
+    setIsLoading(false);
+  }
+}, [sessionId, bookingId]);
 
   const isPaid = useMemo(() => {
     if (!payment) return false;
