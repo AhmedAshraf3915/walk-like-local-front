@@ -48,6 +48,7 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
                 </div>
                 <p className="text-xl md:text-2xl font-medium text-[var(--maincolor,#010170)]">{s.price}</p>
               </div>
+              <hr className="border-[var(--lighttext,#dfdeed)]" />
             </div>
 
             
@@ -64,10 +65,12 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
                     </div>
                   ))}
                 </div>
+                <hr className="border-[var(--lighttext,#dfdeed)]" />
               </div>
+              
             )}
 
-            <hr className="border-[var(--lighttext,#dfdeed)]" />
+            
 
             {/* Time slot schedule rows */}
             <div className="flex flex-col gap-6 w-full">
