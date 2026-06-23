@@ -93,7 +93,7 @@ const normalizeQuestion = (question, index) => {
       question?.responseType ??
       "text",
   ).toLowerCase();
-  const type = /voice|audio|speak|record/.test(rawType) ? "voice" : "text";
+  const type = /voice|audio|speak|spoken|record/.test(rawType) ? "voice" : "text";
 
   return {
     id: String(
@@ -114,6 +114,7 @@ const normalizeQuestion = (question, index) => {
       "",
     audioUrl:
       question?.audioUrl ??
+      question?.ttsAudioUrl ??
       question?.audio?.secureUrl ??
       question?.audio?.url ??
       "",
@@ -147,16 +148,24 @@ const getDurationSeconds = (...payloads) => {
       if (seconds > 0) return seconds;
     }
 
-    const duration = Number(
+    const seconds = Number(
       session?.remainingSeconds ??
         session?.timeRemainingSeconds ??
         session?.expiresIn ??
         session?.durationSeconds ??
-        session?.timeLimitSeconds ??
-        session?.duration ??
-        session?.timeLimit,
+        session?.timeLimitSeconds,
     );
-    if (Number.isFinite(duration) && duration > 0) return duration;
+    if (Number.isFinite(seconds) && seconds > 0) return seconds;
+
+    const minutes = Number(
+      session?.durationMinutes ?? session?.timeLimitMinutes,
+    );
+    if (Number.isFinite(minutes) && minutes > 0) return minutes * 60;
+
+    const genericDuration = Number(session?.duration ?? session?.timeLimit);
+    if (Number.isFinite(genericDuration) && genericDuration > 0) {
+      return genericDuration <= 30 ? genericDuration * 60 : genericDuration;
+    }
   }
 
   return DEFAULT_TEST_DURATION_SECONDS;
@@ -242,6 +251,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
   const [aiUploadingAudio, setAiUploadingAudio] = useState(false);
   const [submittingAiTest, setSubmittingAiTest] = useState(false);
   const [aiTestCompleted, setAiTestCompleted] = useState(false);
+  const [testResult, setTestResult] = useState(null);
   const [aiSkipUsed, setAiSkipUsed] = useState(false);
 
   const aiVoiceClipsRef = useRef(aiVoiceClips);
@@ -259,7 +269,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
   }, []);
 
   useEffect(() => {
-    if (!isAiSessionStarted || aiTestCompleted || remainingSeconds <= 0) {
+    if (!isAiSessionStarted || aiTestCompleted) {
       return undefined;
     }
 
@@ -275,7 +285,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [aiTestCompleted, isAiSessionStarted, remainingSeconds, setErrorMessage]);
+  }, [aiTestCompleted, isAiSessionStarted, setErrorMessage]);
 
   useEffect(() => {
     if (!isAiSessionStarted || !activeSessionId || aiTestCompleted) {
@@ -288,7 +298,6 @@ export const useAiAssessment = ({ setErrorMessage }) => {
           events: [{ type, occurredAt: new Date().toISOString() }],
         })
         .catch(() => {
-          // Integrity reporting must never erase the guide's assessment answers.
         });
     };
     const handleVisibilityChange = () => {
@@ -353,7 +362,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
     }
 
     const preferredLanguage =
-      languageCodes.find((code) => code !== "ar") ?? languageCodes[0];
+      languageCodes.filter((code) => code !== "ar").slice(-1)[0] ?? languageCodes[0];
 
     setStartingAiSession(true);
     setErrorMessage("");
@@ -365,48 +374,67 @@ export const useAiAssessment = ({ setErrorMessage }) => {
       const statusResponse = await guideVerificationApi.getLanguageTestStatus([
         preferredLanguage,
       ]);
-      let nextSessionId = extractActiveSessionId(statusResponse);
-      let startResponse = null;
+      const existingSession = extractActiveSessionId(statusResponse);
 
-      if (!nextSessionId) {
-        startResponse = await guideVerificationApi.startLanguageTest({
-          language: preferredLanguage,
+      if (existingSession && existingSession.length > 0) {
+        const session = await guideVerificationApi.getLanguageTestSession(existingSession);
+        const questions = extractQuestions(session);
+
+        if (questions.length === 0) {
+          throw new Error("Language test session did not return any questions.");
+        }
+
+        const sessionProgress = getInitialSessionProgress(session, questions);
+        const sessionState = getSessionState(session);
+
+        Object.values(aiVoiceClipsRef.current).forEach((clip) => {
+          if (clip?.localUrl) URL.revokeObjectURL(clip.localUrl);
         });
-        nextSessionId = extractSessionId(startResponse);
+        setQuestions(questions);
+        setActiveSessionId(String(existingSession));
+        setSessionLanguage(sessionState?.language ?? preferredLanguage);
+        setRemainingSeconds(getDurationSeconds(session));
+        setAiQuestionIndex(sessionProgress.questionIndex);
+        setAiAnswers(sessionProgress.textAnswers);
+        setAiVoiceClips(sessionProgress.voiceClips);
+        setAiTestCompleted(false);
+        setTestResult(null);
+        setIsAiSessionStarted(true);
+        return;
       }
 
-      if (!nextSessionId) {
-        throw new Error("Language test session did not return a session ID.");
+      const startResponse = await guideVerificationApi.startLanguageTest({
+        language: preferredLanguage,
+      });
+      const newSessionId = extractSessionId(startResponse);
+      if (!newSessionId) {
+        throw new Error("Failed to create language test session.");
       }
+      const session = await guideVerificationApi.getLanguageTestSession(newSessionId);
+      const questions = extractQuestions(session);
 
-      const sessionResponse =
-        await guideVerificationApi.getLanguageTestSession(nextSessionId);
-      const sessionQuestions = extractQuestions(sessionResponse, startResponse);
-
-      if (sessionQuestions.length === 0) {
+      if (questions.length === 0) {
         throw new Error("Language test session did not return any questions.");
       }
 
-      const sessionProgress = getInitialSessionProgress(
-        sessionResponse,
-        sessionQuestions,
-      );
-      const sessionState = getSessionState(sessionResponse);
+      const sessionProgress = getInitialSessionProgress(session, questions);
+      const sessionState = getSessionState(session);
 
       Object.values(aiVoiceClipsRef.current).forEach((clip) => {
         if (clip?.localUrl) URL.revokeObjectURL(clip.localUrl);
       });
-      setQuestions(sessionQuestions);
-      setActiveSessionId(String(nextSessionId));
+      setQuestions(questions);
+      setActiveSessionId(String(newSessionId));
       setSessionLanguage(sessionState?.language ?? preferredLanguage);
-      setRemainingSeconds(getDurationSeconds(sessionResponse, startResponse));
+      setRemainingSeconds(getDurationSeconds(session));
       setAiQuestionIndex(sessionProgress.questionIndex);
       setAiAnswers(sessionProgress.textAnswers);
       setAiVoiceClips(sessionProgress.voiceClips);
       setAiTestCompleted(false);
+      setTestResult(null);
       setIsAiSessionStarted(true);
     } catch (error) {
-      setErrorMessage(error.message ?? "Unable to start language test.");
+      setErrorMessage(error.message ?? "Unable to start AI language test.");
     } finally {
       setStartingAiSession(false);
     }
@@ -467,9 +495,10 @@ export const useAiAssessment = ({ setErrorMessage }) => {
     setErrorMessage("");
 
     try {
-      await guideVerificationApi.submitLanguageTest(activeSessionId, {
+      const result = await guideVerificationApi.submitLanguageTest(activeSessionId, {
         answers,
       });
+      setTestResult(result);
       setAiTestCompleted(true);
     } catch (error) {
       setErrorMessage(error.message ?? "Unable to submit AI language test.");
@@ -533,6 +562,7 @@ export const useAiAssessment = ({ setErrorMessage }) => {
     aiUploadingAudio,
     submittingAiTest,
     aiTestCompleted,
+    testResult,
     aiSkipUsed,
     isRecording: recorder.isRecording,
     recordingSeconds: recorder.recordingSeconds,

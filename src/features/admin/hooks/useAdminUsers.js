@@ -89,12 +89,29 @@ export const useAdminUsers = ({ enabled }) => {
 	const handleUserAction = async (user, actionType) => {
 		if (!user?.id) return;
 
+		const requiresReason = actionType === "suspend" || actionType === "ban";
+		const reason = requiresReason
+			? window.prompt(
+					`Provide a reason to ${actionType} ${user.fullName || "this user"}.`,
+				)
+			: "";
+
+		if (requiresReason && !reason?.trim()) {
+			setUsersError(`A reason is required to ${actionType} a user.`);
+			return;
+		}
+
+		setUsersError("");
 		setUsersActionLoadingId(user.id);
 
 		try {
-			if (actionType === "suspend") await adminApi.suspendUser(user.id);
+			if (actionType === "suspend") {
+				await adminApi.suspendUser(user.id, { reason: reason.trim() });
+			}
 			if (actionType === "activate") await adminApi.activateUser(user.id);
-			if (actionType === "ban") await adminApi.banUser(user.id);
+			if (actionType === "ban") {
+				await adminApi.banUser(user.id, { reason: reason.trim() });
+			}
 			if (actionType === "unban") await adminApi.unbanUser(user.id);
 
 			await Promise.all([loadUsers(), loadStats()]);

@@ -11,7 +11,7 @@ export const mapVerificationList = (payload, type) => {
 	return records.map((item, index) => {
 		const entity = item?.guide ?? item?.tourist ?? item?.user ?? item ?? {};
 		const id =
-			item?._id ?? item?.id ?? entity?._id ?? entity?.id ?? `${type}-${index}`;
+			entity?._id ?? entity?.id ?? item?._id ?? item?.id ?? `${type}-${index}`;
 
 		const fullName = readPossible(entity, ["fullName", "name"], "Unknown user");
 		const email = readPossible(entity, ["email"], "No email");
@@ -62,7 +62,7 @@ export const mapVerificationDetails = (payload, type) => {
 	}
 
 	return {
-		id: record?._id ?? record?.id ?? "",
+		id: entity?._id ?? entity?.id ?? record?._id ?? record?.id ?? "",
 		type,
 		fullName: readPossible(entity, ["fullName", "name"], "Unknown user"),
 		email: readPossible(entity, ["email"], "No email"),

@@ -39,13 +39,13 @@ export const adminApi = {
 
 	approveGuideVerification: (guideId) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/guides/verifications/${guideId}/approve`),
+			() => apiClient.patch(`/admin/guides/verifications/${guideId}/approve`),
 			"Unable to approve guide verification.",
 		),
 
 	rejectGuideVerification: (guideId, payload) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/guides/verifications/${guideId}/reject`, payload),
+			() => apiClient.patch(`/admin/guides/verifications/${guideId}/reject`, payload),
 			"Unable to reject guide verification.",
 		),
 
@@ -63,13 +63,13 @@ export const adminApi = {
 
 	approveTouristVerification: (touristId) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/tourists/verifications/${touristId}/approve`),
+			() => apiClient.patch(`/admin/tourists/verifications/${touristId}/approve`),
 			"Unable to approve tourist verification.",
 		),
 
 	rejectTouristVerification: (touristId, payload) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/tourists/verifications/${touristId}/reject`, payload),
+			() => apiClient.patch(`/admin/tourists/verifications/${touristId}/reject`, payload),
 			"Unable to reject tourist verification.",
 		),
 
@@ -100,27 +100,27 @@ export const adminApi = {
 			"Unable to load user details.",
 		),
 
-	suspendUser: (userId) =>
+	suspendUser: (userId, payload) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/users/${userId}/suspend`),
+			() => apiClient.patch(`/admin/users/${userId}/suspend`, payload),
 			"Unable to suspend user.",
 		),
 
 	activateUser: (userId) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/users/${userId}/activate`),
+			() => apiClient.patch(`/admin/users/${userId}/activate`),
 			"Unable to activate user.",
 		),
 
-	banUser: (userId) =>
+	banUser: (userId, payload) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/users/${userId}/ban`),
+			() => apiClient.patch(`/admin/users/${userId}/ban`, payload),
 			"Unable to ban user.",
 		),
 
 	unbanUser: (userId) =>
 		withErrorMessage(
-			() => apiClient.put(`/admin/users/${userId}/unban`),
+			() => apiClient.patch(`/admin/users/${userId}/unban`),
 			"Unable to unban user.",
 		),
 };
