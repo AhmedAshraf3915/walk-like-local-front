@@ -130,11 +130,21 @@ function RequireVerifiedGuide({ children }) {
   return children;
 }
 
+function LandingRoute() {
+  const { isAuthenticated, userRole } = useAuth();
+
+  if (isAuthenticated && normalizeRole(userRole) === "guide") {
+    return <Navigate to="/guide" replace />;
+  }
+
+  return <HomePage />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LandingRoute />} />
         <Route path="/tours" element={<AllToursPage />} />
         {/* <Route path="/" element={<RootRedirect />} /> */}
         <Route path="/signup" element={<SignUpPage />} />

@@ -7,7 +7,6 @@ import useAuth from "@/contexts/useAuth";
 import { useGuideVerificationStatus } from "@/features/guideVerification/hooks/useGuideVerificationStatus";
 
 const GUIDE_LINKS = [
-  { label: "Landing", to: "/" },
   { label: "Explore tours", to: "/tours" },
   { label: "Guide home", to: "/guide" },
   { label: "Profile", to: "/guide/profile" },

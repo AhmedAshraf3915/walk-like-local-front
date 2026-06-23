@@ -1,31 +1,28 @@
-import { Calendar, MapPin, Search } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Calendar, Check, ChevronDown, MapPin, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import { IMG } from "../../../assets/images/landingPage/images.js";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-
-const CITIES = [
-  "Cairo",
-  "Giza",
-  "Alexandria",
-  "Luxor",
-  "Aswan",
-  "Khan el Khalili",
-];
-
-const TOUR_TYPES = [
-  "Cultural Tour",
-  "Food Tour",
-  "Historical",
-  "Adventure",
-  "Diving",
-  "Desert Safari",
-];
+import { TOUR_CITIES, TOUR_TYPES } from "@/data/homeData.js";
 
 export default function Hero() {
+  const navigate = useNavigate();
   const [city, setCity] = useState("");
   const [tourType, setTourType] = useState("");
   const [date, setDate] = useState("");
+
+  const searchTours = (event) => {
+    event.preventDefault();
+
+    const searchParams = new URLSearchParams();
+
+    if (city) searchParams.set("destination", city);
+    if (tourType) searchParams.set("search", tourType);
+    if (date) searchParams.set("date", date);
+
+    const query = searchParams.toString();
+    navigate(query ? `/tours?${query}` : "/tours");
+  };
 
   return (
     <section className="relative overflow-hidden">
@@ -97,43 +94,48 @@ export default function Hero() {
       </div>
 
       {/* Search bar */}
-      <div className="relative z-10 mx-auto -mt-5 flex max-w-5xl flex-col items-stretch gap-2 px-4 pb-6 sm:px-6 md:flex-row md:items-center md:gap-0 md:rounded-2xl md:overflow-hidden md:bg-transparent">
-        <SearchField
-          icon={<MapPin size={14} color="rgba(255,255,255,0.75)" />}
-          label="Where to"
-          value={city}
-          placeholder="Cities, places or regions"
-          options={CITIES}
-          onChange={setCity}
-        />
-        <Divider />
-        <SearchField
-          icon={<MapPin size={14} color="rgba(255,255,255,0.75)" />}
-          label="Type of Tour"
-          value={tourType}
-          placeholder="Cultural Tour"
-          options={TOUR_TYPES}
-          onChange={setTourType}
-        />
-        <Divider />
-        <DateField
-          icon={<Calendar size={14} color="rgba(255,255,255,0.75)" />}
-          label="Select Date"
-          value={date}
-          placeholder="Add date"
-          onChange={setDate}
-        />
-        <Link
-          to="/signup"
-          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full md:ml-3"
-          style={{
-            background: "linear-gradient(180deg, #010170, #4646A0)",
-            boxShadow: "0 4px 14px rgba(1,1,112,0.5)",
-          }}
-          aria-label="Search"
+      <div className="relative z-10 mx-auto -mt-5 flex max-w-5xl flex-col items-stretch gap-2 px-4 pb-6 sm:px-6 md:overflow-hidden md:rounded-2xl md:bg-transparent md:flex-row md:items-center md:gap-0">
+        <form
+          onSubmit={searchTours}
+          className="flex w-full flex-col items-stretch gap-2 md:flex-row md:items-center md:gap-0"
         >
-          <Search size={16} color="white" />
-        </Link>
+          <SearchField
+            icon={<MapPin size={14} color="rgba(255,255,255,0.75)" />}
+            label="Where to"
+            value={city}
+            placeholder="Cities, places or regions"
+            options={TOUR_CITIES}
+            onChange={setCity}
+          />
+          <Divider />
+          <SearchField
+            icon={<MapPin size={14} color="rgba(255,255,255,0.75)" />}
+            label="Type of Tour"
+            value={tourType}
+            placeholder="Cultural Tour"
+            options={TOUR_TYPES}
+            onChange={setTourType}
+          />
+          <Divider />
+          <DateField
+            icon={<Calendar size={14} color="rgba(255,255,255,0.75)" />}
+            label="Select Date"
+            value={date}
+            placeholder="Add date"
+            onChange={setDate}
+          />
+          <button
+            type="submit"
+            aria-label="Search tours"
+            className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full md:ml-3"
+            style={{
+              background: "linear-gradient(180deg, #010170, #4646A0)",
+              boxShadow: "0 4px 14px rgba(1,1,112,0.5)",
+            }}
+          >
+            <Search size={16} color="white" />
+          </button>
+        </form>
       </div>
     </section>
   );
@@ -197,24 +199,101 @@ function FieldShell({ icon, label, children }) {
 }
 
 function SearchField({ icon, label, value, placeholder, options, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const fieldRef = useRef(null);
+  const listboxId = useId();
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!fieldRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const selectOption = (option) => {
+    onChange(option);
+    setIsOpen(false);
+  };
+
   return (
     <FieldShell icon={icon} label={label}>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full bg-transparent font-semibold text-white outline-none"
-        style={{ fontSize: "11px" }}
-        aria-label={label}
-      >
-        <option value="" style={{ color: "#010138" }}>
-          {placeholder}
-        </option>
-        {options.map((option) => (
-          <option key={option} value={option} style={{ color: "#010138" }}>
-            {option}
-          </option>
-        ))}
-      </select>
+      <div ref={fieldRef} className="relative mt-1">
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={listboxId}
+          aria-label={label}
+          onClick={() => setIsOpen((open) => !open)}
+          className={`flex h-9 w-full cursor-pointer items-center rounded-lg border px-3 pr-9 text-left text-[11px] font-semibold outline-none transition duration-200 focus:ring-2 focus:ring-[#EDC84C]/30 ${
+            isOpen
+              ? "border-[#EDC84C]/70 bg-white/20 shadow-[0_4px_18px_rgba(1,1,56,0.16)]"
+              : "border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15"
+          } ${value ? "text-white" : "text-white/70"}`}
+        >
+          <span className="truncate">{value || placeholder}</span>
+        </button>
+        <ChevronDown
+          aria-hidden="true"
+          className={`pointer-events-none absolute right-3 top-[18px] h-3.5 w-3.5 -translate-y-1/2 text-white/80 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+
+        {isOpen ? (
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label={`${label} options`}
+            className="absolute left-0 top-[calc(100%+0.55rem)] z-[80] max-h-64 min-w-full overflow-y-auto rounded-2xl border border-white/70 bg-white/95 p-2 shadow-[0_18px_55px_rgba(1,1,56,0.28)] ring-1 ring-[#010170]/10 backdrop-blur-xl [scrollbar-color:#aaaacf_transparent] [scrollbar-width:thin]"
+          >
+            {["", ...options].map((option) => {
+              const isSelected = value === option;
+
+              return (
+                <button
+                  key={option || "all-options"}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => selectOption(option)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition ${
+                    isSelected
+                      ? "bg-gradient-to-r from-[#ececfa] to-[#f6f5fc] text-[#010170]"
+                      : "text-[#353572] hover:bg-[#f1f0f8] hover:text-[#010138]"
+                  }`}
+                >
+                  <span className="whitespace-nowrap">
+                    {option || placeholder}
+                  </span>
+                  {isSelected ? (
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#010170] text-white shadow-sm">
+                      <Check aria-hidden="true" className="h-3 w-3" />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
     </FieldShell>
   );
 }

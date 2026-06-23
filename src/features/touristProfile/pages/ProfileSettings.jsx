@@ -1,13 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 import Navbar from "@/components/home/Navbar.jsx";
-import AccountTabs from '../components/AccountTabs'
-import { useNavigate } from 'react-router-dom'
-import { Pencil, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react'
-import { getTouristProfile, updateTouristProfile, uploadAndSaveProfilePhoto, getVerificationStatus } from '../services/touristProfile.js';
-import useAuth from '@/contexts/useAuth';
+import AccountTabs from "../components/AccountTabs";
+import { useNavigate } from "react-router-dom";
+import { Pencil, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import {
+  getTouristProfile,
+  updateTouristProfile,
+  uploadAndSaveProfilePhoto,
+  getVerificationStatus,
+} from "../services/touristProfile.js";
+import useAuth from "@/contexts/useAuth";
 
-const interestsList = ['Swimming', 'Safari', 'Adventure', 'Riding', 'Climbing', 'Summer', 'Sun rise']
-const preferencesList = ['Solo traveler', 'Family', 'Adventure', 'Budget', 'Luxury']
+const interestsList = [
+  "Swimming",
+  "Safari",
+  "Adventure",
+  "Riding",
+  "Climbing",
+  "Summer",
+  "Sun rise",
+];
+const preferencesList = [
+  "Solo traveler",
+  "Family",
+  "Adventure",
+  "Budget",
+  "Luxury",
+];
 
 function Pill({ label, active, onClick }) {
   return (
@@ -15,16 +34,23 @@ function Pill({ label, active, onClick }) {
       onClick={onClick}
       className={`h-[60px] px-10 rounded-full text-2xl whitespace-nowrap transition-colors ${
         active
-          ? 'bg-[var(--maincolor)] text-white shadow-[0px_2px_6px_0px_var(--lighttext)]'
-          : 'border border-[var(--mediumfont)] text-[var(--maintaxt)] shadow-[0px_0px_5px_0px_var(--lightblue)]'
+          ? "bg-[var(--maincolor)] text-white shadow-[0px_2px_6px_0px_var(--lighttext)]"
+          : "border border-[var(--mediumfont)] text-[var(--maintaxt)] shadow-[0px_0px_5px_0px_var(--lightblue)]"
       }`}
     >
       {label}
     </button>
-  )
+  );
 }
 
-function InfoField({ label, value, onChange, editing, onToggleEdit,available = true }) {
+function InfoField({
+  label,
+  value,
+  onChange,
+  editing,
+  onToggleEdit,
+  available = true,
+}) {
   return (
     <div className="bg-[var(--mediabackground)] rounded-2xl px-8 py-7 flex-1 min-w-[300px]">
       <div className="flex items-center justify-between gap-4">
@@ -36,11 +62,13 @@ function InfoField({ label, value, onChange, editing, onToggleEdit,available = t
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onBlur={onToggleEdit}
-              onKeyDown={(e) => e.key === 'Enter' && onToggleEdit()}
+              onKeyDown={(e) => e.key === "Enter" && onToggleEdit()}
               className="text-2xl text-[var(--maincolor)] bg-white/60 rounded-xl px-4 py-2 outline-none w-full max-w-[260px]"
             />
           ) : (
-            <p className="text-2xl text-[var(--maincolor)] truncate">{value || '—'}</p>
+            <p className="text-2xl text-[var(--maincolor)] truncate">
+              {value || "—"}
+            </p>
           )}
           {available && (
             <Pencil
@@ -51,123 +79,146 @@ function InfoField({ label, value, onChange, editing, onToggleEdit,available = t
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function ProfileSettings() {
-  const navigate = useNavigate()
-  const { logout } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const [verificationStatus, setVerificationStatus] = useState(null) // 'pending' | 'approved' | 'rejected' | null
-  const [verificationLoading, setVerificationLoading] = useState(true)
+  const [verificationStatus, setVerificationStatus] = useState(null); // 'pending' | 'approved' | 'rejected' | null
+  const [verificationLoading, setVerificationLoading] = useState(true);
 
-  const [profile, setProfile] = useState(null)
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [country, setCountry] = useState('')
-  const [languages, setLanguages] = useState('')
-  const [editingField, setEditingField] = useState(null) // 'fullName' | 'email' | 'country' | 'languages' | null
+  const [profile, setProfile] = useState(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [country, setCountry] = useState("");
+  const [languages, setLanguages] = useState("");
+  const [editingField, setEditingField] = useState(null); // 'fullName' | 'email' | 'country' | 'languages' | null
 
-  const [interests, setInterests] = useState({})
-  const [preferences, setPreferences] = useState({})
+  const [interests, setInterests] = useState({});
+  const [preferences, setPreferences] = useState({});
 
   const extractErrorMessage = (err) =>
-    err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Something went wrong'
+    err?.response?.data?.message ||
+    err?.response?.data?.error ||
+    err?.message ||
+    "Something went wrong";
 
   const loadProfile = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const res = await getTouristProfile()
-      const data = res?.data?.tourist || res?.data || res?.tourist || res
+      const res = await getTouristProfile();
+      const data = res?.data?.tourist || res?.data || res?.tourist || res;
 
-      setProfile(data)
-      setFullName(data?.fullName || data?.user?.fullName || data?.userId?.fullName || data?.account?.fullName || '')
-      setEmail(data?.email || data?.user?.email || data?.userId?.email || '')
-      setCountry(data?.nationality || '')
+      setProfile(data);
+      setFullName(
+        data?.fullName ||
+          data?.user?.fullName ||
+          data?.userId?.fullName ||
+          data?.account?.fullName ||
+          "",
+      );
+      setEmail(data?.email || data?.user?.email || data?.userId?.email || "");
+      setCountry(data?.nationality || "");
 
-      const langArr = Array.isArray(data?.preferredLanguages) ? data.preferredLanguages : []
-      setLanguages(langArr.join(' , '))
+      const langArr = Array.isArray(data?.preferredLanguages)
+        ? data.preferredLanguages
+        : [];
+      setLanguages(langArr.join(" , "));
 
-      const interestsArr = Array.isArray(data?.interests) ? data.interests : []
-      setInterests(Object.fromEntries(interestsArr.map((i) => [i, true])))
+      const interestsArr = Array.isArray(data?.interests) ? data.interests : [];
+      setInterests(Object.fromEntries(interestsArr.map((i) => [i, true])));
 
-      const preferencesArr = Array.isArray(data?.travelPreferences) ? data.travelPreferences : []
-      setPreferences(Object.fromEntries(preferencesArr.map((p) => [p, true])))
+      const preferencesArr = Array.isArray(data?.travelPreferences)
+        ? data.travelPreferences
+        : [];
+      setPreferences(Object.fromEntries(preferencesArr.map((p) => [p, true])));
     } catch (err) {
-      setError(extractErrorMessage(err))
+      setError(extractErrorMessage(err));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadProfile()
-    loadVerificationStatus()
-  }, [])
+    loadProfile();
+    loadVerificationStatus();
+  }, []);
 
   const loadVerificationStatus = async () => {
-    setVerificationLoading(true)
+    setVerificationLoading(true);
     try {
-      const res = await getVerificationStatus()
-      const status = res?.data?.status || res?.status || res?.data?.verificationStatus || null
-      setVerificationStatus(status)
+      const res = await getVerificationStatus();
+      const status =
+        res?.data?.status ||
+        res?.status ||
+        res?.data?.verificationStatus ||
+        null;
+      setVerificationStatus(status);
     } catch {
-      setVerificationStatus(null)
+      setVerificationStatus(null);
     } finally {
-      setVerificationLoading(false)
+      setVerificationLoading(false);
     }
-  }
+  };
 
-  const toggle = (setFn) => (key) => setFn((prev) => ({ ...prev, [key]: !prev[key] }))
+  const toggle = (setFn) => (key) =>
+    setFn((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleDiscard = () => {
-    loadProfile()
-    setEditingField(null)
-  }
+    loadProfile();
+    setEditingField(null);
+  };
 
   const handleSave = async () => {
-    setSaving(true)
-    setError(null)
+    setSaving(true);
+    setError(null);
     try {
       await updateTouristProfile({
         nationality: country,
-        preferredLanguages: languages.split(',').map((l) => l.trim()).filter(Boolean),
+        preferredLanguages: languages
+          .split(",")
+          .map((l) => l.trim())
+          .filter(Boolean),
         interests: Object.keys(interests).filter((k) => interests[k]),
-        travelPreferences: Object.keys(preferences).filter((k) => preferences[k]),
-      })
-      setEditingField(null)
+        travelPreferences: Object.keys(preferences).filter(
+          (k) => preferences[k],
+        ),
+      });
+      setEditingField(null);
     } catch (err) {
-      setError(extractErrorMessage(err))
+      setError(extractErrorMessage(err));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handlePhotoChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploadingPhoto(true)
-    setError(null)
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    setError(null);
     try {
-      const res = await uploadAndSaveProfilePhoto(file)
-      const updated = res?.data?.tourist || res?.data || res?.tourist || res
-      setProfile((prev) => ({ ...prev, ...updated }))
+      const res = await uploadAndSaveProfilePhoto(file);
+      const updated = res?.data?.tourist || res?.data || res?.tourist || res;
+      setProfile((prev) => ({ ...prev, ...updated }));
     } catch (err) {
-      setError(extractErrorMessage(err))
+      setError(extractErrorMessage(err));
     } finally {
-      setUploadingPhoto(false)
-      e.target.value = ''
+      setUploadingPhoto(false);
+      e.target.value = "";
     }
-  }
+  };
 
   const photoUrl =
     profile?.profilePhoto?.secureUrl ||
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrb4OvIZOz-Z2RvlJ0xDl1E_e3qOfh_TQK1va1Z7gJ4g&s=10?w=400&h=400&fit=crop'
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrb4OvIZOz-Z2RvlJ0xDl1E_e3qOfh_TQK1va1Z7gJ4g&s=10?w=400&h=400&fit=crop";
 
   if (loading) {
     return (
@@ -175,16 +226,18 @@ export default function ProfileSettings() {
         <Navbar />
         <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
           <Loader2 className="size-10 animate-spin text-[var(--maincolor)]" />
-          <p className="text-xl text-[var(--mediumfont)]">Loading your profile…</p>
+          <p className="text-xl text-[var(--mediumfont)]">
+            Loading your profile…
+          </p>
         </main>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
+
       <main className="max-w-[1728px] mx-auto px-8 lg:px-24 py-16 flex flex-col gap-16">
         <AccountTabs />
 
@@ -197,26 +250,31 @@ export default function ProfileSettings() {
         <section className="flex flex-col gap-12">
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex flex-col gap-6">
-              <h1 className="text-3xl font-semibold text-[var(--maintaxt)]">Account settings</h1>
-              <p className="text-2xl text-[var(--maincolor)]">Personal information used across bookings</p>
+              <h1 className="text-3xl font-semibold text-[var(--maintaxt)]">
+                Account settings
+              </h1>
+              <p className="text-2xl text-[var(--maincolor)]">
+                Personal information used across bookings
+              </p>
             </div>
 
-            {!verificationLoading && (
-              verificationStatus === 'approved' ? (
+            {!verificationLoading &&
+              (verificationStatus === "approved" ? (
                 <span className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(46,204,113,0.12)] text-[#1e8449] font-semibold text-lg whitespace-nowrap">
                   <ShieldCheck className="size-5" />
                   Verified
                 </span>
               ) : (
                 <button
-                  onClick={() => navigate('/onboarding/verification')}
+                  onClick={() => navigate("/onboarding/verification")}
                   className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(237,200,76,0.12)] text-[var(--darkgold)] font-semibold text-lg whitespace-nowrap border border-[var(--lightgold)]"
                 >
                   <ShieldAlert className="size-5" />
-                  {verificationStatus === 'rejected' ? 'Verification rejected · Retry' : 'Complete verification'}
+                  {verificationStatus === "rejected"
+                    ? "Verification rejected · Retry"
+                    : "Complete verification"}
                 </button>
-              )
-            )}
+              ))}
           </div>
 
           <div className="flex flex-col items-center gap-10">
@@ -238,34 +296,55 @@ export default function ProfileSettings() {
 
             <div className="flex flex-col gap-10 w-full">
               <div className="flex flex-col md:flex-row gap-6">
-                <InfoField label="Full name" value={fullName} editing={false} onToggleEdit={() => {}} available={false} />
-                <InfoField label="Email" value={email} editing={false} onToggleEdit={() => {}} available={false} />
+                <InfoField
+                  label="Full name"
+                  value={fullName}
+                  editing={false}
+                  onToggleEdit={() => {}}
+                  available={false}
+                />
+                <InfoField
+                  label="Email"
+                  value={email}
+                  editing={false}
+                  onToggleEdit={() => {}}
+                  available={false}
+                />
               </div>
               <div className="flex flex-col md:flex-row gap-6">
                 <InfoField
                   label="Country"
                   value={country}
                   onChange={setCountry}
-                  editing={editingField === 'country'}
-                  onToggleEdit={() => setEditingField((f) => (f === 'country' ? null : 'country'))}
+                  editing={editingField === "country"}
+                  onToggleEdit={() =>
+                    setEditingField((f) => (f === "country" ? null : "country"))
+                  }
                 />
                 <InfoField
                   label="Languages"
                   value={languages}
                   onChange={setLanguages}
-                  editing={editingField === 'languages'}
-                  onToggleEdit={() => setEditingField((f) => (f === 'languages' ? null : 'languages'))}
+                  editing={editingField === "languages"}
+                  onToggleEdit={() =>
+                    setEditingField((f) =>
+                      f === "languages" ? null : "languages",
+                    )
+                  }
                 />
               </div>
             </div>
           </div>
-
         </section>
 
         <section className="flex flex-col gap-12">
           <div className="flex flex-col gap-6">
-            <h2 className="text-3xl font-semibold text-[var(--maintaxt)]">Interests</h2>
-            <p className="text-2xl text-[var(--maincolor)]">Tap to toggle your travel interests:</p>
+            <h2 className="text-3xl font-semibold text-[var(--maintaxt)]">
+              Interests
+            </h2>
+            <p className="text-2xl text-[var(--maincolor)]">
+              Tap to toggle your travel interests:
+            </p>
           </div>
           <div className="flex flex-wrap gap-4">
             {interestsList.map((label) => (
@@ -281,8 +360,12 @@ export default function ProfileSettings() {
 
         <section className="flex flex-col gap-12">
           <div className="flex flex-col gap-6">
-            <h2 className="text-3xl font-semibold text-[var(--maintaxt)]">Preferences</h2>
-            <p className="text-2xl text-[var(--maincolor)]">Tap to toggle your travel preferences:</p>
+            <h2 className="text-3xl font-semibold text-[var(--maintaxt)]">
+              Preferences
+            </h2>
+            <p className="text-2xl text-[var(--maincolor)]">
+              Tap to toggle your travel preferences:
+            </p>
           </div>
           <div className="flex flex-wrap gap-4">
             {preferencesList.map((label) => (
@@ -294,7 +377,7 @@ export default function ProfileSettings() {
               />
             ))}
           </div>
-                    <div className="flex gap-6">
+          <div className="flex gap-6">
             <button
               onClick={handleDiscard}
               disabled={saving}
@@ -313,24 +396,27 @@ export default function ProfileSettings() {
           </div>
         </section>
 
-
         {/* ── Sign out ─────────────────────────────────────────── */}
         <section className="flex flex-col gap-6 border-t border-[rgba(228,29,29,0.2)] pt-12">
           <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-semibold text-[rgba(174,24,24,0.9)]">Sign out</h2>
+            <h2 className="text-2xl font-semibold text-[rgba(174,24,24,0.9)]">
+              Sign out
+            </h2>
             <p className="text-lg text-[var(--mediumfont)]">
               You will be signed out of your account on this device.
             </p>
           </div>
           <button
-            onClick={() => { logout(); navigate('/'); }}
+            onClick={async () => {
+              await logout();
+              navigate("/");
+            }}
             className="self-start h-12 px-10 rounded-2xl border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] font-medium text-lg hover:bg-[rgba(228,29,29,0.06)] transition-colors"
           >
             Log out
           </button>
         </section>
-
       </main>
     </div>
-  )
+  );
 }

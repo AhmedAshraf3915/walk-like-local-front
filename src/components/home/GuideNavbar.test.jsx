@@ -32,10 +32,13 @@ describe("GuideNavbar", () => {
     cleanup();
   });
 
-  it("links guide pages to the landing page and catalog", () => {
+  it("keeps the brand linked to the landing page and removes the separate landing item", () => {
     renderNavbar({ verified: true });
 
-    expect(screen.getAllByRole("link", { name: "Landing" })[0].getAttribute("href")).toBe("/");
+    expect(
+      screen.getByRole("link", { name: /walk like a local/i }).getAttribute("href"),
+    ).toBe("/");
+    expect(screen.queryByRole("link", { name: "Landing" })).toBeNull();
     expect(
       screen.getAllByRole("link", { name: "Explore tours" })[0].getAttribute("href"),
     ).toBe("/tours");

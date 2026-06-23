@@ -39,4 +39,14 @@ describe("authApi resend verification", () => {
       { email: "guide@example.com" },
     );
   });
+
+  it("calls the logout endpoint with the current refresh token payload", async () => {
+    apiClientMocks.post.mockResolvedValue({ data: { success: true } });
+
+    await authApi.logout({ refreshToken: "refresh-token-123" });
+
+    expect(apiClientMocks.post).toHaveBeenCalledWith("/auth/logout", {
+      refreshToken: "refresh-token-123",
+    });
+  });
 });

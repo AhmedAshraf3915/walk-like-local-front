@@ -41,21 +41,25 @@ const getUserAvatar = (user) => {
 };
 
 export default function Navbar() {
-  const [menuOpen, setMenuOpen]     = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdown] = useState(false);
-  const dropdownRef                 = useRef(null);
-  const { pathname }                = useLocation();
-  const navigate                    = useNavigate();
+  const dropdownRef = useRef(null);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated, user, userRole, logout } = useAuth();
 
   const hasAuthSession = Boolean(isAuthenticated && user);
-  const profilePath    = getProfilePath(userRole);
-  const userAvatar     = getUserAvatar(user);
-  const userInitial    = (user?.fullName ?? user?.name ?? "U").slice(0, 1).toUpperCase();
+  const profilePath = getProfilePath(userRole);
+  const userAvatar = getUserAvatar(user);
+  const userInitial = (user?.fullName ?? user?.name ?? "U")
+    .slice(0, 1)
+    .toUpperCase();
 
   // Nav links are intentionally hidden on /tours and /guides pages
   const hideNavLinks =
-    pathname.startsWith("/tours") || pathname.startsWith("/guides") || pathname.startsWith("/tourist");
+    pathname.startsWith("/tours") ||
+    pathname.startsWith("/guides") ||
+    pathname.startsWith("/tourist");
 
   // Close avatar dropdown when clicking outside
   useEffect(() => {
@@ -68,8 +72,8 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setDropdown(false);
     setMenuOpen(false);
     navigate("/");
@@ -78,14 +82,16 @@ export default function Navbar() {
   return (
     <nav className="relative z-50 border-b border-[#deddea] bg-[#f4f3f8]/95 shadow-[0_1px_12px_rgba(1,1,56,0.07)] backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
+        {/* Brand */}
+        <Link to="/" className="flex items-center gap-2.5 shrink-0">
           <img
             src={IMG.WLLLogo}
             alt="Walk Like A Local"
             className="h-7 w-7 [filter:brightness(0)_saturate(100%)_invert(9%)_sepia(68%)_saturate(4043%)_hue-rotate(239deg)_brightness(79%)_contrast(111%)]"
           />
+          <span className="text-sm font-bold text-[#010138]">
+            Walk Like A Local
+          </span>
         </Link>
 
         {/* Desktop nav links — hidden on /tours & /guides, hidden on mobile */}
@@ -105,7 +111,6 @@ export default function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-
           {/* Not logged in */}
           {!hasAuthSession && (
             <Link
@@ -209,9 +214,15 @@ export default function Navbar() {
               <div className="flex items-center gap-3 px-3 py-2">
                 <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border-2 border-[#cccce2] bg-[#f4f4f8] flex-shrink-0">
                   {userAvatar ? (
-                    <img src={userAvatar} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={userAvatar}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
-                    <span className="text-[10px] font-bold uppercase text-[#010170]">{userInitial}</span>
+                    <span className="text-[10px] font-bold uppercase text-[#010170]">
+                      {userInitial}
+                    </span>
                   )}
                 </div>
                 <span className="text-[13px] font-semibold text-[#010138] truncate">

@@ -51,6 +51,9 @@ describe("landing page header", () => {
     expect(authAction.getAttribute("href")).toBe("/signup");
     expect(authAction.className).toContain("inline-flex");
     expect(authAction.className).not.toContain("hidden");
+    expect(
+      screen.getByRole("link", { name: /walk like a local/i }).getAttribute("href"),
+    ).toBe("/");
     expect(screen.getAllByText("Explore Trips").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Profile" })).toBeNull();
     expect(container.querySelector("nav").className).toContain(
@@ -74,7 +77,7 @@ describe("landing page header", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByAltText("Nour Hassan profile").getAttribute("src")).toBe(
+    expect(screen.getByAltText("Nour Hassan").getAttribute("src")).toBe(
       "https://images.example/nour.jpg",
     );
     expect(

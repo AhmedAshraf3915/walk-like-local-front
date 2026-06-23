@@ -69,9 +69,9 @@ const extractCooldownSeconds = (error) => {
 	const errorData = error?.response?.data ?? error?.cause?.response?.data ?? {};
 	const explicitSeconds = Number(
 		error?.cooldownSeconds ??
-			errorData?.retryAfterSeconds ??
-			errorData?.retryAfter ??
-			errorData?.remainingSeconds,
+		errorData?.retryAfterSeconds ??
+		errorData?.retryAfter ??
+		errorData?.remainingSeconds,
 	);
 
 	if (Number.isFinite(explicitSeconds) && explicitSeconds > 0) {
@@ -80,10 +80,10 @@ const extractCooldownSeconds = (error) => {
 
 	const message = String(
 		error?.message ??
-			errorData?.message ??
-			errorData?.error ??
-			error?.cause?.message ??
-			"",
+		errorData?.message ??
+		errorData?.error ??
+		error?.cause?.message ??
+		"",
 	);
 	const match = message.match(/wait\s+(\d+)\s+seconds?/i);
 
@@ -228,6 +228,13 @@ const getGoogleSigninUrl = (nextPath = "/test") =>
 		mode: "signin",
 	});
 
+const logout = (payload = {}) =>
+	postWithMessage(
+		"/auth/logout",
+		payload,
+		"Unable to sign out. Please try again.",
+	);
+
 export const authApi = {
 	registerTourist: (data) =>
 		postWithMessage(
@@ -243,11 +250,12 @@ export const authApi = {
 		),
 	resendVerificationEmail,
 	register: (data) => apiClient.post("/auth/register", data),
-		login: (data) => loginWithMessage(data),
+	login: (data) => loginWithMessage(data),
 	verifyEmail: (token) => apiClient.get(`/auth/verify-email?token=${token}`),
 	getGoogleAuthUrl,
 	getGoogleSignupUrl,
 	getGoogleSigninUrl,
+	logout,
 
 	forgotPassword: (data) =>
 		postWithMessage(

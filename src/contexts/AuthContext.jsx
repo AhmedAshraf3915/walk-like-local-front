@@ -156,9 +156,10 @@ export const AuthProvider = ({ children }) => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [pendingVerificationEmail, setPendingVerificationEmail] =
     useState(null);
-  const [verificationResendCooldownSeconds, setVerificationResendCooldownSeconds] =
-    useState(0);
-
+  const [
+    verificationResendCooldownSeconds,
+    setVerificationResendCooldownSeconds,
+  ] = useState(0);
 
   useEffect(() => {
     if (verificationResendCooldownSeconds <= 0) return undefined;
@@ -207,8 +208,14 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const logout = () => {
-    clearAuth();
+  const logout = async () => {
+    try {
+      await authApi.logout({ refreshToken: authState.refreshToken });
+    } catch {
+      // Session cleanup should still succeed locally if the server call fails.
+    } finally {
+      clearAuth();
+    }
   };
 
   const resetMessages = () => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	mapVerificationDetails,
 	mapVerificationList,
+	mapUsers,
 } from "@/features/admin/utils/adminMappers";
 import { VERIFICATION_TYPES } from "@/features/admin/utils/adminConstants";
 
@@ -70,5 +71,47 @@ describe("admin verification mappers", () => {
 		);
 
 		expect(queue[0].id).toBe("tourist-456");
+	});
+
+	it("supports wrapped users and verification payloads", () => {
+		expect(
+			mapVerificationList(
+				{
+					verifications: [
+						{
+							_id: "verification-record-3",
+							guide: {
+								_id: "guide-789",
+								fullName: "Wrapped Guide",
+								email: "wrapped@example.com",
+							},
+						},
+					],
+				},
+				VERIFICATION_TYPES.guide,
+			),
+		).toHaveLength(1);
+
+		expect(
+			mapUsers({
+				users: [
+					{
+						_id: "user-1",
+						fullName: "Wrapped User",
+						email: "user@example.com",
+						role: "admin",
+						status: "active",
+					},
+				],
+			}),
+		).toMatchObject([
+			{
+				id: "user-1",
+				fullName: "Wrapped User",
+				email: "user@example.com",
+				role: "ADMIN",
+				status: "ACTIVE",
+			},
+		]);
 	});
 });

@@ -18,6 +18,7 @@ export const mapVerificationList = (payload, type) => {
 		const createdAt =
 			item?.createdAt ??
 			item?.updatedAt ??
+			item?.submittedAt ??
 			entity?.createdAt ??
 			entity?.updatedAt ??
 			null;

@@ -1,16 +1,25 @@
 import { useState } from "react";
-import { Menu, Search } from "lucide-react";
+import { LogOut, Menu, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AdminUsersView from "@/features/admin/components/AdminUsersView";
 import AdminVerificationView from "@/features/admin/components/AdminVerificationView";
+import useAuth from "@/contexts/useAuth";
 import { useAdminUsers } from "@/features/admin/hooks/useAdminUsers";
 import { useAdminVerification } from "@/features/admin/hooks/useAdminVerification";
 import { TABS } from "@/features/admin/utils/adminConstants";
 
 const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState(TABS.verification);
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
 
   const verification = useAdminVerification();
   const users = useAdminUsers({ enabled: activeTab === TABS.users });
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#ecebfb_0%,#f6f5fb_42%,#f0eff9_100%)] text-[#1c1a52]">
@@ -39,6 +48,24 @@ const AdminDashboardPage = () => {
             <div className="hidden items-center gap-2 rounded-2xl border border-[#d2d0e5] bg-white px-3 py-2 md:flex">
               <Search className="h-4 w-4 text-[#77759a]" />
               <span className="text-sm text-[#757398]">Search dashboard..</span>
+            </div>
+            <div className="hidden items-center gap-3 rounded-2xl border border-[#d2d0e5] bg-white px-4 py-2 md:flex">
+              <div className="text-right leading-tight">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#757398]">
+                  Signed in as
+                </p>
+                <p className="text-sm font-semibold text-[#1b1a4f]">
+                  {user?.fullName ?? user?.name ?? "Admin"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[#d8d7ea] px-3 text-sm font-semibold text-[#1b1a4f] transition hover:bg-[#f6f5fb]"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
             </div>
           </div>
         </div>

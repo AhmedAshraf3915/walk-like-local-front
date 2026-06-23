@@ -17,6 +17,8 @@ export const toArray = (value) => {
 	if (Array.isArray(value?.items)) return value.items;
 	if (Array.isArray(value?.docs)) return value.docs;
 	if (Array.isArray(value?.results)) return value.results;
+	if (Array.isArray(value?.users)) return value.users;
+	if (Array.isArray(value?.verifications)) return value.verifications;
 	if (Array.isArray(value?.data)) return value.data;
 	return [];
 };
@@ -24,10 +26,23 @@ export const toArray = (value) => {
 export const getPaginationMeta = (value, fallbackLength = 0) => {
 	const root = value && typeof value === "object" ? value : {};
 	const page = Number(root.page ?? root.currentPage ?? 1) || 1;
-	const totalPages = Number(root.totalPages ?? root.pages ?? 1) || 1;
+	const totalPages =
+		Number(
+			root.totalPages ??
+			root.total_pages ??
+			root.pages ??
+			root.meta?.totalPages ??
+			1,
+		) || 1;
 	const totalItems =
-		Number(root.totalItems ?? root.total ?? root.count ?? fallbackLength) ||
-		fallbackLength;
+		Number(
+			root.totalItems ??
+			root.total ??
+			root.count ??
+			root.meta?.totalItems ??
+			root.meta?.count ??
+			fallbackLength,
+		) || fallbackLength;
 
 	return { page, totalPages, totalItems };
 };
