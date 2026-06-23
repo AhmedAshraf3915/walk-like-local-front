@@ -291,6 +291,7 @@ function App() {
         <Route path="/guides" element={<ViewAllGuidePage />} />
         <Route path="/guides/:guideId" element={<GuideDetailsPage />} />
         <Route path="/places" element={<ViewAllPlacesPage />} />
+        <Route path="/tourist/bookings/:bookingId/confirmation" element={<CheckoutResult />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

@@ -16,12 +16,14 @@ export async function createBooking({ tourId, slotId, groupSize, members = [], d
 // GET /tourists/bookings  (returns bookings with all statuses)
 export async function getMyBookings() {
 	const res = await apiClient.get("/tourists/bookings");
+	console.log("BOOKINGS RESPONSE", res);
 	return res.data;
 }
 
 // GET /tourists/bookings/:bookingId
 export async function getBookingById(bookingId) {
 	const res = await apiClient.get(`/tourists/bookings/${bookingId}`);
+	console.log("BOOKINGS RESPONSE", res);
 	return res.data;
 }
 
