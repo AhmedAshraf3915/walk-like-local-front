@@ -197,12 +197,11 @@ function UpcomingCard({ booking, onCancel }) {
           <div className="flex gap-4">
             <button
               onClick={() => onCancel(booking)}
-              className="h-14 px-10 rounded-2xl border border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg"
+              // className="h-14 px-10 rounded-2xl border bg-[#ff07072a] border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg"
+             className="h-14 px-10 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-medium text-xl disabled:opacity-60 flex items-center gap-2"
+
             >
               Cancel
-            </button>
-            <button className="h-14 px-10 rounded-2xl bg-gradient-to-r from-[#010170] to-[#5656a0] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-white font-medium text-lg flex items-center gap-2">
-             <MapPin className="size-5" /> Map 
             </button>
           </div>
         </div>
