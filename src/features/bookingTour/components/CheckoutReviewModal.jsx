@@ -94,9 +94,12 @@ export default function CheckoutReviewModal({ onClose, onBack, onContinue, summa
 
             {/* Server side error notices handling banner block */}
             {error && (
-              <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-6 py-4 animate-shake">
+              <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-6 py-4">
                 <AlertCircle className="size-6 shrink-0 text-red-500" />
-                <p className="text-lg font-medium">{error}</p>
+                <p className="text-lg font-medium">
+                  {/* This will show your friendly error message instead of the raw code */}
+                  {error.includes("idDocument") ? "One or more guests are missing a required ID document." : error}
+                </p>
               </div>
             )}
 
