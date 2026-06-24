@@ -395,13 +395,17 @@ export default function ProfileDetailsPage() {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((l) => (
-                    <LangOption
-                      key={l}
-                      label={l}
-                      onAdd={() => setSelectedLangs((prev) => [...prev, l])}
-                    />
-                  ))}
+                  {LANGUAGES
+                    .filter((l) => !selectedLangs.includes(l))
+                    .map((l) => (
+                      <LangOption
+                        key={l}
+                        label={l}
+                        onAdd={() =>
+                          setSelectedLangs((prev) => [...prev, l])
+                        }
+                      />
+                    ))}
                 </div>
               </div>
 

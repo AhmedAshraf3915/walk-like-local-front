@@ -9,10 +9,26 @@ export default function GroupSelection({
   onSave, 
   initialGroupSize = 2, 
   initialMembers = [],
-  tourPrice = 50 // Default fallback price matching your UI card snippet
+  tourPrice = 50,
+  groupType
 }) {
   const [groupSize, setGroupSize] = useState(initialGroupSize);
   const [members, setMembers] = useState([]);
+  const GROUP_LIMITS = {
+  SMALL_GROUP: {
+    min: 2,
+    max: 4,
+  },
+  LARGE_GROUP: {
+    min: 5,
+    max: 8,
+  },
+};
+
+const limits = GROUP_LIMITS[groupType] || {
+  min: 1,
+  max: 1,
+};
 
   // 1. Sync values on initialization when the modal opens
   useEffect(() => {
@@ -162,16 +178,20 @@ export default function GroupSelection({
           <div className="flex items-center gap-4">
             <button 
               type="button"
-              onClick={() => setGroupSize(prev => Math.max(1, prev - 1))}
+              onClick={() =>
+                setGroupSize(prev => Math.max(limits.min, prev - 1))
+              }
               className="w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-40"
-              disabled={groupSize <= 1}
+              disabled={groupSize <= limits.min}
             >
               <Minus size={16} />
             </button>
             <span className="font-bold text-lg text-slate-800 w-5 text-center select-none">{groupSize}</span>
             <button 
               type="button"
-              onClick={() => setGroupSize(prev => prev + 1)}
+              onClick={() =>
+                setGroupSize(prev => Math.min(limits.max, prev + 1))
+              }
               className="w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
             >
               <Plus size={16} />

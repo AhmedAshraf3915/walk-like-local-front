@@ -971,13 +971,14 @@ export default function TourDetail() {
 
       {showGroupSelection && isTourist && (
         <GroupSelection
-          isOpen={showGroupSelection}
-          onClose={() => setShowGroupSelection(false)}
-          onSave={handleGroupSave}
-          initialGroupSize={groupSize ?? GROUP_META[selectedPackage]?.size ?? 2}
-          initialMembers={groupMembers.slice(1)} // exclude primary (index 0)
-          touristAccountName={touristName}
-        />
+        isOpen={showGroupSelection}
+        onClose={() => setShowGroupSelection(false)}
+        onSave={handleGroupSave}
+        groupType={selectedPackage}
+        initialGroupSize={groupSize ?? GROUP_META[selectedPackage]?.size ?? 2}
+        initialMembers={groupMembers.slice(1)}
+        touristAccountName={touristName}
+      />
       )}
 
       {showReview && isTourist && (
