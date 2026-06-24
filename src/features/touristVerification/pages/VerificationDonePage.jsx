@@ -9,15 +9,15 @@ import { touristApi } from "../api/touristApi";
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
 
 const checkGoldIcon = ICONS.checkGoldIcon;
-const verifiedIcon = ICONS.verifiedIcon;
-const lockIcon = ICONS.lockIcon;
+const verifiedIcon  = ICONS.verifiedIcon;
+const lockIcon      = ICONS.lockIcon;
 
-const POLL_INTERVAL_MS = 8000; //  FIX: poll every 8s instead of checking once
+const POLL_INTERVAL_MS = 8000;
 
 export default function VerificationDonePage() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState("pending");
-  const [loading, setLoading] = useState(true);
+  const [status,     setStatus]     = useState("pending");
+  const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const pollRef = useRef(null);
 
@@ -25,14 +25,13 @@ export default function VerificationDonePage() {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const verificationStatus = await touristApi.getVerificationStatus();
-      setStatus(verificationStatus);
-
-      if (verificationStatus === "rejected") {
-        navigate("/onboarding/verification");
+      const s = await touristApi.getVerificationStatus(); // always lowercase
+      setStatus(s ?? "pending");
+      if (s === "rejected") {
+        navigate("/onboarding/verification", { replace: true });
       }
-    } catch (error) {
-      console.error("Failed to get verification status:", error);
+    } catch (err) {
+      console.error("Failed to get verification status:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,21 +40,20 @@ export default function VerificationDonePage() {
 
   useEffect(() => {
     checkStatus();
-
-    pollRef.current = setInterval(() => {
-      checkStatus({ silent: true });
-    }, POLL_INTERVAL_MS);
-
+    pollRef.current = setInterval(() => checkStatus({ silent: true }), POLL_INTERVAL_MS);
     return () => clearInterval(pollRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Stop polling once we leave "pending"
   useEffect(() => {
     if (status !== "pending" && pollRef.current) {
       clearInterval(pollRef.current);
     }
   }, [status]);
+
+  // Forces a clean app mount to completely bypass stale cached useAuth states
+  const handleAppNavigation = () => {
+    window.location.href = "/tourist/profile";
+  };
 
   if (loading) {
     return (
@@ -95,11 +93,11 @@ export default function VerificationDonePage() {
               </div>
               <div className="text-center">
                 <p className="text-sm sm:text-base text-[#353572]">
-                  {status === "pending" ? "Document submitted for review" : "Document verified"}
+                  {status === "pending" ? "Document submitted for review" : "Document verified ✓"}
                 </p>
                 <p className="text-xs text-[#aaaacf] mt-1">
                   {status === "pending"
-                    ? "Your passport is being reviewed. This usually takes 24-48 hours."
+                    ? "Your passport is being reviewed. This usually takes 24–48 hours."
                     : "Your identity has been verified successfully!"}
                 </p>
               </div>
@@ -117,13 +115,12 @@ export default function VerificationDonePage() {
                 <p className="text-xs sm:text-sm text-[#353572] mt-1">
                   {status === "pending"
                     ? "Your badge will be unlocked once approved."
-                    : "Your badge is active!"}
+                    : "Your badge is now active!"}
                 </p>
               </div>
             </div>
           </div>
 
-          {/*  FIX: manual refresh option in addition to auto-polling */}
           {status === "pending" && (
             <div className="flex justify-center mt-6">
               <button
@@ -146,12 +143,13 @@ export default function VerificationDonePage() {
       </div>
 
       <OnboardingFooter
-        backTo="/onboarding/verification"
-        continueTo={status === "pending" ? null : "/tourist/profile"}
-        continueLabel={status === "pending" ? "Wait for Review" : "Finish & Explore"}
+        backTo={null}
+        continueTo={null}
+        onContinue={status !== "pending" ? handleAppNavigation : null}
+        continueLabel={status === "pending" ? "Waiting for review…" : "Finish & Explore"}
         continueEnabled={status !== "pending"}
-        skipLabel={status === "pending" ? "Continue anyway" : null}
-        onSkip={status === "pending" ? () => navigate("/tourist/profile") : null}
+        skipLabel={status === "pending" ? "Continue to app" : null}
+        onSkip={status === "pending" ? handleAppNavigation : null}
       />
     </OnboardingPage>
   );

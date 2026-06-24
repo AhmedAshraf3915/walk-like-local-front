@@ -1,37 +1,50 @@
 import { apiClient } from "@/services/apiClient";
 import { uploadProfilePhotoToCloudinary } from "./cloudinaryUpload.js";
 
-// GET {{baseUrl}}/tourists/profile
+// GET /tourists/profile
 export async function getTouristProfile() {
-	const res = await apiClient.get("/tourists/profile");
-	return res.data;
+  const res = await apiClient.get("/tourists/profile");
+  return res.data;
 }
 
-// PATCH {{baseUrl}}/tourists/profile
-// payload can include: nationality, languages, interests, preferences, fullName, etc.
+// PATCH /tourists/profile
 export async function updateTouristProfile(payload) {
-	const res = await apiClient.patch("/tourists/profile", payload);
-	return res.data;
+  const res = await apiClient.patch("/tourists/profile", payload);
+  return res.data;
 }
 
-// PATCH {{baseUrl}}/tourists/profile/photo
-// Requires both secureUrl and publicId (both required by backend validation).
+// PATCH /tourists/profile/photo
 export async function updateTouristProfilePhoto({ secureUrl, publicId }) {
-	const res = await apiClient.patch("/tourists/profile/photo", {
-		profilePhoto: { secureUrl, publicId },
-	});
-	return res.data;
+  const res = await apiClient.patch("/tourists/profile/photo", {
+    profilePhoto: { secureUrl, publicId },
+  });
+  return res.data;
 }
 
-// Convenience helper: upload the raw file to Cloudinary, then save the
-// returned secureUrl/publicId on the tourist's profile in one call.
 export async function uploadAndSaveProfilePhoto(file) {
-	const { secureUrl, publicId } = await uploadProfilePhotoToCloudinary(file);
-	return updateTouristProfilePhoto({ secureUrl, publicId });
+  const { secureUrl, publicId } = await uploadProfilePhotoToCloudinary(file);
+  return updateTouristProfilePhoto({ secureUrl, publicId });
 }
 
-// GET /tourists/verification-status -> { status: "pending" | "approved" | "rejected" }
+/**
+ * GET /tourists/verification-status
+ *
+ * Backend returns:
+ *   { success: true, data: { passportVerificationStatus: "PENDING" | "APPROVED" | "REJECTED" } }
+ *
+ * This function always returns a lowercase string so every caller can simply do:
+ *   status === "pending" / "approved" / "rejected"
+ */
 export async function getVerificationStatus() {
-	const res = await apiClient.get("/tourists/verification-status");
-	return res.data;
+  const res = await apiClient.get("/tourists/verification-status");
+
+  // Try every possible path the backend might use
+  const raw =
+    res.data?.data?.passportVerificationStatus ??
+    res.data?.data?.status ??
+    res.data?.passportVerificationStatus ??
+    res.data?.status ??
+    null;
+
+  return raw ? String(raw).toLowerCase() : null;
 }

@@ -8,42 +8,37 @@ import {
 import { touristApi } from "../api/touristApi";
 import { ICONS } from "../../../assets/images/touristVerification/images.js";
 
-const uploadIcon = ICONS.uploadIcon;
+const uploadIcon    = ICONS.uploadIcon;
 const checkGoldIcon = ICONS.checkGoldIcon;
-const verifiedIcon = ICONS.verifiedIcon;
-const lockIcon = ICONS.lockIcon;
+const verifiedIcon  = ICONS.verifiedIcon;
+const lockIcon      = ICONS.lockIcon;
 
 export default function VerificationPage() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
 
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
+  const [selectedFile,       setSelectedFile]       = useState(null);
+  const [uploading,          setUploading]          = useState(false);
+  const [uploadError,        setUploadError]        = useState(null);
   const [verificationStatus, setVerificationStatus] = useState(null);
-  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [loadingStatus,      setLoadingStatus]      = useState(true);
 
-  // ── Check verification status on mount ──
+  // Check status ONCE on mount — single useEffect
   useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const status = await touristApi.getVerificationStatus();
+    touristApi.getVerificationStatus()
+      .then((status) => {
         setVerificationStatus(status);
-
-        // If already verified or pending, redirect to appropriate page
         if (status === "approved") {
-          navigate("/onboarding/payment");
+          // Already verified — skip to the app
+          navigate("/tourist/profile", { replace: true });
         } else if (status === "pending") {
-          navigate("/onboarding/verification-done");
+          // Already submitted — go to waiting page, can't resubmit
+          navigate("/onboarding/verification-done", { replace: true });
         }
-        // status === "rejected" or null/none → stay here so the user can (re)submit
-      } catch (error) {
-        console.error("Failed to get verification status:", error);
-      } finally {
-        setLoadingStatus(false);
-      }
-    };
-    checkStatus();
+        // "rejected" or null → stay here so they can (re)submit
+      })
+      .catch((err) => console.error("Failed to get verification status:", err))
+      .finally(() => setLoadingStatus(false));
   }, [navigate]);
 
   const handleFileChange = (e) => {
@@ -58,17 +53,14 @@ export default function VerificationPage() {
     setUploading(true);
     setUploadError(null);
     try {
-    // use resubmitPassport when a previous submission was rejected
       if (verificationStatus === "rejected") {
         await touristApi.resubmitPassport(selectedFile);
       } else {
         await touristApi.submitPassport(selectedFile);
       }
-      navigate("/onboarding/verification-done");
+      navigate("/onboarding/verification-done", { replace: true });
     } catch (err) {
-      setUploadError(
-        err?.message ?? "Passport upload failed. Please try again."
-      );
+      setUploadError(err?.message ?? "Passport upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -111,9 +103,9 @@ export default function VerificationPage() {
           </div>
         )}
 
-        {/* Upload card */}
         <div className="bg-white border border-[#353572] rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
+            {/* Drop zone */}
             <div
               className={`flex-1 w-full min-w-[240px] bg-[#f4f4f8] rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-3 sm:gap-4 py-8 sm:py-10 lg:py-12 cursor-pointer transition-colors ${
                 selectedFile
@@ -137,9 +129,7 @@ export default function VerificationPage() {
                   </div>
                   <div className="text-center px-3">
                     <p className="text-sm sm:text-base text-[#353572]">Document ready</p>
-                    <p className="text-xs sm:text-sm font-medium text-[#010170] mt-1 break-all">
-                      {selectedFile.name}
-                    </p>
+                    <p className="text-xs sm:text-sm font-medium text-[#010170] mt-1 break-all">{selectedFile.name}</p>
                     <p className="text-[10px] sm:text-xs text-[#aaaacf] mt-1">
                       {(selectedFile.size / 1024).toFixed(0)} KB — tap to change
                     </p>
@@ -156,7 +146,6 @@ export default function VerificationPage() {
                   </div>
                 </>
               )}
-
               <input
                 ref={inputRef}
                 type="file"
@@ -166,6 +155,7 @@ export default function VerificationPage() {
               />
             </div>
 
+            {/* Badge preview */}
             <div className="flex flex-row lg:flex-col items-center gap-3 sm:gap-4 lg:gap-5 text-center shrink-0">
               <div
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center"
@@ -176,9 +166,7 @@ export default function VerificationPage() {
               <div>
                 <p className="text-sm sm:text-base lg:text-lg font-medium text-[#010138]">Verified Tourist Badge</p>
                 <p className="text-xs sm:text-sm text-[#353572] mt-1">
-                  {verificationStatus === "pending"
-                    ? "Your document is being reviewed."
-                    : verificationStatus === "rejected"
+                  {verificationStatus === "rejected"
                     ? "Please resubmit your document."
                     : "Unlocked once your document is reviewed."}
                 </p>
@@ -196,9 +184,7 @@ export default function VerificationPage() {
                 onClick={handleSubmit}
                 disabled={uploading}
                 className="h-10 sm:h-11 px-8 sm:px-12 rounded-xl sm:rounded-2xl text-sm sm:text-base font-medium text-white transition-opacity disabled:opacity-60"
-                style={{
-                  background: "linear-gradient(to right, #010170, #5656a0)",
-                }}
+                style={{ background: "linear-gradient(to right, #010170, #5656a0)" }}
               >
                 {verificationStatus === "rejected" ? "Resubmit for Verification" : "Submit for Verification"}
               </button>

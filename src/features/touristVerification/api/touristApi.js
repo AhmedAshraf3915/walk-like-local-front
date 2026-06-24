@@ -1,8 +1,8 @@
 import { apiClient } from "@/services/apiClient";
 
-// ── Cloudinary upload 
+// ── Cloudinary upload ─────────────────────────────────────────────────────────
 export const uploadToCloudinary = async (file, folder) => {
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const cloudName    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
   const formData = new FormData();
@@ -24,9 +24,10 @@ export const uploadToCloudinary = async (file, folder) => {
   return { secureUrl: data.secure_url, publicId: data.public_id };
 };
 
-// ── Tourist profile API 
+// ── Tourist API ───────────────────────────────────────────────────────────────
 export const touristApi = {
-  getProfile: () => apiClient.get("/tourists/profile").then((r) => r.data?.data ?? r.data),
+  getProfile: () =>
+    apiClient.get("/tourists/profile").then((r) => r.data?.data ?? r.data),
 
   updateProfile: (data) =>
     apiClient.patch("/tourists/profile", data).then((r) => r.data?.data ?? r.data),
@@ -41,9 +42,19 @@ export const touristApi = {
       .then((r) => r.data?.data ?? r.data);
   },
 
-  // ── Verification 
+  // ── Verification ─────────────────────────────────────────────────────────
+  // Backend returns: { success: true, data: { passportVerificationStatus: "PENDING" } }
+  // We always return lowercase: "pending" | "approved" | "rejected" | null
   getVerificationStatus: () =>
-    apiClient.get("/tourists/verification-status").then((r) => r.data?.data ?? r.data),
+    apiClient.get("/tourists/verification-status").then((r) => {
+      const raw =
+        r.data?.data?.passportVerificationStatus ??
+        r.data?.data?.status ??
+        r.data?.passportVerificationStatus ??
+        r.data?.status ??
+        null;
+      return raw ? String(raw).toLowerCase() : null;
+    }),
 
   submitPassport: async (file) => {
     const { secureUrl, publicId } = await uploadToCloudinary(
@@ -65,7 +76,7 @@ export const touristApi = {
       .then((r) => r.data?.data ?? r.data);
   },
 
-  // ── Bookings ──
+  // ── Bookings ──────────────────────────────────────────────────────────────
   getMyBookings: (params = {}) =>
     apiClient.get("/tourists/bookings", { params }).then((r) => r.data?.data ?? r.data),
 
@@ -73,8 +84,12 @@ export const touristApi = {
     apiClient.post("/tourists/bookings", data).then((r) => r.data?.data ?? r.data),
 
   cancelBooking: (bookingId, reason) =>
-    apiClient.patch(`/tourists/bookings/${encodeURIComponent(bookingId)}/cancel`, { reason }).then((r) => r.data?.data ?? r.data),
+    apiClient
+      .patch(`/tourists/bookings/${encodeURIComponent(bookingId)}/cancel`, { reason })
+      .then((r) => r.data?.data ?? r.data),
 
   getPaymentStatus: (bookingId) =>
-    apiClient.get(`/payments/status/${encodeURIComponent(bookingId)}`).then((r) => r.data?.data ?? r.data),
+    apiClient
+      .get(`/payments/status/${encodeURIComponent(bookingId)}`)
+      .then((r) => r.data?.data ?? r.data),
 };

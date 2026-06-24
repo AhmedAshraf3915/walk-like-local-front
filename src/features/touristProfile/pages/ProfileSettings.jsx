@@ -188,18 +188,19 @@ export default function ProfileSettings() {
     }
   }
 
-  const loadVerification = async () => {
-    setVerificationLoading(true)
+const loadVerification = async () => {
+    setVerificationLoading(true);
     try {
-      const res    = await getVerificationStatus()
-      const status = res?.data?.status || res?.status || res?.data?.verificationStatus || null
-      setVerificationStatus(status)
+      const res = await getVerificationStatus();
+      // Normalize to lowercase immediately to handle "APPROVED", "Approved", "approved"
+      const status = res?.data?.status || res?.status || res?.data?.verificationStatus || null;
+      setVerificationStatus(status ? status.toString().toLowerCase().trim() : null);
     } catch {
-      setVerificationStatus(null)
+      setVerificationStatus(null);
     } finally {
-      setVerificationLoading(false)
+      setVerificationLoading(false);
     }
-  }
+  };
 
   useEffect(() => { loadProfile(); loadVerification() }, [])
 
@@ -249,39 +250,53 @@ export default function ProfileSettings() {
           </div>
         )}
 
-        {/* ── Header + verification badge ────────────────────────────────── */}
-        <section className="flex flex-col gap-12">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="flex flex-col gap-6">
-              <h1 className="text-3xl font-semibold text-[var(--maintaxt)]">Account settings</h1>
-              <p className="text-2xl text-[var(--maincolor)]">Personal information used across bookings</p>
-            </div>
+{/* ── Header + verification badge ────────────────────────────────── */}
+{/* ── Header + verification badge ────────────────────────────────── */}
+<section className="flex flex-col gap-12">
+  <div className="flex flex-wrap items-center justify-between gap-6">
+    <div className="flex flex-col gap-6">
+      <h1 className="text-3xl font-semibold text-[var(--maintaxt)]">Account settings</h1>
+      <p className="text-2xl text-[var(--maincolor)]">Personal information used across bookings</p>
+    </div>
 
-            {!verificationLoading && (
-              verificationStatus === 'approved' ? (
-                // ✅ GREEN — non-clickable
-                <span className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(46,204,113,0.12)] text-[#1e8449] font-semibold text-lg whitespace-nowrap border border-[rgba(46,204,113,0.3)] select-none cursor-default">
-                  <ShieldCheck className="size-5" />
-                  Verified
-                </span>
-              ) : verificationStatus === 'pending' ? (
-                // 🟡 YELLOW — non-clickable "Under review"
-                <span className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(237,200,76,0.12)] text-[var(--darkgold)] font-semibold text-lg whitespace-nowrap border border-[var(--lightgold)] select-none cursor-default">
-                  <ShieldAlert className="size-5" />
-                  Under review
-                </span>
-              ) : (
-                // 🔶 YELLOW — clickable, go submit / retry
-                <button
-                  onClick={() => navigate('/onboarding/verification')}
-                  className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(237,200,76,0.12)] text-[var(--darkgold)] font-semibold text-lg whitespace-nowrap border border-[var(--lightgold)]"
-                >
-                  <ShieldAlert className="size-5" />
-                  {verificationStatus === 'rejected' ? 'Verification rejected · Retry' : 'Complete verification'}
-                </button>
-              )
-            )}
-          </div>
+    {!verificationLoading && (
+      (() => {
+        // Checking against list of common "success" statuses
+        const isVerified = ['approved', 'success', 'succeeded', 'pass', 'passed', 'verified'].includes(verificationStatus);
+        
+        if (isVerified) {
+          return (
+            <span className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(46,204,113,0.12)] text-[#1e8449] font-semibold text-lg whitespace-nowrap border border-[rgba(46,204,113,0.3)] select-none cursor-default">
+              <ShieldCheck className="size-5" />
+              Verified
+            </span>
+          );
+        } 
+        
+        if (verificationStatus === 'pending') {
+          return (
+            <span className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(237,200,76,0.12)] text-[var(--darkgold)] font-semibold text-lg whitespace-nowrap border border-[var(--lightgold)] select-none cursor-default">
+              <ShieldAlert className="size-5" />
+              Under review
+            </span>
+          );
+        }
+
+        // Default: Show "Complete verification" or "Retry"
+        return (
+          <button
+            onClick={() => navigate('/onboarding/verification')}
+            className="flex items-center gap-2 rounded-2xl px-6 py-3 bg-[rgba(237,200,76,0.12)] text-[var(--darkgold)] font-semibold text-lg whitespace-nowrap border border-[var(--lightgold)]"
+          >
+            <ShieldAlert className="size-5" />
+            {verificationStatus === 'rejected' ? 'Verification rejected · Retry' : 'Complete verification'}
+          </button>
+        );
+      })()
+    )}
+  </div>
+  
+  {/* Avatar + read-only fields remains the same below... */}
 
           {/* Avatar + read-only fields */}
           <div className="flex flex-col items-center gap-10">
@@ -296,6 +311,7 @@ export default function ProfileSettings() {
             </div>
           </div>
         </section>
+  {/* ... rest of the component */}
 
         {/* ── Country & Language ─────────────────────────────────────────── */}
         <section className="flex flex-col gap-8">
