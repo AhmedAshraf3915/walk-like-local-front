@@ -79,7 +79,7 @@ export default function CancelModal({ booking, onClose, onConfirm, error, confir
             <button
               onClick={() => onConfirm(booking, selected)}
               disabled={confirming}
-              className="h-14 px-10 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-medium text-xl disabled:opacity-60 flex items-center gap-2"
+              className="h-14 px-10 rounded-2xl border border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] hover:bg-[rgba(228,29,29,0.06)] transition-colors font-medium text-xl disabled:opacity-60 flex items-center gap-2"
             >
               {confirming && <Loader2 className="size-5 animate-spin" />}
               Confirm cancellation

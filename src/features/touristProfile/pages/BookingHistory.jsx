@@ -198,7 +198,7 @@ function UpcomingCard({ booking, onCancel }) {
             <button
               onClick={() => onCancel(booking)}
               // className="h-14 px-10 rounded-2xl border bg-[#ff07072a] border-[#010170] shadow-[0px_4px_4px_0px_rgba(1,1,56,0.2)] text-[var(--maintaxt)] font-medium text-lg"
-             className="h-14 px-10 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-medium text-xl disabled:opacity-60 flex items-center gap-2"
+             className="h-14 px-10 border rounded-2xl border-[rgba(228,29,29,0.5)] text-[rgba(174,24,24,0.9)] hover:bg-[rgba(228,29,29,0.06)] transition-colors font-medium text-xl disabled:opacity-60 flex items-center gap-2"
 
             >
               Cancel
